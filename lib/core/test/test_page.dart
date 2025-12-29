@@ -8,6 +8,8 @@ import 'package:health_app/core/utils/calculation_utils.dart';
 import 'package:health_app/core/utils/format_utils.dart';
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/errors/error_handler.dart';
+import 'package:health_app/core/pages/export_page.dart';
+import 'package:health_app/core/widgets/custom_button.dart';
 
 /// Test page to demonstrate core constants and utilities
 class TestPage extends StatefulWidget {
@@ -257,6 +259,28 @@ ${ErrorHandler.getUserFriendlyMessage(networkFailure)}
                       style: const TextStyle(fontFamily: 'monospace'),
                     ),
                   ),
+              ],
+            ),
+            
+            const SizedBox(height: UIConstants.spacingLg),
+            
+            // Export Page Navigation
+            _buildSection(
+              'Data Export',
+              [
+                CustomButton(
+                  label: 'Open Export Page',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ExportPage(),
+                      ),
+                    );
+                  },
+                  variant: ButtonVariant.primary,
+                  icon: Icons.download,
+                  width: double.infinity,
+                ),
               ],
             ),
           ],
