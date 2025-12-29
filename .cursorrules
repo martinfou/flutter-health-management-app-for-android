@@ -1,0 +1,416 @@
+# Flutter Health Management App - Cursor Rules
+
+## Project Overview
+
+This is a Flutter mobile application targeting Android that helps users manage their health with a primary focus on weight loss. The app provides health tracking, nutrition management, exercise tracking, and clinical safety features.
+
+**Platform**: Android (API 24-34)  
+**Framework**: Flutter 3.24.0+ (LTS)  
+**Language**: Dart 3.3.0+  
+**Architecture**: Feature-First Clean Architecture  
+**State Management**: Riverpod (default)  
+**Database**: Hive for local storage
+
+## Architecture Standards
+
+### Feature-First Clean Architecture
+
+Follow the three-layer architecture pattern for each feature:
+
+```
+lib/features/{feature_name}/
+├── data/
+│   ├── models/              # Data transfer objects (DTOs)
+│   ├── repositories/        # Repository implementations
+│   └── datasources/         # Local (Hive) and remote data sources
+├── domain/
+│   ├── entities/           # Business entities (pure Dart classes)
+│   ├── repositories/       # Repository interfaces
+│   └── usecases/           # Business logic use cases
+└── presentation/
+    ├── pages/              # Feature screens
+    ├── widgets/            # Feature-specific widgets
+    └── providers/          # Riverpod providers
+```
+
+**Dependency Rules**:
+- Presentation layer → Domain layer → Data layer
+- Domain layer has NO external dependencies (pure Dart)
+- Features must NOT import from other features
+- Shared code goes in `lib/core/`
+- Cross-feature communication via domain events or shared core services
+
+### Core Layer Structure
+
+```
+lib/core/
+├── constants/         # App-wide constants
+├── errors/            # Error handling (failures, exceptions)
+├── utils/             # Utility functions
+├── widgets/           # Reusable widgets
+└── providers/         # Global Riverpod providers
+```
+
+## Code Organization
+
+### File Naming Conventions
+
+- **Files**: `snake_case` (e.g., `health_tracking_repository.dart`)
+- **Classes**: `PascalCase` (e.g., `HealthTrackingRepository`)
+- **Variables/Methods**: `camelCase` (e.g., `calculateMovingAverage()`)
+- **Constants**: `lowerCamelCase` with `k` prefix (e.g., `kDefaultMovingAverageDays`)
+- **Private Members**: `camelCase` with `_` prefix (e.g., `_calculateAverage()`)
+- **Folders**: `snake_case` (e.g., `health_tracking/`)
+
+### Import Organization
+
+Order imports as follows:
+1. Dart SDK imports (`dart:async`, `dart:math`)
+2. Flutter imports (`package:flutter/material.dart`)
+3. Package imports (`package:riverpod/riverpod.dart`)
+4. Project imports (relative paths)
+
+Example:
+```dart
+// Dart SDK
+import 'dart:async';
+
+// Flutter
+import 'package:flutter/material.dart';
+
+// Packages
+import 'package:riverpod/riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:fpdart/fpdart.dart';
+
+// Project
+import 'package:health_app/core/errors/failures.dart';
+import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
+```
+
+## Error Handling
+
+### Use fpdart Either Type
+
+Always use `Either<Failure, T>` for operations that can fail:
+
+```dart
+typedef Result<T> = Either<Failure, T>;
+
+// Domain layer (use cases)
+Result<double> call(List<HealthMetric> metrics) {
+  if (metrics.isEmpty) {
+    return Left(ValidationFailure('Metrics list cannot be empty'));
+  }
+  // Business logic
+  return Right(calculatedValue);
+}
+
+// Data layer (repositories)
+Future<Result<HealthMetric>> saveHealthMetric(HealthMetric metric) async {
+  try {
+    final saved = await localDataSource.saveHealthMetric(metric);
+    return Right(saved);
+  } on HiveError catch (e) {
+    return Left(DatabaseFailure('Failed to save: ${e.message}'));
+  }
+}
+```
+
+### Failure Types
+
+Use specific failure classes:
+- `ValidationFailure` - Input validation errors
+- `NetworkFailure` - Network/API errors (post-MVP)
+- `DatabaseFailure` - Database/Hive errors
+- `PermissionFailure` - Permission errors
+- `NotFoundFailure` - Resource not found
+- `CacheFailure` - Cache errors
+
+**Never throw exceptions in domain layer** - always return `Result<T>`.
+
+## State Management with Riverpod
+
+### Provider Organization
+
+- **Global providers**: `lib/core/providers/`
+- **Feature providers**: `lib/features/{feature}/presentation/providers/`
+- Use `family` providers for parameterized providers
+
+### Provider Patterns
+
+```dart
+// Future provider for async data
+final weightMetricsProvider = FutureProvider<List<HealthMetric>>((ref) async {
+  final repository = ref.watch(healthTrackingRepositoryProvider);
+  return await repository.getHealthMetrics();
+});
+
+// State provider for simple state
+final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
+
+// StateNotifier provider for complex state
+final healthMetricsNotifierProvider = StateNotifierProvider<HealthMetricsNotifier, List<HealthMetric>>((ref) {
+  return HealthMetricsNotifier(ref.watch(healthTrackingRepositoryProvider));
+});
+```
+
+### Provider Best Practices
+
+1. Keep state local when possible (use `StatefulWidget` for UI-only state)
+2. Use providers for business logic and data fetching
+3. Avoid deep provider dependency chains
+4. Always handle error states in providers
+5. Use `keepAlive: true` for providers that should persist
+
+## Testing Standards
+
+### Test Coverage Requirements
+
+- **Unit Tests**: 80% minimum coverage for business logic (domain layer)
+- **Widget Tests**: 60% minimum coverage for UI components (presentation layer)
+- **Integration Tests**: Critical user flows (weight entry, weekly review)
+
+### Test Organization
+
+Mirror `lib/` structure in `test/`:
+
+```
+test/
+├── unit/
+│   ├── core/
+│   └── features/{feature}/
+│       ├── data/
+│       ├── domain/
+│       └── presentation/
+├── widget/
+│   └── features/{feature}/presentation/
+├── integration/
+└── fixtures/
+```
+
+### Test Naming
+
+- Test files: `{class_under_test}_test.dart`
+- Test groups: Use `group()` to organize related tests
+- Test names: Descriptive, explain what is being tested
+
+Example:
+```dart
+void main() {
+  group('CalculateMovingAverage', () {
+    test('should calculate 7-day average correctly', () {
+      // Arrange
+      final metrics = [...];
+      final usecase = CalculateMovingAverage();
+      
+      // Act
+      final result = usecase(metrics);
+      
+      // Assert
+      expect(result.isRight(), true);
+      result.fold(
+        (failure) => fail('Should not fail'),
+        (average) => expect(average, closeTo(75.0, 0.1)),
+      );
+    });
+    
+    test('should return ValidationFailure when metrics list is empty', () {
+      // Test implementation
+    });
+  });
+}
+```
+
+## Documentation Standards
+
+- Always document public APIs with Dartdoc comments
+- Add inline comments for complex logic explaining algorithms and performance characteristics
+- Use clear, concise documentation that explains the "why" not just the "what"
+
+## Code Quality Standards
+
+### Linting
+
+- Use `flutter_lints` (latest) with strict rules
+- Configure in `analysis_options.yaml`
+- Fix all linter warnings before committing
+
+### Type Safety
+
+- Avoid `dynamic` types - use explicit types
+- Use type inference only when type is obvious
+- Always handle null cases explicitly (null safety)
+
+### Immutability
+
+- Prefer immutable data structures
+- Use `freezed` for complex models (with code generation)
+- Use `const` constructors when possible
+
+### Performance
+
+Follow performance best practices:
+- Use `ListView.builder` for large lists
+- Limit chart data points (max 100 for rendering)
+- Compress images before storing (progress photos)
+- Dispose controllers and subscriptions
+- Cache expensive calculations
+- Use pagination for large datasets
+
+## Git Workflow
+
+### Branching Strategy
+
+**Feature Branch Workflow** - All development on feature branches:
+
+- **Feature**: `feature/FR-XXX-short-description`
+- **Bug Fix**: `bugfix/BF-XXX-short-description`
+- **Hotfix**: `hotfix/critical-issue-description`
+- **Chore**: `chore/description`
+
+### Commit Message Standards (CRISPE Framework)
+
+**Format**:
+```
+<type>(<scope>): <subject>
+
+<business-focused paragraph explaining why and user impact>
+
+<technical paragraph with bullet points>
+- Technical implementation detail 1
+- Technical implementation detail 2
+- Dependencies or system interactions
+- Performance considerations
+
+<footer with task reference>
+```
+
+**Commit Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`
+
+**Commit Scopes**: `health-tracking`, `nutrition`, `exercise`, `core`, `llm` (post-MVP)
+
+**Rules**:
+1. Subject line: Maximum 50 characters, imperative mood, capitalized, no period
+2. Task number: Goes in footer (e.g., `Refs FR-042`), NOT in subject line
+3. Business first: First paragraph explains business value and user impact
+4. Technical second: Second paragraph lists technical implementation details
+5. No past tense: Use "Add" not "Added", "Fix" not "Fixed"
+6. No implementation details in subject: Subject describes WHAT, not HOW
+
+## Feature Implementation Guidelines
+
+### Use Case Pattern
+
+Each use case should:
+1. Take entities/parameters as input
+2. Return `Result<T>` (Either<Failure, T>)
+3. Contain single business operation
+4. Have no side effects (except through repository)
+5. Be easily testable
+
+Example:
+```dart
+class CalculateMovingAverage {
+  final HealthTrackingRepository repository;
+  
+  CalculateMovingAverage(this.repository);
+  
+  Result<double> call(List<HealthMetric> metrics) {
+    // Validation
+    if (metrics.isEmpty) {
+      return Left(ValidationFailure('Metrics list cannot be empty'));
+    }
+    
+    // Business logic
+    // ...
+    
+    return Right(average);
+  }
+}
+```
+
+### Widget Guidelines
+
+- Use `ConsumerWidget` or `ConsumerStatefulWidget` for Riverpod integration
+- Extract complex widgets into separate files
+- Use `const` constructors when possible
+- Implement proper error states
+- Add loading indicators for async operations
+- Follow Material Design 3 principles
+
+## Accessibility Standards
+
+### WCAG 2.1 AA Compliance
+
+- Color contrast: 4.5:1 minimum for normal text
+- Touch targets: 48x48dp minimum
+- Screen reader support: All interactive elements labeled
+- Keyboard navigation: All features accessible via keyboard
+
+### Implementation
+
+```dart
+// Use Semantics widget for screen readers
+Semantics(
+  label: 'Weight entry field',
+  hint: 'Enter your weight in kilograms',
+  child: TextField(...),
+)
+
+// Ensure minimum touch targets
+SizedBox(
+  width: 48,
+  height: 48,
+  child: IconButton(...),
+)
+```
+
+## MVP vs Post-MVP
+
+### MVP Scope
+
+- **Local-only**: No cloud sync, no authentication
+- **Hive Database**: Local storage only
+- **No LLM Integration**: LLM features deferred to post-MVP
+- **Core Features**: Health tracking, nutrition, exercise (subset)
+
+### Post-MVP Features
+
+- Cloud sync (DreamHost PHP/MySQL backend)
+- User authentication
+- LLM integration (abstraction layer designed)
+- Additional features (medication management, behavioral support, advanced analytics)
+
+**Important**: Architecture supports post-MVP, but implementation is deferred.
+
+## Health Domain Rules
+
+### Clinical Safety Rules
+
+- **Resting Heart Rate Alert**: If > 100 BPM for 3 consecutive days → show alert
+- **Rapid Weight Loss Alert**: If > 4 lbs/week for 2 consecutive weeks → show alert
+- **Poor Sleep Alert**: If sleep quality < 4/10 for 5 consecutive days → show alert
+- **Elevated Heart Rate Alert**: If increases by > 20 BPM from baseline for 3 days → show alert
+  - Baseline: Average of first 7 days, recalculated monthly
+
+### Data Calculations
+
+- **7-Day Moving Average**: Average over last 7 days (inclusive of today)
+- **Plateau Detection**: Weight unchanged for 3 consecutive weeks AND measurements unchanged
+- **Macro Calculations**: Calculate percentages by calories (protein/carbs: 4 cal/g, fats: 9 cal/g)
+
+## Code Review Reminders
+
+Before committing, ensure:
+- [ ] All tests pass
+- [ ] Test coverage meets requirements (80% unit, 60% widget)
+- [ ] No linter warnings
+- [ ] Error handling implemented
+- [ ] Documentation added (Dartdoc for public APIs)
+- [ ] Follows naming conventions
+- [ ] Follows architecture patterns
+- [ ] Performance considerations addressed
+- [ ] Accessibility requirements met
+- [ ] Commit message follows CRISPE framework
+- [ ] Branch name follows convention
