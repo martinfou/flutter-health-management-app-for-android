@@ -62,6 +62,8 @@
 
 **Status**: ✅ Completed
 
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
+
 **Tasks**:
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
@@ -106,6 +108,8 @@
 
 **Status**: ✅ Completed
 
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
+
 **Tasks**:
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
@@ -145,6 +149,8 @@
 **Priority**: 🔴 Critical
 
 **Status**: ✅ Completed
+
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 
 **Tasks**:
 
@@ -186,6 +192,8 @@
 
 **Status**: ✅ Completed
 
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
+
 **Tasks**:
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
@@ -225,6 +233,8 @@
 **Priority**: 🔴 Critical (Risk Mitigation)
 
 **Status**: ✅ Completed
+
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 
 **Tasks**:
 

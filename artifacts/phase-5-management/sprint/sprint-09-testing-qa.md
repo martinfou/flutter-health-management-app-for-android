@@ -62,6 +62,8 @@
 
 **Status**: ⭕ Not Started
 
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
+
 **Tasks**:
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
@@ -105,6 +107,8 @@
 
 **Status**: ⭕ Not Started
 
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
+
 **Tasks**:
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
@@ -146,6 +150,8 @@
 
 **Status**: ⭕ Not Started
 
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
+
 **Tasks**:
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
@@ -183,6 +189,8 @@
 **Priority**: 🟠 High
 
 **Status**: ⭕ Not Started
+
+**Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 
 **Tasks**:
 

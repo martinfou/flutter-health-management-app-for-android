@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:health_app/core/test/test_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:health_app/core/test/sprint2_demo_page.dart';
 import 'package:health_app/core/providers/database_initializer.dart';
 import 'package:health_app/core/errors/error_handler.dart';
 
@@ -21,7 +22,11 @@ void main() async {
     },
   );
 
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -35,7 +40,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const TestPage(),
+      home: const Sprint2DemoPage(),
     );
   }
 }
