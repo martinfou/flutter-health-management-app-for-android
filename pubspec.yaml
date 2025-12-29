@@ -45,6 +45,12 @@ dependencies:
   # Functional Programming
   fpdart: ^1.1.0
 
+  # Internationalization
+  intl: ^0.19.0
+
+  # File System
+  path_provider: ^2.1.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
