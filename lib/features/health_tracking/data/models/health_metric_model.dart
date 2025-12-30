@@ -29,6 +29,10 @@ class HealthMetricModel extends HiveObject {
   @HiveField(4)
   int? sleepQuality;
 
+  /// Sleep hours (1-12 hours, nullable, in 0.5 hour increments)
+  @HiveField(13)
+  double? sleepHours;
+
   /// Energy level (1-10, nullable)
   @HiveField(5)
   int? energyLevel;
@@ -36,6 +40,14 @@ class HealthMetricModel extends HiveObject {
   /// Resting heart rate in BPM (nullable)
   @HiveField(6)
   int? restingHeartRate;
+
+  /// Systolic blood pressure in mmHg (nullable)
+  @HiveField(11)
+  int? systolicBP;
+
+  /// Diastolic blood pressure in mmHg (nullable)
+  @HiveField(12)
+  int? diastolicBP;
 
   /// Body measurements map (waist, hips, neck, chest, thigh) in cm
   @HiveField(7)
@@ -64,8 +76,11 @@ class HealthMetricModel extends HiveObject {
       date: date,
       weight: weight,
       sleepQuality: sleepQuality,
+      sleepHours: sleepHours,
       energyLevel: energyLevel,
       restingHeartRate: restingHeartRate,
+      systolicBP: systolicBP,
+      diastolicBP: diastolicBP,
       bodyMeasurements: bodyMeasurements,
       notes: notes,
       createdAt: createdAt,
@@ -81,8 +96,11 @@ class HealthMetricModel extends HiveObject {
       ..date = entity.date
       ..weight = entity.weight
       ..sleepQuality = entity.sleepQuality
+      ..sleepHours = entity.sleepHours
       ..energyLevel = entity.energyLevel
       ..restingHeartRate = entity.restingHeartRate
+      ..systolicBP = entity.systolicBP
+      ..diastolicBP = entity.diastolicBP
       ..bodyMeasurements = entity.bodyMeasurements
       ..notes = entity.notes
       ..createdAt = entity.createdAt

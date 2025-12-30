@@ -95,6 +95,34 @@ class SaveHealthMetricUseCase {
       }
     }
 
+    // Validate blood pressure if provided
+    if (metric.systolicBP != null) {
+      if (metric.systolicBP! < HealthConstants.minSystolicBP ||
+          metric.systolicBP! > HealthConstants.maxSystolicBP) {
+        return ValidationFailure(
+          'Systolic blood pressure must be between ${HealthConstants.minSystolicBP} and ${HealthConstants.maxSystolicBP} mmHg',
+        );
+      }
+    }
+
+    if (metric.diastolicBP != null) {
+      if (metric.diastolicBP! < HealthConstants.minDiastolicBP ||
+          metric.diastolicBP! > HealthConstants.maxDiastolicBP) {
+        return ValidationFailure(
+          'Diastolic blood pressure must be between ${HealthConstants.minDiastolicBP} and ${HealthConstants.maxDiastolicBP} mmHg',
+        );
+      }
+    }
+
+    // Validate that if both blood pressure values are provided, systolic > diastolic
+    if (metric.systolicBP != null && metric.diastolicBP != null) {
+      if (metric.systolicBP! <= metric.diastolicBP!) {
+        return ValidationFailure(
+          'Systolic blood pressure must be greater than diastolic blood pressure',
+        );
+      }
+    }
+
     // Validate that metric has at least one data field
     if (!metric.hasData) {
       return ValidationFailure('Health metric must have at least one data field');

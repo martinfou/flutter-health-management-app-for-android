@@ -5,6 +5,7 @@ import 'package:health_app/features/medication_management/presentation/providers
 import 'package:health_app/features/medication_management/presentation/widgets/medication_card_widget.dart';
 import 'package:health_app/features/medication_management/presentation/pages/add_medication_dialog.dart';
 import 'package:health_app/features/medication_management/presentation/pages/medication_logging_page.dart';
+import 'package:health_app/core/widgets/safety_alert_widget.dart';
 
 /// Main medication management page showing list of medications
 class MedicationPage extends ConsumerWidget {
@@ -58,6 +59,9 @@ class MedicationPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Safety alerts
+                const SafetyAlertWidget(),
+                
                 if (activeMedications.isNotEmpty) ...[
                   Text(
                     'Active Medications',

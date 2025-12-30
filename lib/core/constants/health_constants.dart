@@ -94,6 +94,18 @@ class HealthConstants {
   /// Maximum valid resting heart rate (BPM)
   static const int maxRestingHeartRate = 200;
 
+  /// Minimum valid systolic blood pressure (mmHg)
+  static const int minSystolicBP = 70;
+
+  /// Maximum valid systolic blood pressure (mmHg)
+  static const int maxSystolicBP = 250;
+
+  /// Minimum valid diastolic blood pressure (mmHg)
+  static const int minDiastolicBP = 40;
+
+  /// Maximum valid diastolic blood pressure (mmHg)
+  static const int maxDiastolicBP = 150;
+
   /// Minimum valid sleep quality (out of 10)
   static const int minSleepQuality = 0;
 

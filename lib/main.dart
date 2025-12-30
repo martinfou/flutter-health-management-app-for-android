@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:health_app/core/test/sprint7_demo_page.dart';
+import 'package:health_app/core/navigation/app_router.dart';
+import 'package:health_app/core/pages/main_navigation_page.dart';
 import 'package:health_app/core/providers/database_initializer.dart';
 import 'package:health_app/core/errors/error_handler.dart';
 
@@ -40,7 +41,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const Sprint7DemoPage(),
+      home: const MainNavigationPage(),
+      onGenerateRoute: AppRouter.generateRoute,
+      initialRoute: AppRoutes.home,
     );
   }
 }

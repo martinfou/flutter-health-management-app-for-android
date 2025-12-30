@@ -158,5 +158,98 @@ class ExportService {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
   }
+
+  /// Import data from JSON file
+  /// 
+  /// Validates the file format and imports data into Hive boxes.
+  /// Returns success if import is successful.
+  static Future<ExportResult> importAllData(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        return Left(DatabaseFailure('Import file does not exist'));
+      }
+
+      // Read file content
+      final jsonString = await file.readAsString();
+      
+      // Parse JSON
+      final importData = jsonDecode(jsonString) as Map<String, dynamic>;
+      
+      // Validate export version
+      if (importData['export_version'] == null) {
+        return Left(DatabaseFailure('Invalid import file format: missing export_version'));
+      }
+      
+      // Import each box
+      final boxNames = DatabaseInitializer.getAllBoxNames();
+      
+      for (final boxName in boxNames) {
+        if (importData.containsKey(boxName)) {
+          final boxData = importData[boxName] as List<dynamic>;
+          
+          if (Hive.isBoxOpen(boxName)) {
+            final box = Hive.box(boxName);
+            await _importBox(box, boxData);
+          }
+        }
+      }
+      
+      return Right('Data imported successfully');
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(
+        e,
+        stackTrace: stackTrace,
+        context: 'ExportService.importAllData',
+      );
+      return Left(
+        DatabaseFailure(
+          'Failed to import data: ${ErrorHandler.handleError(e)}',
+        ),
+      );
+    }
+  }
+
+  /// Import data into a Hive box
+  static Future<void> _importBox(Box box, List<dynamic> data) async {
+    // Clear existing data (optional - could merge instead)
+    await box.clear();
+    
+    // Import each item
+    for (final item in data) {
+      if (item is Map<String, dynamic>) {
+        // Extract key and value
+        final key = item['key'];
+        final value = item['value'];
+        
+        if (key != null) {
+          await box.put(key, value);
+        }
+      }
+    }
+  }
+
+  /// Validate import file format
+  /// 
+  /// Returns true if file format is valid, false otherwise.
+  static Future<ExportResult> validateImportFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        return Left(DatabaseFailure('File does not exist'));
+      }
+      
+      final jsonString = await file.readAsString();
+      final importData = jsonDecode(jsonString) as Map<String, dynamic>;
+      
+      if (importData['export_version'] == null) {
+        return Left(DatabaseFailure('Invalid file format: missing export_version'));
+      }
+      
+      return Right('File format is valid');
+    } catch (e) {
+      return Left(DatabaseFailure('Invalid JSON file: ${ErrorHandler.handleError(e)}'));
+    }
+  }
 }
 
