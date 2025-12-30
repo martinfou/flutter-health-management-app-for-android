@@ -26,13 +26,20 @@ class ErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    final semanticLabel = onRetry != null
+        ? 'Error: $message. Retry button available'
+        : 'Error: $message';
+
+    return Semantics(
+      label: semanticLabel,
+      hint: onRetry != null ? 'Double tap to retry' : null,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Icon(
               icon ?? Icons.error_outline,
               size: UIConstants.iconSizeXl,
@@ -55,6 +62,7 @@ class ErrorWidget extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

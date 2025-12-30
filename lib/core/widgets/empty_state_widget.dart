@@ -34,13 +34,19 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    final semanticLabel = description != null
+        ? '$title. $description'
+        : title;
+
+    return Semantics(
+      label: semanticLabel,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             if (icon != null) ...[
               Icon(
                 icon,
@@ -75,6 +81,7 @@ class EmptyStateWidget extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

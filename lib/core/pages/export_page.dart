@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/utils/export_utils.dart';
@@ -5,6 +6,7 @@ import 'package:health_app/core/widgets/custom_button.dart';
 import 'package:health_app/core/widgets/loading_indicator.dart';
 import 'package:health_app/core/widgets/error_widget.dart' as core_error;
 import 'package:health_app/core/errors/failures.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Export page for backing up user data
 class ExportPage extends StatefulWidget {
@@ -27,7 +29,7 @@ class _ExportPageState extends State<ExportPage> {
         title: const Text('Export Data'),
         content: const Text(
           'This will export all your health data to a JSON file. '
-          'The file will be saved to your device\'s Downloads folder.\n\n'
+          'The file will be saved to your device\'s Downloads folder, making it easy to find and import later.\n\n'
           'Do you want to continue?',
         ),
         actions: [
@@ -75,6 +77,37 @@ class _ExportPageState extends State<ExportPage> {
     );
   }
 
+  Future<void> _shareFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        final xFile = XFile(filePath);
+        await Share.shareXFiles(
+          [xFile],
+          subject: 'Health App Data Export',
+          text: 'My health data export from Health Tracker App',
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('File not found. Please export again.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing file: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   void _showSuccessDialog(String filePath) {
     showDialog(
       context: context,
@@ -101,13 +134,26 @@ class _ExportPageState extends State<ExportPage> {
               filePath,
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            const SizedBox(height: UIConstants.spacingMd),
+            const Text(
+              'The file has been saved to your Downloads folder. You can easily find it when importing, or share it to save to another location.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
         actions: [
-          CustomButton(
-            label: 'OK',
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+          CustomButton(
+            label: 'Share',
+            onPressed: () {
+              Navigator.of(context).pop();
+              _shareFile(filePath);
+            },
             variant: ButtonVariant.primary,
+            icon: Icons.share,
           ),
         ],
       ),
@@ -153,7 +199,7 @@ class _ExportPageState extends State<ExportPage> {
                     ),
                     const SizedBox(height: UIConstants.spacingSm),
                     Text(
-                      'The file will be saved to your device\'s Downloads folder.',
+                      'The file will be saved to the app\'s documents directory. You can access it when importing by using the file picker\'s navigation menu.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -206,6 +252,14 @@ class _ExportPageState extends State<ExportPage> {
                       Text(
                         _exportPath!,
                         style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: UIConstants.spacingMd),
+                      CustomButton(
+                        label: 'Share File',
+                        onPressed: () => _shareFile(_exportPath!),
+                        variant: ButtonVariant.secondary,
+                        icon: Icons.share,
+                        width: double.infinity,
                       ),
                     ],
                   ),
