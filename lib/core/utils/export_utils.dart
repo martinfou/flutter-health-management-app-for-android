@@ -381,6 +381,9 @@ class ExportService {
   }
 
   /// Save export file to device storage
+  /// 
+  /// Attempts to save to Downloads directory for better accessibility.
+  /// Falls back to app's external storage directory if Downloads is not accessible.
   static Future<String> _saveExportFile(String jsonContent) async {
     try {
       Directory directory;
@@ -388,7 +391,8 @@ class ExportService {
       // Try to save to Downloads directory (more accessible)
       if (defaultTargetPlatform == TargetPlatform.android) {
         try {
-          // For Android, get external storage directory and navigate to Downloads
+          // For Android, try to get Downloads directory
+          // First, try to get external storage directory
           final externalDir = await getExternalStorageDirectory();
           if (externalDir != null) {
             // External storage path is like: /storage/emulated/0/Android/data/com.healthapp.health_app/files
@@ -411,8 +415,11 @@ class ExportService {
               final downloadsPath = '$basePath/Download';
               final downloadsDir = Directory(downloadsPath);
               
-              // Try to use Downloads directory (may fail on Android 10+ without proper permissions)
+              // Try to use Downloads directory
+              // On Android 10+ (API 29+), direct access to Downloads may be restricted
+              // but we can still try
               try {
+                // Check if Downloads directory exists or can be created
                 if (!await downloadsDir.exists()) {
                   await downloadsDir.create(recursive: true);
                 }
@@ -424,17 +431,22 @@ class ExportService {
                   await testFile.delete();
                   directory = downloadsDir;
                 } catch (_) {
-                  // Can't write to Downloads, fall back to app directory
-                  directory = await getApplicationDocumentsDirectory();
+                  // Can't write to Downloads (likely Android 10+ scoped storage)
+                  // Use app's external storage directory instead
+                  // This directory is accessible via file picker
+                  directory = externalDir;
                 }
               } catch (_) {
-                // If we can't create/write to Downloads, fall back to app directory
-                directory = await getApplicationDocumentsDirectory();
+                // If we can't create/write to Downloads, use app's external directory
+                // This is accessible via file picker and share functionality
+                directory = externalDir;
               }
             } else {
-              directory = await getApplicationDocumentsDirectory();
+              // Fallback to app's external storage directory
+              directory = externalDir;
             }
           } else {
+            // Fallback to app documents directory
             directory = await getApplicationDocumentsDirectory();
           }
         } catch (e) {
@@ -445,6 +457,11 @@ class ExportService {
       } else {
         // For other platforms, use app documents directory
         directory = await getApplicationDocumentsDirectory();
+      }
+
+      // Ensure directory exists
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
       }
 
       // Create filename with timestamp

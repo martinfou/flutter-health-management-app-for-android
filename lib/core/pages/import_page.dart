@@ -26,24 +26,29 @@ class _ImportPageState extends State<ImportPage> {
 
   Future<void> _pickFile() async {
     try {
+      // Configure file picker to handle both local and cloud storage files
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
-        withData: true, // Enable data reading for cloud storage files
+        withData: true, // Enable data reading for cloud storage files (Dropbox, Google Drive)
+        allowMultiple: false,
+        // On Android, this allows access to Downloads and cloud storage
+        dialogTitle: 'Select export file to import',
       );
 
-      if (result != null) {
+      if (result != null && result.files.isNotEmpty) {
         final pickedFile = result.files.single;
         String? filePath;
 
-        // If path is available, use it directly (local files)
-        if (pickedFile.path != null) {
+        // Priority 1: If path is available, use it directly (local files)
+        if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
           filePath = pickedFile.path;
         }
-        // If path is null but bytes are available (cloud storage), save to temp file
-        else if (pickedFile.bytes != null) {
+        // Priority 2: If path is null but bytes are available (cloud storage), save to temp file
+        else if (pickedFile.bytes != null && pickedFile.bytes!.isNotEmpty) {
           try {
-            // Save bytes to temporary file
+            // Save bytes to temporary file for processing
+            // This handles files from cloud storage (Dropbox, Google Drive, etc.)
             final directory = await getTemporaryDirectory();
             final fileName = pickedFile.name.isNotEmpty
                 ? pickedFile.name
@@ -55,19 +60,25 @@ class _ImportPageState extends State<ImportPage> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error saving file: $e'),
+                  content: Text('Error accessing file from cloud storage: ${e.toString()}'),
                   backgroundColor: Theme.of(context).colorScheme.error,
+                  duration: const Duration(seconds: 5),
                 ),
               );
             }
             return;
           }
         } else {
+          // No path and no bytes - file cannot be accessed
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Unable to access file. Please try selecting the file again.'),
+                content: Text(
+                  'Unable to access file. Please ensure the file is accessible and try again.\n\n'
+                  'Tip: If the file is in cloud storage, try downloading it to your device first, or use the file picker\'s navigation menu to browse folders.',
+                ),
                 backgroundColor: Colors.orange,
+                duration: Duration(seconds: 6),
               ),
             );
           }
@@ -75,6 +86,20 @@ class _ImportPageState extends State<ImportPage> {
         }
 
         if (filePath != null) {
+          // Verify file exists and is readable
+          final file = File(filePath);
+          if (!await file.exists()) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Selected file does not exist. Please select a different file.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            return;
+          }
+
           setState(() {
             _selectedFilePath = filePath;
             _importError = null;
@@ -89,8 +114,9 @@ class _ImportPageState extends State<ImportPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error selecting file: $e'),
+            content: Text('Error selecting file: ${e.toString()}'),
             backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -250,7 +276,7 @@ class _ImportPageState extends State<ImportPage> {
                     ),
                     const SizedBox(height: UIConstants.spacingSm),
                     Text(
-                      'Tip: If you can\'t find your exported file, use the file picker\'s navigation menu to browse folders. The file is saved in the app\'s documents directory.',
+                      'Tip: Use the file picker\'s navigation menu to browse folders. The exported file is typically saved in your Downloads folder. If you shared the file to cloud storage (Dropbox, Google Drive), you can access it through the file picker\'s cloud storage options.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontStyle: FontStyle.italic,
                           ),

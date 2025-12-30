@@ -136,7 +136,7 @@ class _ExportPageState extends State<ExportPage> {
             ),
             const SizedBox(height: UIConstants.spacingMd),
             const Text(
-              'The file has been saved to your Downloads folder. You can easily find it when importing, or share it to save to another location.',
+              'The file has been saved. You can share it to save to cloud storage (Dropbox, Google Drive, etc.) for safekeeping. When importing, use the file picker to select the file from your device or cloud storage.',
               style: TextStyle(fontSize: 12),
             ),
           ],
@@ -199,7 +199,7 @@ class _ExportPageState extends State<ExportPage> {
                     ),
                     const SizedBox(height: UIConstants.spacingSm),
                     Text(
-                      'The file will be saved to the app\'s documents directory. You can access it when importing by using the file picker\'s navigation menu.',
+                      'The file will be saved to your device\'s Downloads folder (if accessible) or the app\'s storage directory. You can share the file to save it to cloud storage (Dropbox, Google Drive, etc.) for safekeeping.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

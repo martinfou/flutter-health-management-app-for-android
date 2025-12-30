@@ -1,11 +1,11 @@
 # Bug Fix: BF-001 - Export/Import Functionality Not Working Properly
 
-**Status**: ⭕ Not Started  
+**Status**: ⏳ In Progress  
 **Priority**: 🔴 Critical  
 **Story Points**: 5  
 **Created**: 2025-12-30  
-**Updated**: 2025-12-30  
-**Assigned Sprint**: Backlog
+**Updated**: 2025-01-02  
+**Assigned Sprint**: Sprint 10
 
 ## Description
 
@@ -75,21 +75,21 @@ No error messages are displayed, but files cannot be selected during import proc
 
 ## Solution
 
-1. **Save to Downloads Directory**: Ensure exported files are saved to the device's Downloads folder, which is more accessible and visible to file pickers and cloud storage apps.
+1. **Save to Downloads Directory**: ✅ Improved export to attempt saving to Downloads directory, with fallback to app's external storage directory (accessible via file picker).
 
-2. **Handle Cloud Storage Files**: Implement proper handling for files accessed from cloud storage:
+2. **Handle Cloud Storage Files**: ✅ Implemented proper handling for files accessed from cloud storage:
    - Read file bytes when direct file path is not available
    - Save file contents to temporary location for import processing
-   - Handle content URIs properly on Android
+   - Enhanced file picker configuration with `withData: true` to read file contents directly
 
-3. **File Picker Configuration**: Configure file picker to properly access files from:
+3. **File Picker Configuration**: ✅ Configured file picker to properly access files from:
    - Local storage (Downloads, Documents)
    - Cloud storage providers (Dropbox, Google Drive, etc.)
-   - May require using `withData: true` to read file contents directly
+   - Using `withData: true` to read file contents directly from cloud storage
 
-4. **Error Handling**: Add proper error messages when files cannot be accessed or imported.
+4. **Error Handling**: ✅ Added proper error messages when files cannot be accessed or imported, with helpful user guidance.
 
-5. **Testing**: Test export/import flow with:
+5. **Testing**: ⏳ Pending - Test export/import flow with:
    - Files in Downloads directory
    - Files shared to Dropbox
    - Files shared to Google Drive
@@ -132,4 +132,10 @@ No error messages are displayed, but files cannot be selected during import proc
 ## History
 
 - 2025-12-30 - Created
+- 2025-01-02 - Status changed to ⏳ In Progress, Assigned to Sprint 10
+- 2025-01-02 - Implemented fixes:
+  - Improved export file saving to attempt Downloads directory with proper fallback
+  - Enhanced import file picker to handle cloud storage files (Dropbox, Google Drive)
+  - Added better error handling and user feedback
+  - Updated UI messages to guide users on file access
 
