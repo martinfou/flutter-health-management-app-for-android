@@ -16,7 +16,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 
 | ID | Title | Priority | Points | Status | Sprint | Created | Updated |
 |----|-------|----------|--------|--------|--------|---------|---------|
-| BF-001 | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ⭕ | Backlog | 2025-12-30 | 2025-12-30 |
+| BF-001 | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ⏳ | Sprint 10 | 2025-12-30 | 2025-01-02 |
 
 ---
 

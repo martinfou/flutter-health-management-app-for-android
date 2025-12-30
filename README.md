@@ -133,6 +133,46 @@ See `artifacts/organization-schema.md` for detailed organization structure.
 
 ## Getting Started
 
+### Prerequisites
+
+- **Flutter SDK**: 3.24.0 or higher (LTS version recommended)
+- **Dart SDK**: 3.3.0 or higher
+- **Android Studio**: Latest version with Android SDK (API 24-34)
+- **Android Device/Emulator**: API 24 (Android 7.0) or higher for testing
+- **Git**: For version control
+
+### Setup Instructions
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd flutter-health-management-app-for-android
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+3. **Run code generation** (if needed for Hive models):
+   ```bash
+   flutter pub run build_runner build --delete-conflicting-outputs
+   ```
+
+4. **Verify setup**:
+   ```bash
+   flutter doctor
+   ```
+   Ensure all required components are installed and configured.
+
+5. **Run the app**:
+   ```bash
+   flutter run
+   ```
+   Or use Android Studio to run the app on a connected device or emulator.
+
+### Development Setup
+
 1. **Review requirements**: Read `artifacts/requirements.md` to understand the project scope and MVP decisions.
 
 2. **Understand architecture**: Start with `artifacts/phase-1-foundations/architecture-documentation.md`.
@@ -142,6 +182,43 @@ See `artifacts/organization-schema.md` for detailed organization structure.
 4. **Follow feature specs**: Implement features according to specifications in `artifacts/phase-2-features/`.
 
 5. **Set up testing**: Follow `artifacts/phase-4-testing/testing-strategy.md` for test implementation.
+
+### Running Tests
+
+**Unit Tests**:
+```bash
+flutter test test/unit/
+```
+
+**Widget Tests**:
+```bash
+flutter test test/widget/
+```
+
+**Integration Tests**:
+```bash
+flutter test test/integration/
+```
+
+**Generate Coverage Report**:
+```bash
+flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+```
+
+### Building for Release
+
+**Build APK**:
+```bash
+flutter build apk --release
+```
+
+**Build App Bundle** (for Play Store):
+```bash
+flutter build appbundle --release
+```
+
+Output files are located in `build/app/outputs/`.
 
 ## Next Steps
 
