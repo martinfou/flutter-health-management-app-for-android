@@ -2,13 +2,14 @@
 
 This is the main product backlog tracking all feature requests and bug fixes.
 
-**Last Updated**: 2024-12-20
+**Last Updated**: 2025-12-30
 
 ## Feature Requests
 
 | ID | Title | Priority | Points | Status | Sprint | Created | Updated |
 |----|-------|----------|--------|--------|--------|---------|---------|
 | FR-001 | Health Tracking UI Redesign (Card-Based Dashboard) | 🟠 High | 13 | ✅ | Current | 2024-12-20 | 2024-12-20 |
+| FR-002 | Home Screen UI Redesign (Priority-Based Stack Layout) | 🟠 High | 13 | ✅ | Current | 2025-12-30 | 2025-12-30 |
 
 ## Bug Fixes
 

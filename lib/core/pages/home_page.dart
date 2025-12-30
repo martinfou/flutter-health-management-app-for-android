@@ -8,22 +8,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/navigation/app_router.dart';
 import 'package:health_app/core/widgets/safety_alert_widget.dart';
-import 'package:health_app/features/behavioral_support/presentation/pages/habit_tracking_page.dart';
-import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
-import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
-import 'package:health_app/features/nutrition_management/domain/usecases/calculate_macros.dart';
-import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
+import 'package:health_app/core/widgets/welcome_card_widget.dart';
+import 'package:health_app/core/widgets/what_next_card_widget.dart';
+import 'package:health_app/core/widgets/progress_bar_widget.dart';
+import 'package:health_app/core/widgets/metric_check_grid_widget.dart';
+import 'package:health_app/core/widgets/quick_access_grid_widget.dart';
+import 'package:health_app/core/providers/home_screen_providers.dart';
+import 'package:health_app/core/entities/recommended_action.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/weight_entry_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/sleep_energy_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/heart_rate_entry_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/blood_pressure_entry_page.dart';
 
-/// Home page with overview of health metrics and quick actions
+/// Home page with priority-based stack layout
+/// 
+/// Displays:
+/// - Safety alerts (if any)
+/// - Welcome message
+/// - "What's Next?" section with recommended actions
+/// - "Today's Progress" section with progress bar and metric grid
+/// - "Quick Access" section for feature navigation
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final metricsAsync = ref.watch(healthMetricsProvider);
-    final today = DateTime.now();
-    final dateOnly = DateTime(today.year, today.month, today.day);
+    final whatNextAsync = ref.watch(whatNextProvider);
+    final progressAsync = ref.watch(dailyProgressProvider);
+    final statusAsync = ref.watch(metricStatusProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -45,59 +58,46 @@ class HomePage extends ConsumerWidget {
           children: [
             // Safety alerts
             const SafetyAlertWidget(),
-            
+
+            const SizedBox(height: UIConstants.spacingLg),
+
             // Welcome message
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(UIConstants.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getGreeting(),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+            const WelcomeCardWidget(),
+
+            const SizedBox(height: UIConstants.spacingLg),
+
+            // "What's Next?" section
+            Text(
+              '🎯 What\'s Next?',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: UIConstants.spacingMd),
+            whatNextAsync.when(
+              data: (actions) {
+                if (actions.isEmpty) {
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(UIConstants.cardPadding),
+                      child: Text(
+                        'Great job! You\'re all caught up.',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: UIConstants.spacingSm),
-                    Text(
-                      'Today is a great day to track your progress.',
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  );
+                }
 
-            const SizedBox(height: UIConstants.spacingLg),
-
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: UIConstants.spacingMd),
-            _buildQuickActions(context),
-
-            const SizedBox(height: UIConstants.spacingLg),
-
-            // Today's Summary
-            Text(
-              'Today\'s Summary',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: UIConstants.spacingMd),
-            metricsAsync.when(
-              data: (metrics) {
-                final macroSummary = ref.watch(macroSummaryProvider(dateOnly));
-                return _buildTodaySummary(
-                  context,
-                  metrics,
-                  macroSummary,
+                return Column(
+                  children: actions.map((action) {
+                    return WhatNextCardWidget(
+                      action: action,
+                      onTap: () => _handleRecommendedAction(context, action),
+                    );
+                  }).toList(),
                 );
               },
               loading: () => const Center(
@@ -110,7 +110,7 @@ class HomePage extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(UIConstants.cardPadding),
                   child: Text(
-                    'Error loading summary: ${error.toString()}',
+                    'Error loading recommendations: ${error.toString()}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.error,
                     ),
@@ -118,220 +118,120 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: UIConstants.spacingMd,
-      crossAxisSpacing: UIConstants.spacingMd,
-      childAspectRatio: 1.0,
-      children: [
-        _buildQuickActionButton(
-          context,
-          'Weight',
-          Icons.monitor_weight,
-          () => AppRouter.navigateTo(context, AppRoutes.healthTracking),
-        ),
-        _buildQuickActionButton(
-          context,
-          'Sleep',
-          Icons.bedtime,
-          () => AppRouter.navigateTo(context, AppRoutes.healthTracking),
-        ),
-        _buildQuickActionButton(
-          context,
-          'Energy',
-          Icons.battery_charging_full,
-          () => AppRouter.navigateTo(context, AppRoutes.healthTracking),
-        ),
-        _buildQuickActionButton(
-          context,
-          'Meals',
-          Icons.restaurant,
-          () => AppRouter.navigateTo(context, AppRoutes.nutrition),
-        ),
-        _buildQuickActionButton(
-          context,
-          'Workout',
-          Icons.fitness_center,
-          () => AppRouter.navigateTo(context, AppRoutes.exercise),
-        ),
-        _buildQuickActionButton(
-          context,
-          'Medication',
-          Icons.medication_liquid,
-          () => AppRouter.navigateTo(context, AppRoutes.medication),
-        ),
-        _buildQuickActionButton(
-          context,
-          'Habits',
-          Icons.check_circle,
-          () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const HabitTrackingPage(),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+            const SizedBox(height: UIConstants.spacingLg),
 
-  Widget _buildQuickActionButton(
-    BuildContext context,
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(UIConstants.borderRadiusMd),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-          borderRadius: BorderRadius.circular(UIConstants.borderRadiusMd),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: UIConstants.spacingSm),
+            // "Today's Progress" section
             Text(
-              label,
-              style: theme.textTheme.bodySmall,
-              textAlign: TextAlign.center,
+              '📊 Today\'s Progress',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            const SizedBox(height: UIConstants.spacingMd),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(UIConstants.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    progressAsync.when(
+                      data: (progress) => ProgressBarWidget(progress: progress),
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(UIConstants.spacingMd),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      error: (error, stack) => Text(
+                        'Error loading progress',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: UIConstants.spacingMd),
+                    statusAsync.when(
+                      data: (status) => MetricCheckGridWidget(status: status),
+                      loading: () => const SizedBox.shrink(),
+                      error: (error, stack) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: UIConstants.spacingLg),
+
+            // "Quick Access" section
+            Text(
+              '🚀 Quick Access',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: UIConstants.spacingMd),
+            const QuickAccessGridWidget(),
+
+            const SizedBox(height: UIConstants.spacingLg),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTodaySummary(
+  /// Handle recommended action tap
+  void _handleRecommendedAction(
     BuildContext context,
-    List<HealthMetric> metrics,
-    MacroSummary macroSummary,
+    RecommendedAction action,
   ) {
-    final theme = Theme.of(context);
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-
-    HealthMetric? todayMetric;
-    try {
-      todayMetric = metrics.firstWhere(
-        (m) {
-          final metricDate = DateTime(m.date.year, m.date.month, m.date.day);
-          return metricDate == todayDate;
-        },
-      );
-    } catch (_) {
-      todayMetric = null;
-    }
-
-    final latestWeight = metrics
-        .where((m) => m.weight != null)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
-    final latestWeightMetric = latestWeight.isNotEmpty ? latestWeight.first : null;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (latestWeightMetric != null) ...[
-              _buildSummaryRow(
-                context,
-                'Weight',
-                latestWeightMetric.weight != null
-                    ? '${latestWeightMetric.weight!.toStringAsFixed(1)} kg'
-                    : 'Not recorded',
-              ),
-              const Divider(),
-            ],
-            _buildSummaryRow(
-              context,
-              'Macros',
-              '${macroSummary.protein.toStringAsFixed(0)}g P | '
-              '${macroSummary.fats.toStringAsFixed(0)}g F | '
-              '${macroSummary.netCarbs.toStringAsFixed(0)}g C',
-            ),
-            const Divider(),
-            if (todayMetric != null) ...[
-              if (todayMetric.sleepQuality != null)
-                _buildSummaryRow(
-                  context,
-                  'Sleep',
-                  '${todayMetric.sleepQuality!.toStringAsFixed(1)}/10',
-                ),
-              if (todayMetric.energyLevel != null) ...[
-                if (todayMetric.sleepQuality != null) const Divider(),
-                _buildSummaryRow(
-                  context,
-                  'Energy',
-                  '${todayMetric.energyLevel!.toStringAsFixed(0)}/10',
-                ),
-              ],
-            ] else
-              Text(
-                'No metrics recorded today',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(BuildContext context, String label, String value) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: UIConstants.spacingXs),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+    switch (action.type) {
+      case RecommendedActionType.logWeight:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const WeightEntryPage(),
           ),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium,
+        );
+        break;
+      case RecommendedActionType.logSleep:
+      case RecommendedActionType.logEnergy:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const SleepEnergyPage(),
           ),
-        ],
-      ),
-    );
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good Morning!';
-    } else if (hour < 17) {
-      return 'Good Afternoon!';
-    } else {
-      return 'Good Evening!';
+        );
+        break;
+      case RecommendedActionType.logHeartRate:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const HeartRateEntryPage(),
+          ),
+        );
+        break;
+      case RecommendedActionType.logBloodPressure:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const BloodPressureEntryPage(),
+          ),
+        );
+        break;
+      case RecommendedActionType.takeMedication:
+        // Navigate to medication page
+        AppRouter.navigateTo(context, AppRoutes.medication);
+        break;
+      case RecommendedActionType.logMeal:
+        AppRouter.navigateTo(context, AppRoutes.nutrition);
+        break;
+      case RecommendedActionType.logWorkout:
+        AppRouter.navigateTo(context, AppRoutes.exercise);
+        break;
+      case RecommendedActionType.completeHabit:
+        AppRouter.navigateTo(context, AppRoutes.behavioral);
+        break;
+      case RecommendedActionType.logMeasurements:
+        // Navigate to health tracking page for measurements
+        AppRouter.navigateTo(context, AppRoutes.healthTracking);
+        break;
     }
   }
 }
-
