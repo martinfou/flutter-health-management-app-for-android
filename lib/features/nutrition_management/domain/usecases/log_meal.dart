@@ -93,12 +93,10 @@ class LogMealUseCase {
       );
     }
 
-    // Validate calories range
-    if (calories < HealthConstants.minDailyCalories ||
-        calories > HealthConstants.maxDailyCalories) {
-      return ValidationFailure(
-        'Calories must be between ${HealthConstants.minDailyCalories} and ${HealthConstants.maxDailyCalories}',
-      );
+    // Validate calories are non-negative (individual meals can be any positive value)
+    // Daily calorie limits should be checked at the daily summary level, not per meal
+    if (calories < 0.0) {
+      return ValidationFailure('Calories cannot be negative');
     }
 
     // Validate macros are non-negative

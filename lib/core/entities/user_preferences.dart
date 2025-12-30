@@ -29,6 +29,18 @@ class UserPreferences {
   /// Theme preference ('light', 'dark', 'system')
   final String theme;
 
+  /// Weight loss objective ('aggressive', 'moderate', 'mild', 'maintenance', 'gain')
+  final String weightLossObjective;
+
+  /// Activity factor for TDEE calculation (1.2 = sedentary, 1.375 = lightly active, 1.55 = moderate, 1.725 = very active, 1.9 = extremely active)
+  final double activityFactor;
+
+  /// Number of meals per day for calorie distribution (default: 3)
+  final int mealsPerDay;
+
+  /// Whether to show calorie warnings for meals
+  final bool showCalorieWarnings;
+
   /// Creates UserPreferences
   UserPreferences({
     required this.dietaryApproach,
@@ -39,6 +51,10 @@ class UserPreferences {
     required this.notificationPreferences,
     required this.units,
     required this.theme,
+    this.weightLossObjective = 'moderate',
+    this.activityFactor = 1.2,
+    this.mealsPerDay = 3,
+    this.showCalorieWarnings = true,
   });
 
   /// Create default preferences
@@ -56,6 +72,10 @@ class UserPreferences {
       },
       units: 'metric',
       theme: 'system',
+      weightLossObjective: 'moderate',
+      activityFactor: 1.2,
+      mealsPerDay: 3,
+      showCalorieWarnings: true,
     );
   }
 
@@ -69,6 +89,10 @@ class UserPreferences {
     Map<String, bool>? notificationPreferences,
     String? units,
     String? theme,
+    String? weightLossObjective,
+    double? activityFactor,
+    int? mealsPerDay,
+    bool? showCalorieWarnings,
   }) {
     return UserPreferences(
       dietaryApproach: dietaryApproach ?? this.dietaryApproach,
@@ -80,6 +104,10 @@ class UserPreferences {
           notificationPreferences ?? this.notificationPreferences,
       units: units ?? this.units,
       theme: theme ?? this.theme,
+      weightLossObjective: weightLossObjective ?? this.weightLossObjective,
+      activityFactor: activityFactor ?? this.activityFactor,
+      mealsPerDay: mealsPerDay ?? this.mealsPerDay,
+      showCalorieWarnings: showCalorieWarnings ?? this.showCalorieWarnings,
     );
   }
 
@@ -95,7 +123,11 @@ class UserPreferences {
           fitnessGoals == other.fitnessGoals &&
           notificationPreferences == other.notificationPreferences &&
           units == other.units &&
-          theme == other.theme;
+          theme == other.theme &&
+          weightLossObjective == other.weightLossObjective &&
+          activityFactor == other.activityFactor &&
+          mealsPerDay == other.mealsPerDay &&
+          showCalorieWarnings == other.showCalorieWarnings;
 
   @override
   int get hashCode =>
@@ -106,7 +138,11 @@ class UserPreferences {
       fitnessGoals.hashCode ^
       notificationPreferences.hashCode ^
       units.hashCode ^
-      theme.hashCode;
+      theme.hashCode ^
+      weightLossObjective.hashCode ^
+      activityFactor.hashCode ^
+      mealsPerDay.hashCode ^
+      showCalorieWarnings.hashCode;
 
   @override
   String toString() {
