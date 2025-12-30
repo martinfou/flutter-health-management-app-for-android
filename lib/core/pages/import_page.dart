@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/utils/export_utils.dart';
@@ -5,8 +6,8 @@ import 'package:health_app/core/widgets/custom_button.dart';
 import 'package:health_app/core/widgets/loading_indicator.dart';
 import 'package:health_app/core/widgets/error_widget.dart' as core_error;
 import 'package:health_app/core/errors/failures.dart';
-// Note: file_picker package needs to be added to pubspec.yaml for file selection
-// import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Import page for restoring user data from backup
 class ImportPage extends StatefulWidget {
@@ -24,34 +25,76 @@ class _ImportPageState extends State<ImportPage> {
   String? _validationMessage;
 
   Future<void> _pickFile() async {
-    // TODO: Add file_picker package to pubspec.yaml for file selection
-    // For now, show a message that file picker needs to be implemented
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'File picker requires file_picker package. '
-          'Please add file_picker to pubspec.yaml dependencies.',
-        ),
-      ),
-    );
-    
-    // Placeholder: In production, this would use FilePicker
-    // final result = await FilePicker.platform.pickFiles(
-    //   type: FileType.custom,
-    //   allowedExtensions: ['json'],
-    //   withData: false,
-    // );
-    // 
-    // if (result != null && result.files.single.path != null) {
-    //   setState(() {
-    //     _selectedFilePath = result.files.single.path!;
-    //     _importError = null;
-    //     _validationMessage = null;
-    //   });
-    //   
-    //   // Validate file
-    //   await _validateFile();
-    // }
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true, // Enable data reading for cloud storage files
+      );
+
+      if (result != null) {
+        final pickedFile = result.files.single;
+        String? filePath;
+
+        // If path is available, use it directly (local files)
+        if (pickedFile.path != null) {
+          filePath = pickedFile.path;
+        }
+        // If path is null but bytes are available (cloud storage), save to temp file
+        else if (pickedFile.bytes != null) {
+          try {
+            // Save bytes to temporary file
+            final directory = await getTemporaryDirectory();
+            final fileName = pickedFile.name.isNotEmpty
+                ? pickedFile.name
+                : 'import_${DateTime.now().millisecondsSinceEpoch}.json';
+            final tempFile = File('${directory.path}/$fileName');
+            await tempFile.writeAsBytes(pickedFile.bytes!);
+            filePath = tempFile.path;
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error saving file: $e'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
+            return;
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Unable to access file. Please try selecting the file again.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+          return;
+        }
+
+        if (filePath != null) {
+          setState(() {
+            _selectedFilePath = filePath;
+            _importError = null;
+            _validationMessage = null;
+          });
+
+          // Validate file
+          await _validateFile();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting file: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _validateFile() async {
@@ -203,6 +246,13 @@ class _ImportPageState extends State<ImportPage> {
                       'Note: It is recommended to export your current data first as a backup.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.error,
+                          ),
+                    ),
+                    const SizedBox(height: UIConstants.spacingSm),
+                    Text(
+                      'Tip: If you can\'t find your exported file, use the file picker\'s navigation menu to browse folders. The file is saved in the app\'s documents directory.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
                           ),
                     ),
                   ],

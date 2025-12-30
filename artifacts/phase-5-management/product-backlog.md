@@ -10,12 +10,13 @@ This is the main product backlog tracking all feature requests and bug fixes.
 |----|-------|----------|--------|--------|--------|---------|---------|
 | FR-001 | Health Tracking UI Redesign (Card-Based Dashboard) | 🟠 High | 13 | ✅ | Current | 2024-12-20 | 2024-12-20 |
 | FR-002 | Home Screen UI Redesign (Priority-Based Stack Layout) | 🟠 High | 13 | ✅ | Current | 2025-12-30 | 2025-12-30 |
+| FR-003 | Home Screen Pull-to-Refresh | 🟠 High | 3 | ⭕ | Backlog | 2025-12-30 | 2025-12-30 |
 
 ## Bug Fixes
 
 | ID | Title | Priority | Points | Status | Sprint | Created | Updated |
 |----|-------|----------|--------|--------|--------|---------|---------|
-| (No bug fixes in backlog yet) | | | | | | | |
+| BF-001 | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ⭕ | Backlog | 2025-12-30 | 2025-12-30 |
 
 ---
 
