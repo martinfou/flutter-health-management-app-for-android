@@ -201,6 +201,7 @@ void main() {
       final result = await useCase.call(
         medicationId: 'medication-1',
         dosage: '   ',
+        validateMedication: false, // Skip medication validation to test dosage validation
       );
 
       // Assert
@@ -223,6 +224,7 @@ void main() {
         medicationId: 'medication-1',
         dosage: '50mg',
         takenAt: futureDate,
+        validateMedication: false, // Skip medication validation to test date validation
       );
 
       // Assert
@@ -245,6 +247,7 @@ void main() {
         medicationId: 'medication-1',
         dosage: '50mg',
         takenAt: tooOldDate,
+        validateMedication: false, // Skip medication validation to test date validation
       );
 
       // Assert

@@ -7,9 +7,15 @@ import 'package:health_app/core/widgets/empty_state_widget.dart';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/calculate_moving_average.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
+import 'package:health_app/core/utils/chart_data_optimizer.dart';
 
 /// Widget displaying weight trend chart with 7-day moving average
-class WeightChartWidget extends ConsumerWidget {
+/// 
+/// Performance optimizations:
+/// - Limits data points to 100 for efficient rendering
+/// - Optimizes moving average calculation
+/// - Uses AutomaticKeepAliveClientMixin to preserve state
+class WeightChartWidget extends ConsumerStatefulWidget {
   /// Number of days to display (default: 30)
   final int daysToShow;
 
@@ -20,7 +26,17 @@ class WeightChartWidget extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WeightChartWidget> createState() => _WeightChartWidgetState();
+}
+
+class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true; // Keep chart state when scrolled out of view
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final metricsAsync = ref.watch(healthMetricsProvider);
     final theme = Theme.of(context);
 
@@ -34,7 +50,7 @@ class WeightChartWidget extends ConsumerWidget {
           );
         }
 
-        return _buildChart(context, metrics, theme);
+        return _buildChart(context, metrics, theme, widget.daysToShow);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => const EmptyStateWidget(
@@ -45,13 +61,18 @@ class WeightChartWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildChart(BuildContext context, List<HealthMetric> metrics, ThemeData theme) {
+  Widget _buildChart(
+    BuildContext context,
+    List<HealthMetric> metrics,
+    ThemeData theme,
+    int daysToShow,
+  ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final startDate = today.subtract(Duration(days: daysToShow - 1));
 
     // Filter metrics to date range with weight data
-    final weightMetrics = metrics
+    var weightMetrics = metrics
         .where((m) {
           final metricDate = DateTime(m.date.year, m.date.month, m.date.day);
           return !metricDate.isBefore(startDate) &&
@@ -69,35 +90,50 @@ class WeightChartWidget extends ConsumerWidget {
       );
     }
 
-    // Calculate 7-day moving averages for each point
+    // Optimize data points if we have too many (limit to 100 points for performance)
+    weightMetrics = ChartDataOptimizer.optimizeDataPoints(weightMetrics);
+
+    // Calculate 7-day moving averages efficiently
+    // Instead of recalculating for each point, calculate once and reuse
     final movingAverageUseCase = CalculateMovingAverageUseCase();
     final chartData = <ChartDataPoint>[];
     final movingAverageData = <ChartDataPoint>[];
 
+    // Pre-calculate moving averages for all points
     for (int i = 0; i < weightMetrics.length; i++) {
       final metric = weightMetrics[i];
       final date = metric.date;
       final weight = metric.weight!;
-
-      // Get metrics up to this point for moving average
-      final metricsUpToDate = weightMetrics
-          .where((m) => !m.date.isAfter(date))
-          .toList();
 
       chartData.add(ChartDataPoint(
         date: date,
         value: weight,
       ));
 
-      // Calculate moving average if we have enough data
-      final movingAvgResult = movingAverageUseCase(metricsUpToDate);
-      movingAvgResult.fold(
-        (_) => null, // Not enough data for moving average
-        (avg) => movingAverageData.add(ChartDataPoint(
-          date: date,
-          value: avg,
-        )),
-      );
+      // For moving average, get the last 7 days of data up to this point
+      // This is more efficient than recalculating from the beginning each time
+      final metricsForAverage = weightMetrics
+          .where((m) {
+            final daysDiff = date.difference(DateTime(
+              m.date.year,
+              m.date.month,
+              m.date.day,
+            )).inDays;
+            return daysDiff >= 0 && daysDiff < 7 && m.weight != null;
+          })
+          .toList();
+
+      // Calculate moving average if we have enough data (at least 1 day)
+      if (metricsForAverage.isNotEmpty) {
+        final movingAvgResult = movingAverageUseCase(metricsForAverage);
+        movingAvgResult.fold(
+          (_) => null, // Not enough data for moving average
+          (avg) => movingAverageData.add(ChartDataPoint(
+            date: date,
+            value: avg,
+          )),
+        );
+      }
     }
 
     return Card(

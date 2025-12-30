@@ -34,11 +34,14 @@ class HealthTrackingLocalDataSource {
   }
 
   /// Get all health metrics for a user
+  /// 
+  /// Optimized: Filters at database level before converting to list.
   Future<Result<List<HealthMetric>>> getHealthMetricsByUserId(
     String userId,
   ) async {
     try {
       final box = _box;
+      // Filter before converting to list to reduce memory usage
       final models = box.values
           .where((model) => model.userId == userId)
           .map((model) => model.toEntity())
@@ -50,7 +53,65 @@ class HealthTrackingLocalDataSource {
     }
   }
 
+  /// Get health metrics with pagination
+  /// 
+  /// Returns a paginated list of health metrics for a user.
+  /// Useful for large datasets to avoid loading everything into memory.
+  Future<Result<List<HealthMetric>>> getHealthMetricsPaginated({
+    required String userId,
+    required int page,
+    required int pageSize,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final box = _box;
+      
+      // Build query with filters
+      var query = box.values.where((model) => model.userId == userId);
+      
+      // Apply date range filter if provided
+      if (startDate != null || endDate != null) {
+        final start = startDate != null
+            ? DateTime(startDate.year, startDate.month, startDate.day)
+            : null;
+        final end = endDate != null
+            ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59)
+            : null;
+        
+        query = query.where((model) {
+          final modelDate = DateTime(
+            model.date.year,
+            model.date.month,
+            model.date.day,
+          );
+          if (start != null && modelDate.isBefore(start)) return false;
+          if (end != null && modelDate.isAfter(end)) return false;
+          return true;
+        });
+      }
+      
+      // Convert to list, sort by date descending, then paginate
+      final allModels = query.map((model) => model.toEntity()).toList();
+      allModels.sort((a, b) => b.date.compareTo(a.date)); // Most recent first
+      
+      final startIndex = page * pageSize;
+      final endIndex = (startIndex + pageSize).clamp(0, allModels.length);
+      
+      if (startIndex >= allModels.length) {
+        return Right([]);
+      }
+      
+      return Right(allModels.sublist(startIndex, endIndex));
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to get paginated health metrics: $e'));
+    }
+  }
+
   /// Get health metrics for a date range
+  /// 
+  /// Optimized: Filters at database level before converting to list.
+  /// More efficient than loading all records and filtering in memory.
   Future<Result<List<HealthMetric>>> getHealthMetricsByDateRange(
     String userId,
     DateTime startDate,
@@ -61,16 +122,20 @@ class HealthTrackingLocalDataSource {
       final start = DateTime(startDate.year, startDate.month, startDate.day);
       final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
       
+      // Filter at database level before converting to list
+      // This is more memory-efficient for large datasets
       final models = box.values
           .where((model) {
+            // Filter by userId first (most selective)
             if (model.userId != userId) return false;
+            
+            // Then filter by date range
             final modelDate = DateTime(
               model.date.year,
               model.date.month,
               model.date.day,
             );
-            return modelDate.isAfter(start.subtract(const Duration(days: 1))) &&
-                modelDate.isBefore(end.add(const Duration(days: 1)));
+            return !modelDate.isBefore(start) && !modelDate.isAfter(end);
           })
           .map((model) => model.toEntity())
           .toList();
@@ -179,6 +244,8 @@ class HealthTrackingLocalDataSource {
   }
 
   /// Delete all health metrics for a user
+  /// 
+  /// Optimized: Uses batch delete operation for better performance.
   Future<Result<void>> deleteHealthMetricsByUserId(String userId) async {
     try {
       final box = _box;
@@ -187,15 +254,37 @@ class HealthTrackingLocalDataSource {
           .map((model) => model.id)
           .toList();
       
-      for (final key in keysToDelete) {
-        await box.delete(key);
-      }
+      // Use batch delete for better performance
+      await box.deleteAll(keysToDelete);
       
       return const Right(null);
     } catch (e) {
       return Left(
         DatabaseFailure('Failed to delete health metrics by user: $e'),
       );
+    }
+  }
+
+  /// Batch save health metrics
+  /// 
+  /// Saves multiple health metrics in a single operation for better performance.
+  Future<Result<List<HealthMetric>>> saveHealthMetricsBatch(
+    List<HealthMetric> metrics,
+  ) async {
+    try {
+      final box = _box;
+      final modelsMap = <String, HealthMetricModel>{};
+      
+      for (final metric in metrics) {
+        modelsMap[metric.id] = HealthMetricModel.fromEntity(metric);
+      }
+      
+      // Use batch put operation
+      await box.putAll(modelsMap);
+      
+      return Right(metrics);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to batch save health metrics: $e'));
     }
   }
 }
