@@ -1,0 +1,354 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:health_app/core/constants/ui_constants.dart';
+import 'package:health_app/core/widgets/custom_button.dart';
+import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
+import 'package:health_app/features/health_tracking/domain/usecases/save_health_metric.dart';
+import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
+import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
+import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
+import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
+import 'package:health_app/features/user_profile/domain/entities/gender.dart';
+
+/// Sleep and energy tracking page
+class SleepEnergyPage extends ConsumerStatefulWidget {
+  const SleepEnergyPage({super.key});
+
+  @override
+  ConsumerState<SleepEnergyPage> createState() => _SleepEnergyPageState();
+}
+
+class _SleepEnergyPageState extends ConsumerState<SleepEnergyPage> {
+  double _sleepQuality = 5.0;
+  double _energyLevel = 5.0;
+  final TextEditingController _notesController = TextEditingController();
+  bool _isSaving = false;
+  String? _errorMessage;
+  String? _successMessage;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  String _getInterpretation(double value) {
+    if (value >= 8) return 'Excellent';
+    if (value >= 6) return 'Good';
+    if (value >= 4) return 'Fair';
+    return 'Poor';
+  }
+
+  Color _getInterpretationColor(double value) {
+    if (value >= 8) return Colors.green;
+    if (value >= 6) return Colors.blue;
+    if (value >= 4) return Colors.orange;
+    return Colors.red;
+  }
+
+  Future<void> _saveEntry() async {
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    String? userId;
+    try {
+      userId = await ref.read(providers.currentUserIdProvider.future);
+    } catch (e) {
+      userId = null;
+    }
+    
+    // Create default user profile if none exists
+    if (userId == null) {
+      final userRepo = ref.read(userProfileRepositoryProvider);
+      final now = DateTime.now();
+      final defaultProfile = UserProfile(
+        id: 'user-${now.millisecondsSinceEpoch}',
+        name: 'User',
+        email: 'user@example.com',
+        dateOfBirth: DateTime(1990, 1, 1),
+        gender: Gender.other,
+        height: 175.0,
+        targetWeight: 70.0,
+        syncEnabled: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      
+      final profileResult = await userRepo.saveUserProfile(defaultProfile);
+      profileResult.fold(
+        (failure) {
+          setState(() {
+            _isSaving = false;
+            _errorMessage = 'Failed to create user profile: ${failure.message}';
+          });
+          return;
+        },
+        (profile) {
+          userId = profile.id;
+          ref.invalidate(providers.currentUserIdProvider);
+        },
+      );
+      
+      if (userId == null) {
+        return;
+      }
+    }
+
+    // userId is guaranteed to be non-null at this point
+    final finalUserId = userId!;
+
+    final repository = ref.read(healthTrackingRepositoryProvider);
+    final useCase = SaveHealthMetricUseCase(repository);
+
+    final metric = HealthMetric(
+      id: '',
+      userId: finalUserId,
+      date: DateTime.now(),
+      sleepQuality: _sleepQuality.toInt(),
+      energyLevel: _energyLevel.toInt(),
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    final result = await useCase(metric);
+
+    result.fold(
+      (failure) {
+        setState(() {
+          _isSaving = false;
+          _errorMessage = failure.message;
+        });
+      },
+      (savedMetric) {
+        setState(() {
+          _isSaving = false;
+          _successMessage = 'Entry saved successfully!';
+          _sleepQuality = 5.0;
+          _energyLevel = 5.0;
+          _notesController.clear();
+        });
+        ref.invalidate(providers.healthMetricsProvider);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sleep & Energy'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Sleep Quality Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(UIConstants.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sleep Quality',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: UIConstants.spacingMd),
+                    Text(
+                      _sleepQuality.toInt().toString(),
+                      style: theme.textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: _getInterpretationColor(_sleepQuality),
+                      ),
+                    ),
+                    const SizedBox(height: UIConstants.spacingSm),
+                    Slider(
+                      value: _sleepQuality,
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      label: _sleepQuality.toInt().toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          _sleepQuality = value;
+                          _errorMessage = null;
+                          _successMessage = null;
+                        });
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '1',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        Text(
+                          '10',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: UIConstants.spacingSm),
+                    Container(
+                      padding: const EdgeInsets.all(UIConstants.spacingSm),
+                      decoration: BoxDecoration(
+                        color: _getInterpretationColor(_sleepQuality).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(UIConstants.borderRadiusSm),
+                      ),
+                      child: Text(
+                        _getInterpretation(_sleepQuality),
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: _getInterpretationColor(_sleepQuality),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: UIConstants.spacingMd),
+
+            // Energy Level Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(UIConstants.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Energy Level',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: UIConstants.spacingMd),
+                    Text(
+                      _energyLevel.toInt().toString(),
+                      style: theme.textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: _getInterpretationColor(_energyLevel),
+                      ),
+                    ),
+                    const SizedBox(height: UIConstants.spacingSm),
+                    Slider(
+                      value: _energyLevel,
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      label: _energyLevel.toInt().toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          _energyLevel = value;
+                          _errorMessage = null;
+                          _successMessage = null;
+                        });
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '1',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        Text(
+                          '10',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: UIConstants.spacingSm),
+                    Container(
+                      padding: const EdgeInsets.all(UIConstants.spacingSm),
+                      decoration: BoxDecoration(
+                        color: _getInterpretationColor(_energyLevel).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(UIConstants.borderRadiusSm),
+                      ),
+                      child: Text(
+                        _getInterpretation(_energyLevel),
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: _getInterpretationColor(_energyLevel),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: UIConstants.spacingMd),
+
+            // Notes Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(UIConstants.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Notes (Optional)',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: UIConstants.spacingSm),
+                    TextField(
+                      controller: _notesController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Add any notes about your sleep or energy...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(UIConstants.borderRadiusMd),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: UIConstants.spacingMd),
+
+            // Error message
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+            // Success message
+            if (_successMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
+                child: Text(
+                  _successMessage!,
+                  style: TextStyle(color: theme.colorScheme.primary),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+            // Save button
+            CustomButton(
+              label: 'Save Entry',
+              onPressed: _isSaving ? null : _saveEntry,
+              isLoading: _isSaving,
+              width: double.infinity,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
