@@ -40,11 +40,11 @@
 **User Story**: As a developer, I want comprehensive unit tests with 80% coverage, so that business logic is thoroughly tested.
 
 **Acceptance Criteria**:
-- [ ] Core utilities tests completed
+- [x] Core utilities tests completed
 - [ ] Use case tests completed (all features)
-- [ ] Calculation utility tests completed
-- [ ] Validation tests completed
-- [ ] Repository tests completed
+- [x] Calculation utility tests completed
+- [x] Validation tests completed
+- [x] Repository tests completed
 - [ ] 80% minimum coverage achieved
 - [ ] Coverage report generated
 
@@ -68,13 +68,13 @@
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
 |---------|------------------|------------------------|---------------------|--------|--------|----------|
-| T-240 | Complete core utilities tests | Test files in `test/unit/core/utils/` | testing-strategy.md - Unit Tests | ⭕ | 3 | Dev1 |
+| T-240 | Complete core utilities tests | Test files in `test/unit/core/utils/` | testing-strategy.md - Unit Tests | ✅ | 3 | Dev1 |
 | T-241 | Complete use case tests (health tracking) | Test files in `test/unit/features/health_tracking/domain/usecases/` | testing-strategy.md | ⭕ | 5 | Dev1 |
 | T-242 | Complete use case tests (nutrition) | Test files in `test/unit/features/nutrition_management/domain/usecases/` | testing-strategy.md | ⭕ | 3 | Dev2 |
 | T-243 | Complete use case tests (exercise) | Test files in `test/unit/features/exercise_management/domain/usecases/` | testing-strategy.md | ⭕ | 3 | Dev2 |
 | T-244 | Complete use case tests (medication) | Test files in `test/unit/features/medication_management/domain/usecases/` | testing-strategy.md | ⭕ | 3 | Dev3 |
 | T-245 | Complete use case tests (behavioral) | Test files in `test/unit/features/behavioral_support/domain/usecases/` | testing-strategy.md | ⭕ | 2 | Dev3 |
-| T-246 | Complete repository tests | Test files in `test/unit/features/*/data/repositories/` | testing-strategy.md | ⭕ | 5 | Dev1 |
+| T-246 | Complete repository tests | Test files in `test/unit/features/*/data/repositories/` | testing-strategy.md | ✅ | 5 | Dev1 |
 | T-247 | Generate coverage report | `flutter test --coverage` | testing-strategy.md - Coverage Measurement | ⭕ | 2 | Dev1 |
 
 **Total Task Points**: 26
@@ -215,7 +215,7 @@
 **Note**: This sprint has a large scope (26 story points). Consider parallel development of different test types by different developers.
 
 **Sprint Burndown**:
-- Day 1: [X] points completed
+- Day 1: 3 points completed (T-240: Core utilities tests)
 - Day 2: [X] points completed
 - Day 3: [X] points completed
 - Day 4: [X] points completed

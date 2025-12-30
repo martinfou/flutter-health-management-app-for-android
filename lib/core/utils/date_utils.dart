@@ -66,7 +66,7 @@ class DateUtils {
   /// Get the start of the week (Monday) for the given date
   static DateTime startOfWeek(DateTime date) {
     final weekday = date.weekday;
-    final daysFromMonday = weekday == 7 ? 0 : weekday - 1;
+    final daysFromMonday = weekday == 7 ? 6 : weekday - 1; // Sunday (7) -> 6 days back to Monday
     return startOfDay(date.subtract(Duration(days: daysFromMonday)));
   }
 
