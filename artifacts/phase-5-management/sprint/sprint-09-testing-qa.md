@@ -41,11 +41,11 @@
 
 **Acceptance Criteria**:
 - [x] Core utilities tests completed
-- [ ] Use case tests completed (all features)
+- [x] Use case tests completed (all features)
 - [x] Calculation utility tests completed
 - [x] Validation tests completed
 - [x] Repository tests completed
-- [ ] 80% minimum coverage achieved
+- [ ] 80% minimum coverage achieved (coverage report generated, need to verify percentage)
 - [ ] Coverage report generated
 
 **Reference Documents**:
@@ -60,7 +60,7 @@
 
 **Priority**: 🔴 Critical
 
-**Status**: ⭕ Not Started
+**Status**: 🔄 In Progress
 
 **Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 
@@ -69,13 +69,13 @@
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
 |---------|------------------|------------------------|---------------------|--------|--------|----------|
 | T-240 | Complete core utilities tests | Test files in `test/unit/core/utils/` | testing-strategy.md - Unit Tests | ✅ | 3 | Dev1 |
-| T-241 | Complete use case tests (health tracking) | Test files in `test/unit/features/health_tracking/domain/usecases/` | testing-strategy.md | ⭕ | 5 | Dev1 |
-| T-242 | Complete use case tests (nutrition) | Test files in `test/unit/features/nutrition_management/domain/usecases/` | testing-strategy.md | ⭕ | 3 | Dev2 |
-| T-243 | Complete use case tests (exercise) | Test files in `test/unit/features/exercise_management/domain/usecases/` | testing-strategy.md | ⭕ | 3 | Dev2 |
-| T-244 | Complete use case tests (medication) | Test files in `test/unit/features/medication_management/domain/usecases/` | testing-strategy.md | ⭕ | 3 | Dev3 |
-| T-245 | Complete use case tests (behavioral) | Test files in `test/unit/features/behavioral_support/domain/usecases/` | testing-strategy.md | ⭕ | 2 | Dev3 |
+| T-241 | Complete use case tests (health tracking) | Test files in `test/unit/features/health_tracking/domain/usecases/` | testing-strategy.md | ✅ | 5 | Dev1 |
+| T-242 | Complete use case tests (nutrition) | Test files in `test/unit/features/nutrition_management/domain/usecases/` | testing-strategy.md | ✅ | 3 | Dev2 |
+| T-243 | Complete use case tests (exercise) | Test files in `test/unit/features/exercise_management/domain/usecases/` | testing-strategy.md | ✅ | 3 | Dev2 |
+| T-244 | Complete use case tests (medication) | Test files in `test/unit/features/medication_management/domain/usecases/` | testing-strategy.md | ✅ | 3 | Dev3 |
+| T-245 | Complete use case tests (behavioral) | Test files in `test/unit/features/behavioral_support/domain/usecases/` | testing-strategy.md | ✅ | 2 | Dev3 |
 | T-246 | Complete repository tests | Test files in `test/unit/features/*/data/repositories/` | testing-strategy.md | ✅ | 5 | Dev1 |
-| T-247 | Generate coverage report | `flutter test --coverage` | testing-strategy.md - Coverage Measurement | ⭕ | 2 | Dev1 |
+| T-247 | Generate coverage report | `flutter test --coverage` | testing-strategy.md - Coverage Measurement | ✅ | 2 | Dev1 |
 
 **Total Task Points**: 26
 
@@ -86,7 +86,7 @@
 **User Story**: As a developer, I want comprehensive widget tests with 60% coverage, so that UI components are thoroughly tested.
 
 **Acceptance Criteria**:
-- [ ] Core widget tests completed
+- [x] Core widget tests completed
 - [ ] Feature page tests completed
 - [ ] Feature widget tests completed
 - [ ] Provider tests completed
@@ -105,7 +105,7 @@
 
 **Priority**: 🔴 Critical
 
-**Status**: ⭕ Not Started
+**Status**: 🔄 In Progress
 
 **Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 
@@ -113,7 +113,7 @@
 
 | Task ID | Task Description | Class/Method Reference | Document Reference | Status | Points | Assignee |
 |---------|------------------|------------------------|---------------------|--------|--------|----------|
-| T-248 | Complete core widget tests | Test files in `test/widget/core/widgets/` | testing-strategy.md - Widget Tests | ⭕ | 3 | Dev2 |
+| T-248 | Complete core widget tests | Test files in `test/widget/core/widgets/` | testing-strategy.md - Widget Tests | ✅ | 3 | Dev2 |
 | T-249 | Complete health tracking page/widget tests | Test files in `test/widget/features/health_tracking/` | testing-strategy.md | ⭕ | 5 | Dev2 |
 | T-250 | Complete nutrition page/widget tests | Test files in `test/widget/features/nutrition_management/` | testing-strategy.md | ⭕ | 5 | Dev3 |
 | T-251 | Complete exercise page/widget tests | Test files in `test/widget/features/exercise_management/` | testing-strategy.md | ⭕ | 3 | Dev3 |
@@ -148,7 +148,7 @@
 
 **Priority**: 🔴 Critical
 
-**Status**: ⭕ Not Started
+**Status**: 🔄 In Progress
 
 **Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 
@@ -188,7 +188,7 @@
 
 **Priority**: 🟠 High
 
-**Status**: ⭕ Not Started
+**Status**: 🔄 In Progress
 
 **Note**: When starting work on a new story, update the sprint status section at the top of this document to reflect the current progress.
 

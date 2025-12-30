@@ -246,7 +246,11 @@ void main() {
       );
     });
 
-    test('should return ValidationFailure when calories below minimum', () async {
+    test('should return ValidationFailure when calories do not match macros', () async {
+      // Arrange
+      // Calculated calories: 10*4 + 5*9 + 5*4 = 40 + 45 + 20 = 105
+      // Provided calories: 90.0 (difference is 15, exceeds tolerance of 10)
+      
       // Act
       final result = await useCase.call(
         userId: 'user-id',
@@ -255,7 +259,7 @@ void main() {
         protein: 10.0,
         fats: 5.0,
         netCarbs: 5.0,
-        calories: 100.0, // Below minimum
+        calories: 90.0, // Doesn't match calculated (105), difference 15 > tolerance 10
         ingredients: ['food'],
       );
 
@@ -264,13 +268,17 @@ void main() {
       result.fold(
         (failure) {
           expect(failure, isA<ValidationFailure>());
-          expect(failure.message, contains('Calories must be between'));
+          expect(failure.message, contains('Calories do not match macro calculations'));
         },
         (_) => fail('Should return ValidationFailure'),
       );
     });
 
-    test('should return ValidationFailure when calories above maximum', () async {
+    test('should return ValidationFailure when calories do not match macros (high value)', () async {
+      // Arrange
+      // Calculated calories: 100*4 + 200*9 + 30*4 = 400 + 1800 + 120 = 2320
+      // Provided calories: 15000.0 (doesn't match)
+      
       // Act
       final result = await useCase.call(
         userId: 'user-id',
@@ -279,7 +287,7 @@ void main() {
         protein: 100.0,
         fats: 200.0,
         netCarbs: 30.0,
-        calories: 15000.0, // Above maximum
+        calories: 15000.0, // Doesn't match calculated (2320)
         ingredients: ['food'],
       );
 
@@ -288,7 +296,7 @@ void main() {
       result.fold(
         (failure) {
           expect(failure, isA<ValidationFailure>());
-          expect(failure.message, contains('Calories must be between'));
+          expect(failure.message, contains('Calories do not match macro calculations'));
         },
         (_) => fail('Should return ValidationFailure'),
       );
