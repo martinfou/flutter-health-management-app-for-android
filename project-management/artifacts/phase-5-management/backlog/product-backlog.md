@@ -31,7 +31,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | ID | Title | Priority | Points | Status | Sprint | Created | Updated |
 |----|-------|----------|--------|--------|--------|---------|---------|
 | [BF-001](../backlog/bug-fixes/BF-001-export-import-not-working.md) | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-12-30 | 2025-01-27 |
-| [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ⭕ | Backlog | 2025-01-03 | 2025-01-03 |
+| [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ⭕ | [Sprint 13](../sprints/sprint-13-exercise-library-and-bug-fixes.md) | 2025-01-03 | 2025-01-27 |
 
 ---
 

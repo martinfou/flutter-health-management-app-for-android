@@ -4,8 +4,8 @@
 **Priority**: 🟠 High  
 **Story Points**: 13  
 **Created**: 2025-01-03  
-**Updated**: 2025-01-03  
-**Assigned Sprint**: Backlog
+**Updated**: 2025-01-27  
+**Assigned Sprint**: [Sprint 13](../sprints/sprint-13-exercise-library-and-bug-fixes.md)
 
 ## Description
 
