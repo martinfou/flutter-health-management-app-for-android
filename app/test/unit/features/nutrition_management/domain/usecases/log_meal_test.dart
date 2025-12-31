@@ -4,6 +4,7 @@ import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 import 'package:health_app/features/nutrition_management/domain/repositories/nutrition_repository.dart';
 import 'package:health_app/features/nutrition_management/domain/usecases/log_meal.dart';
 
@@ -452,6 +453,209 @@ void main() {
           expect(failure.message, 'Database error');
         },
         (_) => fail('Should return DatabaseFailure'),
+      );
+    });
+
+    test('should save meal with hunger levels and eating reasons', () async {
+      // Arrange
+      mockRepository.failureToReturn = null;
+
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.lunch,
+        name: 'Lunch with Context',
+        protein: 100.0, // 100*4 = 400
+        fats: 50.0, // 50*9 = 450
+        netCarbs: 10.0, // 10*4 = 40
+        calories: 890.0, // Total: 890 (matches calculated)
+        ingredients: ['chicken', 'rice'],
+        hungerLevelBefore: 3,
+        hungerLevelAfter: 7,
+        eatingReasons: [EatingReason.hungry, EatingReason.scheduled],
+      );
+
+      // Assert
+      expect(result.isRight(), true);
+      result.fold(
+        (failure) => fail('Should not return failure'),
+        (meal) {
+          expect(meal.hungerLevelBefore, 3);
+          expect(meal.hungerLevelAfter, 7);
+          expect(meal.fullnessAfterTimestamp, isNotNull);
+          expect(meal.eatingReasons, [EatingReason.hungry, EatingReason.scheduled]);
+        },
+      );
+      expect(mockRepository.savedMeal?.hungerLevelBefore, 3);
+      expect(mockRepository.savedMeal?.hungerLevelAfter, 7);
+    });
+
+    test('should save meal with only hunger level before', () async {
+      // Arrange
+      mockRepository.failureToReturn = null;
+
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.breakfast,
+        name: 'Breakfast',
+        protein: 100.0,
+        fats: 50.0,
+        netCarbs: 10.0,
+        calories: 890.0,
+        ingredients: ['eggs'],
+        hungerLevelBefore: 2,
+      );
+
+      // Assert
+      expect(result.isRight(), true);
+      result.fold(
+        (failure) => fail('Should not return failure'),
+        (meal) {
+          expect(meal.hungerLevelBefore, 2);
+          expect(meal.hungerLevelAfter, isNull);
+          expect(meal.fullnessAfterTimestamp, isNull);
+        },
+      );
+    });
+
+    test('should auto-set fullnessAfterTimestamp when hungerLevelAfter is provided', () async {
+      // Arrange
+      mockRepository.failureToReturn = null;
+      final beforeTime = DateTime.now();
+
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.dinner,
+        name: 'Dinner',
+        protein: 100.0,
+        fats: 50.0,
+        netCarbs: 10.0,
+        calories: 890.0,
+        ingredients: ['steak'],
+        hungerLevelAfter: 8,
+      );
+
+      // Assert
+      expect(result.isRight(), true);
+      result.fold(
+        (failure) => fail('Should not return failure'),
+        (meal) {
+          expect(meal.fullnessAfterTimestamp, isNotNull);
+          expect(
+            meal.fullnessAfterTimestamp!.isAfter(beforeTime) ||
+            meal.fullnessAfterTimestamp!.isAtSameMomentAs(beforeTime),
+            true,
+          );
+        },
+      );
+    });
+
+    test('should return ValidationFailure when hungerLevelBefore is out of range', () async {
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.breakfast,
+        name: 'Meal',
+        protein: 100.0,
+        fats: 50.0,
+        netCarbs: 10.0,
+        calories: 890.0,
+        ingredients: ['food'],
+        hungerLevelBefore: 11, // Out of range
+      );
+
+      // Assert
+      expect(result.isLeft(), true);
+      result.fold(
+        (failure) {
+          expect(failure, isA<ValidationFailure>());
+          expect(failure.message, contains('Hunger level before must be between 0 and 10'));
+        },
+        (_) => fail('Should return ValidationFailure'),
+      );
+    });
+
+    test('should return ValidationFailure when hungerLevelAfter is out of range', () async {
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.breakfast,
+        name: 'Meal',
+        protein: 100.0,
+        fats: 50.0,
+        netCarbs: 10.0,
+        calories: 890.0,
+        ingredients: ['food'],
+        hungerLevelAfter: -1, // Out of range
+      );
+
+      // Assert
+      expect(result.isLeft(), true);
+      result.fold(
+        (failure) {
+          expect(failure, isA<ValidationFailure>());
+          expect(failure.message, contains('Hunger level after must be between 0 and 10'));
+        },
+        (_) => fail('Should return ValidationFailure'),
+      );
+    });
+
+    test('should accept empty eating reasons list', () async {
+      // Arrange
+      mockRepository.failureToReturn = null;
+
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.snack,
+        name: 'Snack',
+        protein: 100.0,
+        fats: 50.0,
+        netCarbs: 10.0,
+        calories: 890.0,
+        ingredients: ['nuts'],
+        eatingReasons: [], // Empty list (explicitly no reasons)
+      );
+
+      // Assert
+      expect(result.isRight(), true);
+      result.fold(
+        (failure) => fail('Should not return failure'),
+        (meal) {
+          expect(meal.eatingReasons, isEmpty);
+        },
+      );
+    });
+
+    test('should save meal without behavioral tracking fields (all optional)', () async {
+      // Arrange
+      mockRepository.failureToReturn = null;
+
+      // Act
+      final result = await useCase.call(
+        userId: 'user-id',
+        mealType: MealType.lunch,
+        name: 'Simple Lunch',
+        protein: 100.0,
+        fats: 50.0,
+        netCarbs: 10.0,
+        calories: 890.0,
+        ingredients: ['salad'],
+        // No behavioral tracking fields
+      );
+
+      // Assert
+      expect(result.isRight(), true);
+      result.fold(
+        (failure) => fail('Should not return failure'),
+        (meal) {
+          expect(meal.hungerLevelBefore, isNull);
+          expect(meal.hungerLevelAfter, isNull);
+          expect(meal.fullnessAfterTimestamp, isNull);
+          expect(meal.eatingReasons, isNull);
+        },
       );
     });
   });

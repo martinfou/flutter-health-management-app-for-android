@@ -5,7 +5,7 @@
 **Story Points**: 5  
 **Created**: 2025-12-30  
 **Updated**: 2025-01-02  
-**Assigned Sprint**: Sprint 10
+**Assigned Sprint**: [Sprint 10](../../sprints/sprint-10-mvp-release.md)
 
 ## Description
 

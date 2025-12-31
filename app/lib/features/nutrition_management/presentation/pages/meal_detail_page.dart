@@ -5,7 +5,9 @@ import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/custom_button.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
+import 'package:health_app/features/nutrition_management/presentation/widgets/hunger_scale_widget.dart';
 import 'package:health_app/features/nutrition_management/presentation/pages/meal_logging_page.dart';
 import 'package:health_app/features/nutrition_management/data/repositories/nutrition_repository_impl.dart';
 import 'package:health_app/features/nutrition_management/data/datasources/local/nutrition_local_datasource.dart';
@@ -263,6 +265,130 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
               ),
             ),
 
+            // Meal Context card (only show if data exists)
+            if (meal.hungerLevelBefore != null ||
+                meal.hungerLevelAfter != null ||
+                (meal.eatingReasons != null && meal.eatingReasons!.isNotEmpty))
+              ...[
+                const SizedBox(height: UIConstants.spacingMd),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(UIConstants.cardPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Meal Context',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: UIConstants.spacingMd),
+                        
+                        // Hunger/Fullness levels
+                        if (meal.hungerLevelBefore != null ||
+                            meal.hungerLevelAfter != null) ...[
+                          Text(
+                            'Hunger/Fullness:',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: UIConstants.spacingXs),
+                          if (meal.hungerLevelBefore != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: UIConstants.spacingXs),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.restaurant_outlined,
+                                    size: 18,
+                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                  ),
+                                  const SizedBox(width: UIConstants.spacingXs),
+                                  Text(
+                                    'Before: ${HungerScaleWidget.getLabelForValue(meal.hungerLevelBefore!)} (${meal.hungerLevelBefore}/10)',
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (meal.hungerLevelAfter != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_outline,
+                                        size: 18,
+                                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                      ),
+                                      const SizedBox(width: UIConstants.spacingXs),
+                                      Text(
+                                        'After: ${HungerScaleWidget.getLabelForValue(meal.hungerLevelAfter!)} (${meal.hungerLevelAfter}/10)',
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                  if (meal.fullnessAfterTimestamp != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: UIConstants.spacingMd,
+                                        top: UIConstants.spacingXs,
+                                      ),
+                                      child: Text(
+                                        'Measured: ${timeFormat.format(meal.fullnessAfterTimestamp!)}',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: UIConstants.spacingSm),
+                        ],
+                        
+                        // Eating reasons
+                        if (meal.eatingReasons != null && meal.eatingReasons!.isNotEmpty) ...[
+                          if (meal.hungerLevelBefore != null ||
+                              meal.hungerLevelAfter != null)
+                            const Divider(),
+                          const SizedBox(height: UIConstants.spacingXs),
+                          Text(
+                            'Eating Reasons:',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: UIConstants.spacingXs),
+                          Wrap(
+                            spacing: UIConstants.spacingXs,
+                            runSpacing: UIConstants.spacingXs,
+                            children: meal.eatingReasons!.map((reason) {
+                              return Chip(
+                                label: Text(reason.displayName),
+                                avatar: Icon(
+                                  _getIconForReason(reason),
+                                  size: 18,
+                                ),
+                                backgroundColor: theme.colorScheme.primaryContainer,
+                                labelStyle: TextStyle(
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
             const SizedBox(height: UIConstants.spacingLg),
 
             // Edit button
@@ -297,6 +423,29 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
         return Icons.dinner_dining;
       case MealType.snack:
         return Icons.cookie;
+    }
+  }
+
+  IconData _getIconForReason(EatingReason reason) {
+    switch (reason.iconName) {
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'mood_bad':
+        return Icons.mood_bad;
+      case 'celebration':
+        return Icons.celebration;
+      case 'sentiment_dissatisfied':
+        return Icons.sentiment_dissatisfied;
+      case 'bedtime':
+        return Icons.bedtime;
+      case 'schedule':
+        return Icons.schedule;
+      case 'groups':
+        return Icons.groups;
+      case 'cake':
+        return Icons.cake;
+      default:
+        return Icons.restaurant_menu;
     }
   }
 }

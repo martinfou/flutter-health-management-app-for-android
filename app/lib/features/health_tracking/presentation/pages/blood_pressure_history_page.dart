@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
+import 'package:health_app/core/widgets/delete_confirmation_dialog.dart';
+import 'package:health_app/features/health_tracking/domain/usecases/delete_health_metric.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/blood_pressure_entry_page.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
+import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 
 /// Blood pressure history page showing all blood pressure entries
 class BloodPressureHistoryPage extends ConsumerWidget {
@@ -166,10 +170,101 @@ class BloodPressureHistoryPage extends ConsumerWidget {
                         ),
                     ],
                   ),
-                  trailing: Icon(
-                    Icons.chevron_right,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  trailing: PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        // Navigate to edit mode
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => BloodPressureEntryPage(metricId: metric.id),
+                          ),
+                        );
+                        // Refresh provider after returning from edit
+                        ref.invalidate(providers.healthMetricsProvider);
+                      } else if (value == 'delete') {
+                        // Show delete confirmation
+                        final confirmed = await DeleteConfirmationDialog.show(
+                          context,
+                          title: 'Delete Blood Pressure Entry',
+                          message: 'Are you sure you want to delete this blood pressure entry?',
+                          details: '$systolic/$diastolic mmHg on ${dateFormat.format(metric.date)}',
+                        );
+
+                        if (confirmed && context.mounted) {
+                          // Delete the metric
+                          final repository = ref.read(healthTrackingRepositoryProvider);
+                          final useCase = DeleteHealthMetricUseCase(repository);
+                          final result = await useCase(metric.id);
+
+                          result.fold(
+                            (failure) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to delete: ${failure.message}'),
+                                    backgroundColor: theme.colorScheme.error,
+                                  ),
+                                );
+                              }
+                            },
+                            (_) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Blood pressure entry deleted successfully'),
+                                  ),
+                                );
+                              }
+                              // Refresh provider
+                              ref.invalidate(providers.healthMetricsProvider);
+                            },
+                          );
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit),
+                            SizedBox(width: UIConstants.spacingSm),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              color: theme.colorScheme.error,
+                            ),
+                            const SizedBox(width: UIConstants.spacingSm),
+                            Text(
+                              'Delete',
+                              style: TextStyle(color: theme.colorScheme.error),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                  onTap: () async {
+                    // Navigate to edit mode on tap
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => BloodPressureEntryPage(metricId: metric.id),
+                      ),
+                    );
+                    // Refresh provider after returning from edit
+                    ref.invalidate(providers.healthMetricsProvider);
+                  },
                 ),
               );
             },

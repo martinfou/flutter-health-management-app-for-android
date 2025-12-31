@@ -3,6 +3,7 @@ import 'package:health_app/core/constants/health_constants.dart';
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 import 'package:health_app/features/nutrition_management/domain/repositories/nutrition_repository.dart';
 
 /// Use case for logging a meal
@@ -34,6 +35,10 @@ class LogMealUseCase {
     String? recipeId,
     DateTime? date,
     String? id,
+    int? hungerLevelBefore,
+    int? hungerLevelAfter,
+    DateTime? fullnessAfterTimestamp,
+    List<EatingReason>? eatingReasons,
   }) async {
     // Generate ID if not provided
     final mealId = id ?? _generateId();
@@ -47,10 +52,17 @@ class LogMealUseCase {
       calories: calories,
       name: name,
       ingredients: ingredients,
+      hungerLevelBefore: hungerLevelBefore,
+      hungerLevelAfter: hungerLevelAfter,
+      eatingReasons: eatingReasons,
     );
     if (validationResult != null) {
       return Left(validationResult);
     }
+
+    // Auto-set fullnessAfterTimestamp if hungerLevelAfter is provided but timestamp is not
+    final finalFullnessAfterTimestamp = fullnessAfterTimestamp ??
+        (hungerLevelAfter != null ? DateTime.now() : null);
 
     // Create meal entity
     final meal = Meal(
@@ -66,6 +78,10 @@ class LogMealUseCase {
       ingredients: ingredients,
       recipeId: recipeId,
       createdAt: DateTime.now(),
+      hungerLevelBefore: hungerLevelBefore,
+      hungerLevelAfter: hungerLevelAfter,
+      fullnessAfterTimestamp: finalFullnessAfterTimestamp,
+      eatingReasons: eatingReasons,
     );
 
     // Save to repository
@@ -80,6 +96,9 @@ class LogMealUseCase {
     required double calories,
     required String name,
     required List<String> ingredients,
+    int? hungerLevelBefore,
+    int? hungerLevelAfter,
+    List<EatingReason>? eatingReasons,
   }) {
     // Validate name
     if (name.trim().isEmpty) {
@@ -125,6 +144,30 @@ class LogMealUseCase {
       return ValidationFailure(
         'Calories do not match macro calculations. Expected: ${calculatedCalories.toStringAsFixed(1)}, Got: ${calories.toStringAsFixed(1)}',
       );
+    }
+
+    // Validate hunger levels (0-10 range if provided)
+    if (hungerLevelBefore != null) {
+      if (hungerLevelBefore < 0 || hungerLevelBefore > 10) {
+        return ValidationFailure(
+          'Hunger level before must be between 0 and 10. Got: $hungerLevelBefore',
+        );
+      }
+    }
+
+    if (hungerLevelAfter != null) {
+      if (hungerLevelAfter < 0 || hungerLevelAfter > 10) {
+        return ValidationFailure(
+          'Hunger level after must be between 0 and 10. Got: $hungerLevelAfter',
+        );
+      }
+    }
+
+    // Validate eating reasons (all must be valid enum values if provided)
+    // Empty list is valid (user explicitly chose none)
+    if (eatingReasons != null) {
+      // All reasons should be valid enum values (empty list is OK)
+      // This is automatically validated by the type system, but we can add explicit checks if needed
     }
 
     return null;

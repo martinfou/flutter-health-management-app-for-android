@@ -14,6 +14,7 @@ import 'package:health_app/features/health_tracking/presentation/pages/heart_rat
 import 'package:health_app/features/health_tracking/presentation/pages/blood_pressure_history_page.dart';
 import 'package:health_app/features/health_tracking/presentation/pages/sleep_energy_history_page.dart';
 import 'package:health_app/features/health_tracking/presentation/pages/body_measurements_history_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/weight_history_page.dart';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/calculate_baseline_heart_rate.dart';
 import 'package:health_app/core/widgets/safety_alert_widget.dart';
@@ -285,7 +286,7 @@ class HealthTrackingPage extends ConsumerWidget {
                   onViewDetails: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const WeightEntryPage(),
+                        builder: (context) => const WeightHistoryPage(),
                       ),
                     );
                   },

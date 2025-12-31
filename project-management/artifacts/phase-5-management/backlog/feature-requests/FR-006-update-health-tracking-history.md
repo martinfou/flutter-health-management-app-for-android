@@ -1,11 +1,11 @@
 # Feature Request: FR-006 - Update Health Tracking History
 
-**Status**: ⭕ Not Started  
+**Status**: ✅ Completed  
 **Priority**: 🟠 High  
 **Story Points**: 8  
 **Created**: 2025-01-02  
-**Updated**: 2025-01-02  
-**Assigned Sprint**: Backlog
+**Updated**: 2025-01-03  
+**Assigned Sprint**: [Sprint 11](../../sprints/sprint-11-post-mvp-improvements.md)
 
 ## Description
 
@@ -53,45 +53,45 @@ graph TD
 ## Acceptance Criteria
 
 ### Core Requirements
-- [ ] Users can tap on any entry in history pages to edit it
-- [ ] Entry pages support "edit mode" when opened with an existing metric ID
-- [ ] Entry pages pre-populate with existing metric data when in edit mode
-- [ ] Users can update all metric fields (weight, heart rate, blood pressure, sleep, energy, body measurements, notes)
-- [ ] Updated entries preserve the original creation date but update the `updatedAt` timestamp
-- [ ] Users can delete entries from history pages with confirmation dialog
-- [ ] Deleted entries are permanently removed from the database
-- [ ] History pages refresh automatically after edit/delete operations
-- [ ] All validation rules apply when editing (same as when creating new entries)
+- [x] Users can tap on any entry in history pages to edit it
+- [x] Entry pages support "edit mode" when opened with an existing metric ID
+- [x] Entry pages pre-populate with existing metric data when in edit mode
+- [x] Users can update all metric fields (weight, heart rate, blood pressure, sleep, energy, body measurements, notes)
+- [x] Updated entries preserve the original creation date but update the `updatedAt` timestamp
+- [x] Users can delete entries from history pages with confirmation dialog
+- [x] Deleted entries are permanently removed from the database
+- [x] History pages refresh automatically after edit/delete operations
+- [x] All validation rules apply when editing (same as when creating new entries)
 
 ### Edit Functionality
-- [ ] Edit mode indicated in UI (page title shows "Edit Heart Rate" vs "Log Heart Rate")
-- [ ] Entry pages accept optional `metricId` parameter to enable edit mode
-- [ ] When `metricId` is provided, page loads existing metric data
-- [ ] When `metricId` is provided, save button text changes to "Update" (or similar)
-- [ ] Update operation preserves original `id`, `userId`, `date`, and `createdAt`
-- [ ] Update operation updates `updatedAt` timestamp
-- [ ] Success message shown after successful update
-- [ ] Navigation returns to history page after successful update
-- [ ] Error handling for cases where metric doesn't exist
+- [x] Edit mode indicated in UI (page title shows "Edit Heart Rate" vs "Log Heart Rate")
+- [x] Entry pages accept optional `metricId` parameter to enable edit mode
+- [x] When `metricId` is provided, page loads existing metric data
+- [x] When `metricId` is provided, save button text changes to "Update" (or similar)
+- [x] Update operation preserves original `id`, `userId`, `date`, and `createdAt`
+- [x] Update operation updates `updatedAt` timestamp
+- [x] Success message shown after successful update
+- [x] Navigation returns to history page after successful update
+- [x] Error handling for cases where metric doesn't exist
 
 ### Delete Functionality
-- [ ] Delete button/action available on history entry items (long press or menu)
-- [ ] Delete confirmation dialog with:
+- [x] Delete button/action available on history entry items (long press or menu)
+- [x] Delete confirmation dialog with:
   - Clear warning message
   - Entry details (date, metric value)
   - "Cancel" and "Delete" buttons
   - Delete button is destructive (red/warning color)
-- [ ] Delete operation removes entry permanently
-- [ ] Success message shown after successful delete
-- [ ] History list refreshes after deletion
-- [ ] Empty state shown if all entries are deleted
+- [x] Delete operation removes entry permanently
+- [x] Success message shown after successful delete
+- [x] History list refreshes after deletion
+- [x] Empty state shown if all entries are deleted
 
 ### Supported History Pages
-- [ ] `HeartRateHistoryPage` - Edit/delete heart rate entries
-- [ ] `BloodPressureHistoryPage` - Edit/delete blood pressure entries
-- [ ] `SleepEnergyHistoryPage` - Edit/delete sleep and energy entries
-- [ ] `BodyMeasurementsHistoryPage` - Edit/delete body measurement entries
-- [ ] Weight history (if exists) - Edit/delete weight entries
+- [x] `HeartRateHistoryPage` - Edit/delete heart rate entries
+- [x] `BloodPressureHistoryPage` - Edit/delete blood pressure entries
+- [x] `SleepEnergyHistoryPage` - Edit/delete sleep and energy entries
+- [x] `BodyMeasurementsHistoryPage` - Edit/delete body measurement entries
+- [x] Weight history (`WeightHistoryPage`) - Edit/delete weight entries
 
 ## Business Value
 
@@ -370,7 +370,53 @@ flowchart TD
 - Consider adding a "last updated" indicator in history pages to show when entries were modified
 - For weight entries specifically, consider impact on moving averages and trend calculations when entries are updated or deleted
 
+## Implementation Notes
+
+**Completed**: 2025-01-03
+
+### Implementation Details
+- Created `UpdateHealthMetricUseCase` and `DeleteHealthMetricUseCase` in domain layer
+- Created reusable `DeleteConfirmationDialog` widget in `lib/core/widgets/delete_confirmation_dialog.dart`
+- Updated all entry pages to support edit mode by accepting optional `metricId` parameter:
+  - `HeartRateEntryPage` - supports edit mode with pre-populated fields
+  - `BloodPressureEntryPage` - supports edit mode with pre-populated fields
+  - `SleepEnergyPage` - supports edit mode with pre-populated fields (sleep quality, hours, energy)
+  - `MeasurementsPage` - supports edit mode with pre-populated body measurements
+  - `WeightEntryPage` - supports edit mode with pre-populated weight field
+- Updated all history pages to support edit/delete:
+  - `HeartRateHistoryPage` - tap to edit, popup menu with edit/delete options
+  - `BloodPressureHistoryPage` - tap to edit, popup menu with edit/delete options
+  - `SleepEnergyHistoryPage` - tap to edit, popup menu with edit/delete options
+  - `BodyMeasurementsHistoryPage` - tap to edit, popup menu with edit/delete options
+  - `WeightHistoryPage` - created new page, tap to edit, popup menu with edit/delete options
+- All entry pages preserve original `createdAt` timestamp when updating
+- All entry pages update `updatedAt` timestamp when saving changes
+- Page titles dynamically change based on edit mode ("Edit..." vs "Log...")
+- Save button text changes based on edit mode ("Update..." vs "Save...")
+- Delete confirmation dialog shows metric details and uses destructive styling
+- Success messages displayed after successful operations
+- Provider invalidation ensures data refresh after edit/delete operations
+- Separated weight quick log (`WeightEntryPage`) from weight history (`WeightHistoryPage`) for better UX
+
+### Technical Changes
+- **New Files Created**:
+  - `lib/features/health_tracking/domain/usecases/update_health_metric.dart`
+  - `lib/features/health_tracking/domain/usecases/delete_health_metric.dart`
+  - `lib/core/widgets/delete_confirmation_dialog.dart`
+  - `lib/features/health_tracking/presentation/pages/weight_history_page.dart`
+- **Files Modified**:
+  - All entry pages: `HeartRateEntryPage`, `BloodPressureEntryPage`, `SleepEnergyPage`, `MeasurementsPage`, `WeightEntryPage`
+  - All history pages: `HeartRateHistoryPage`, `BloodPressureHistoryPage`, `SleepEnergyHistoryPage`, `BodyMeasurementsHistoryPage`
+  - `lib/features/health_tracking/presentation/pages/health_tracking_page.dart` - updated navigation
+  - Repository implementations updated to support update/delete operations
+
+### Testing
+- Unit tests completed for `UpdateHealthMetricUseCase` and `DeleteHealthMetricUseCase`
+- Widget tests pending (T-294) - optional
+- Manual testing completed - all edit/delete functionality verified
+
 ## History
 
 - 2025-01-02 - Created
+- 2025-01-03 - Completed - All acceptance criteria met, implementation verified
 

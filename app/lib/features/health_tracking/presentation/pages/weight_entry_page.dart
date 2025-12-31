@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/custom_button.dart';
-import 'package:health_app/core/widgets/error_widget.dart' as core_error;
-import 'package:health_app/core/widgets/loading_indicator.dart';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/save_health_metric.dart';
+import 'package:health_app/features/health_tracking/domain/usecases/update_health_metric.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/moving_average_provider.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/weight_trend_provider.dart';
@@ -18,8 +17,14 @@ import 'package:health_app/features/user_profile/domain/entities/user_profile.da
 import 'package:health_app/features/user_profile/domain/entities/gender.dart';
 
 /// Weight entry page for logging daily weight
+/// 
+/// Supports both creating new entries and editing existing ones.
+/// When [metricId] is provided, the page opens in edit mode.
 class WeightEntryPage extends ConsumerStatefulWidget {
-  const WeightEntryPage({super.key});
+  /// Optional metric ID for edit mode
+  final String? metricId;
+
+  const WeightEntryPage({super.key, this.metricId});
 
   @override
   ConsumerState<WeightEntryPage> createState() => _WeightEntryPageState();
@@ -30,14 +35,72 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
   final FocusNode _weightFocusNode = FocusNode();
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
+  bool _isLoading = true;
   String? _errorMessage;
   String? _successMessage;
+  HealthMetric? _existingMetric;
+
+  bool get _isEditMode => widget.metricId != null && widget.metricId!.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadExistingMetric();
+    });
+  }
 
   @override
   void dispose() {
     _weightController.dispose();
     _weightFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadExistingMetric() async {
+    if (!_isEditMode) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final repository = ref.read(healthTrackingRepositoryProvider);
+      final result = await repository.getHealthMetric(widget.metricId!);
+
+      result.fold(
+        (failure) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = 'Failed to load metric: ${failure.message}';
+            });
+          }
+        },
+        (metric) {
+          if (mounted) {
+            setState(() {
+              _existingMetric = metric;
+              _selectedDate = metric.date;
+              if (metric.weight != null) {
+                _weightController.text = metric.weight!.toStringAsFixed(1);
+              }
+              _isLoading = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error loading metric: $e';
+        });
+      }
+    }
   }
 
   Future<void> _selectDate() async {
@@ -128,54 +191,96 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
     final finalUserId = userId!;
 
     final repository = ref.read(healthTrackingRepositoryProvider);
-    final useCase = SaveHealthMetricUseCase(repository);
 
-    final metric = HealthMetric(
-      id: '',
-      userId: finalUserId,
-      date: _selectedDate,
-      weight: weight,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    if (_isEditMode && _existingMetric != null) {
+      // Update existing metric
+      final useCase = UpdateHealthMetricUseCase(repository);
+      
+      final updatedMetric = _existingMetric!.copyWith(
+        weight: weight,
+        date: _selectedDate,
+        updatedAt: DateTime.now(),
+      );
 
-    final result = await useCase(metric);
+      final result = await useCase(updatedMetric);
 
-    result.fold(
-      (failure) {
-        setState(() {
-          _isSaving = false;
-          _errorMessage = failure.message;
-        });
-      },
-      (savedMetric) {
-        setState(() {
-          _isSaving = false;
-          _successMessage = 'Weight saved successfully!';
-          _weightController.clear();
-        });
-        // Invalidate providers to refresh data
-        ref.invalidate(healthMetricsProvider);
-        ref.invalidate(movingAverageProvider);
-        ref.invalidate(weightTrendProvider);
-      },
-    );
+      result.fold(
+        (failure) {
+          setState(() {
+            _isSaving = false;
+            _errorMessage = failure.message;
+          });
+        },
+        (updatedMetric) {
+          setState(() {
+            _isSaving = false;
+            _successMessage = 'Weight updated successfully!';
+          });
+          // Invalidate providers to refresh data
+          ref.invalidate(healthMetricsProvider);
+          ref.invalidate(movingAverageProvider);
+          ref.invalidate(weightTrendProvider);
+          // Pop back to previous screen after a short delay
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          });
+        },
+      );
+    } else {
+      // Create new metric entry
+      final useCase = SaveHealthMetricUseCase(repository);
+
+      final metric = HealthMetric(
+        id: '',
+        userId: finalUserId,
+        date: _selectedDate,
+        weight: weight,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final result = await useCase(metric);
+
+      result.fold(
+        (failure) {
+          setState(() {
+            _isSaving = false;
+            _errorMessage = failure.message;
+          });
+        },
+        (savedMetric) {
+          setState(() {
+            _isSaving = false;
+            _successMessage = 'Weight saved successfully!';
+            _weightController.clear();
+          });
+          // Invalidate providers to refresh data
+          ref.invalidate(healthMetricsProvider);
+          ref.invalidate(movingAverageProvider);
+          ref.invalidate(weightTrendProvider);
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final metricsAsync = ref.watch(healthMetricsProvider);
     final movingAverage = ref.watch(movingAverageProvider);
     final weightTrend = ref.watch(weightTrendProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weight Entry'),
+        title: Text(_isEditMode ? 'Edit Weight' : 'Weight Entry'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
-        child: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Weight input card
@@ -184,9 +289,9 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
                 padding: const EdgeInsets.all(UIConstants.cardPadding),
                 child: Column(
                   children: [
-                    const Text(
-                      'Today\'s Weight',
-                      style: TextStyle(
+                    Text(
+                      _isEditMode ? 'Edit Weight' : 'Today\'s Weight',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -310,60 +415,6 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
 
             const SizedBox(height: UIConstants.spacingMd),
 
-            // Recent weights list
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(UIConstants.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Recent Weights',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: UIConstants.spacingSm),
-                    metricsAsync.when(
-                      data: (metrics) {
-                        final weightMetrics = metrics
-                            .where((m) => m.weight != null)
-                            .toList()
-                          ..sort((a, b) => b.date.compareTo(a.date));
-                        final recent = weightMetrics.take(5).toList();
-
-                        if (recent.isEmpty) {
-                          return Text(
-                            'No weight entries yet',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                          );
-                        }
-
-                        return Column(
-                          children: recent.map((metric) {
-                            return ListTile(
-                              title: Text('${metric.weight!.toStringAsFixed(1)} kg'),
-                              subtitle: Text(DateFormat('MMMM d, yyyy').format(metric.date)),
-                              leading: const Icon(Icons.scale),
-                            );
-                          }).toList(),
-                        );
-                      },
-                      loading: () => const LoadingIndicator(),
-                      error: (error, stack) => core_error.ErrorWidget(
-                        message: 'Failed to load recent weights',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: UIConstants.spacingMd),
-
             // Error message
             if (_errorMessage != null)
               Padding(
@@ -392,12 +443,15 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
 
             // Save button
             CustomButton(
-              label: 'Save Weight',
+              label: _isSaving
+                  ? (_isEditMode ? 'Updating...' : 'Saving...')
+                  : (_isEditMode ? 'Update Weight' : 'Save Weight'),
               onPressed: _isSaving ? null : _saveWeight,
               isLoading: _isSaving,
               width: double.infinity,
             ),
           ],
+        ),
         ),
       ),
     );

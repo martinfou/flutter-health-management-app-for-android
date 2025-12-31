@@ -5,6 +5,7 @@ import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/custom_button.dart';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/save_health_metric.dart';
+import 'package:health_app/features/health_tracking/domain/usecases/update_health_metric.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 import 'package:health_app/features/health_tracking/presentation/widgets/measurement_form_widget.dart';
@@ -13,8 +14,14 @@ import 'package:health_app/features/user_profile/domain/entities/user_profile.da
 import 'package:health_app/features/user_profile/domain/entities/gender.dart';
 
 /// Body measurements entry page
+/// 
+/// Supports both creating new entries and editing existing ones.
+/// When [metricId] is provided, the page opens in edit mode.
 class MeasurementsPage extends ConsumerStatefulWidget {
-  const MeasurementsPage({super.key});
+  /// Optional metric ID for edit mode
+  final String? metricId;
+
+  const MeasurementsPage({super.key, this.metricId});
 
   @override
   ConsumerState<MeasurementsPage> createState() => _MeasurementsPageState();
@@ -30,8 +37,20 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
   };
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
+  bool _isLoading = true;
   String? _errorMessage;
   String? _successMessage;
+  HealthMetric? _existingMetric;
+
+  bool get _isEditMode => widget.metricId != null && widget.metricId!.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadExistingMetric();
+    });
+  }
 
   @override
   void dispose() {
@@ -39,6 +58,56 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _loadExistingMetric() async {
+    if (!_isEditMode) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final repository = ref.read(healthTrackingRepositoryProvider);
+      final result = await repository.getHealthMetric(widget.metricId!);
+
+      result.fold(
+        (failure) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = 'Failed to load metric: ${failure.message}';
+            });
+          }
+        },
+        (metric) {
+          if (mounted) {
+            setState(() {
+              _existingMetric = metric;
+              _selectedDate = metric.date;
+              if (metric.bodyMeasurements != null) {
+                for (final entry in metric.bodyMeasurements!.entries) {
+                  if (_controllers.containsKey(entry.key)) {
+                    _controllers[entry.key]!.text = entry.value.toStringAsFixed(1);
+                  }
+                }
+              }
+              _isLoading = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error loading metric: $e';
+        });
+      }
+    }
   }
 
   Future<void> _selectDate() async {
@@ -152,37 +221,72 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
     final finalUserId = userId!;
 
     final repository = ref.read(healthTrackingRepositoryProvider);
-    final useCase = SaveHealthMetricUseCase(repository);
 
-    final metric = HealthMetric(
-      id: '',
-      userId: finalUserId,
-      date: _selectedDate,
-      bodyMeasurements: measurements,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    if (_isEditMode && _existingMetric != null) {
+      // Update existing metric
+      final useCase = UpdateHealthMetricUseCase(repository);
+      
+      final updatedMetric = _existingMetric!.copyWith(
+        bodyMeasurements: measurements,
+      );
 
-    final result = await useCase(metric);
+      final result = await useCase(updatedMetric);
 
-    result.fold(
-      (failure) {
-        setState(() {
-          _isSaving = false;
-          _errorMessage = failure.message;
-        });
-      },
-      (savedMetric) {
-        setState(() {
-          _isSaving = false;
-          _successMessage = 'Measurements saved successfully!';
-          for (final controller in _controllers.values) {
-            controller.clear();
-          }
-        });
-        ref.invalidate(providers.healthMetricsProvider);
-      },
-    );
+      result.fold(
+        (failure) {
+          setState(() {
+            _isSaving = false;
+            _errorMessage = failure.message;
+          });
+        },
+        (updatedMetric) {
+          setState(() {
+            _isSaving = false;
+            _successMessage = 'Measurements updated successfully!';
+          });
+          ref.invalidate(providers.healthMetricsProvider);
+          // Pop back to previous screen after a short delay
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          });
+        },
+      );
+    } else {
+      // Create new metric entry
+      final useCase = SaveHealthMetricUseCase(repository);
+
+      final metric = HealthMetric(
+        id: '',
+        userId: finalUserId,
+        date: _selectedDate,
+        bodyMeasurements: measurements,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final result = await useCase(metric);
+
+      result.fold(
+        (failure) {
+          setState(() {
+            _isSaving = false;
+            _errorMessage = failure.message;
+          });
+        },
+        (savedMetric) {
+          setState(() {
+            _isSaving = false;
+            _successMessage = 'Measurements saved successfully!';
+            for (final controller in _controllers.values) {
+              controller.clear();
+            }
+          });
+          ref.invalidate(providers.healthMetricsProvider);
+        },
+      );
+    }
   }
 
   @override
@@ -192,9 +296,17 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Body Measurements'),
+        title: Text(_isEditMode ? 'Edit Body Measurements' : 'Body Measurements'),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(context, theme, lastMeasurements),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, ThemeData theme, Map<String, double>? lastMeasurements) {
+    return SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -314,7 +426,9 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
 
             // Save button
             CustomButton(
-              label: 'Save Measurements',
+              label: _isSaving
+                  ? (_isEditMode ? 'Updating...' : 'Saving...')
+                  : (_isEditMode ? 'Update Measurements' : 'Save Measurements'),
               onPressed: _isSaving ? null : _saveMeasurements,
               isLoading: _isSaving,
               width: double.infinity,
@@ -325,4 +439,3 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
     );
   }
 }
-

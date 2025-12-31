@@ -1,4 +1,5 @@
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 
 /// Meal domain entity
 /// 
@@ -41,6 +42,21 @@ class Meal {
   /// Creation timestamp
   final DateTime createdAt;
 
+  /// Hunger level before eating (0-10, nullable)
+  /// 0 = extremely hungry, 5 = neutral, 10 = extremely full
+  final int? hungerLevelBefore;
+
+  /// Fullness level after eating (0-10, nullable)
+  /// 0 = extremely hungry, 5 = neutral, 10 = extremely full
+  final int? hungerLevelAfter;
+
+  /// Timestamp when fullness after was measured (nullable)
+  final DateTime? fullnessAfterTimestamp;
+
+  /// Eating reasons (nullable)
+  /// null = not answered, empty list = explicitly no reasons
+  final List<EatingReason>? eatingReasons;
+
   /// Creates a Meal
   Meal({
     required this.id,
@@ -55,6 +71,10 @@ class Meal {
     required this.ingredients,
     this.recipeId,
     required this.createdAt,
+    this.hungerLevelBefore,
+    this.hungerLevelAfter,
+    this.fullnessAfterTimestamp,
+    this.eatingReasons,
   });
 
   /// Calculate macro percentages
@@ -88,6 +108,10 @@ class Meal {
     List<String>? ingredients,
     String? recipeId,
     DateTime? createdAt,
+    int? hungerLevelBefore,
+    int? hungerLevelAfter,
+    DateTime? fullnessAfterTimestamp,
+    List<EatingReason>? eatingReasons,
   }) {
     return Meal(
       id: id ?? this.id,
@@ -102,6 +126,10 @@ class Meal {
       ingredients: ingredients ?? this.ingredients,
       recipeId: recipeId ?? this.recipeId,
       createdAt: createdAt ?? this.createdAt,
+      hungerLevelBefore: hungerLevelBefore ?? this.hungerLevelBefore,
+      hungerLevelAfter: hungerLevelAfter ?? this.hungerLevelAfter,
+      fullnessAfterTimestamp: fullnessAfterTimestamp ?? this.fullnessAfterTimestamp,
+      eatingReasons: eatingReasons ?? this.eatingReasons,
     );
   }
 
@@ -120,21 +148,46 @@ class Meal {
           netCarbs == other.netCarbs &&
           calories == other.calories &&
           ingredients == other.ingredients &&
-          recipeId == other.recipeId;
+          recipeId == other.recipeId &&
+          hungerLevelBefore == other.hungerLevelBefore &&
+          hungerLevelAfter == other.hungerLevelAfter &&
+          fullnessAfterTimestamp == other.fullnessAfterTimestamp &&
+          _listEquals(eatingReasons, other.eatingReasons);
+
+  /// Helper method to compare lists
+  bool _listEquals(List<EatingReason>? a, List<EatingReason>? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 
   @override
-  int get hashCode =>
-      id.hashCode ^
-      userId.hashCode ^
-      date.hashCode ^
-      mealType.hashCode ^
-      name.hashCode ^
-      protein.hashCode ^
-      fats.hashCode ^
-      netCarbs.hashCode ^
-      calories.hashCode ^
-      ingredients.hashCode ^
-      recipeId.hashCode;
+  int get hashCode {
+    var hash = id.hashCode ^
+        userId.hashCode ^
+        date.hashCode ^
+        mealType.hashCode ^
+        name.hashCode ^
+        protein.hashCode ^
+        fats.hashCode ^
+        netCarbs.hashCode ^
+        calories.hashCode ^
+        ingredients.hashCode ^
+        (recipeId?.hashCode ?? 0) ^
+        (hungerLevelBefore?.hashCode ?? 0) ^
+        (hungerLevelAfter?.hashCode ?? 0) ^
+        (fullnessAfterTimestamp?.hashCode ?? 0);
+    
+    if (eatingReasons != null) {
+      hash = hash ^ eatingReasons!.fold(0, (sum, reason) => sum ^ reason.hashCode);
+    }
+    
+    return hash;
+  }
 
   @override
   String toString() {

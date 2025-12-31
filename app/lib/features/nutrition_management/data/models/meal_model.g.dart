@@ -28,13 +28,17 @@ class MealModelAdapter extends TypeAdapter<MealModel> {
       ..calories = fields[8] as double
       ..ingredients = (fields[9] as List).cast<String>()
       ..recipeId = fields[10] as String?
-      ..createdAt = fields[11] as DateTime;
+      ..createdAt = fields[11] as DateTime
+      ..hungerLevelBefore = fields[12] as int?
+      ..hungerLevelAfter = fields[13] as int?
+      ..fullnessAfterTimestamp = fields[14] as DateTime?
+      ..eatingReasons = (fields[15] as List?)?.cast<String>();
   }
 
   @override
   void write(BinaryWriter writer, MealModel obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -58,7 +62,15 @@ class MealModelAdapter extends TypeAdapter<MealModel> {
       ..writeByte(10)
       ..write(obj.recipeId)
       ..writeByte(11)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(12)
+      ..write(obj.hungerLevelBefore)
+      ..writeByte(13)
+      ..write(obj.hungerLevelAfter)
+      ..writeByte(14)
+      ..write(obj.fullnessAfterTimestamp)
+      ..writeByte(15)
+      ..write(obj.eatingReasons);
   }
 
   @override

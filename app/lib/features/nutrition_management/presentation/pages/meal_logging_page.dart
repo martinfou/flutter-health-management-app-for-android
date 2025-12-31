@@ -9,7 +9,10 @@ import 'package:health_app/core/utils/calorie_calculation_utils.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
 import 'package:health_app/features/nutrition_management/domain/usecases/calculate_macros.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
+import 'package:health_app/features/nutrition_management/presentation/widgets/hunger_scale_widget.dart';
+import 'package:health_app/features/nutrition_management/presentation/widgets/eating_reasons_widget.dart';
 import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
 import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
@@ -65,6 +68,11 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
   bool _isSaving = false;
   String? _errorMessage;
   String? _successMessage;
+  
+  // Behavioral tracking fields
+  int? _hungerLevelBefore;
+  int? _hungerLevelAfter;
+  Set<EatingReason> _selectedEatingReasons = {};
 
   /// Calculate meal totals from food items
   MacroSummary _calculateMealTotals() {
@@ -292,6 +300,9 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
       netCarbs: unroundedNetCarbs,
       calories: unroundedCalories,
       ingredients: allIngredients,
+      hungerLevelBefore: _hungerLevelBefore,
+      hungerLevelAfter: _hungerLevelAfter,
+      eatingReasons: _selectedEatingReasons.isEmpty ? null : _selectedEatingReasons.toList(),
     );
 
     result.fold(
@@ -361,6 +372,10 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
             _errorMessage = calorieWarning; // Show as informational message
           }
           _foodItems.clear();
+          // Reset behavioral tracking fields
+          _hungerLevelBefore = null;
+          _hungerLevelAfter = null;
+          _selectedEatingReasons.clear();
         });
         // Invalidate providers to refresh data
         ref.invalidate(dailyMealsProvider);
@@ -560,6 +575,76 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: UIConstants.spacingMd),
+
+            // Meal Context section (Optional)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(UIConstants.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Meal Context (Optional)',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: UIConstants.spacingMd),
+                    
+                    // Hunger Before scale
+                    HungerScaleWidget(
+                      selectedValue: _hungerLevelBefore,
+                      label: 'How hungry are you? (Before eating)',
+                      onChanged: (value) {
+                        setState(() {
+                          _hungerLevelBefore = value;
+                          _errorMessage = null;
+                          _successMessage = null;
+                        });
+                      },
+                    ),
+                    
+                    const SizedBox(height: UIConstants.spacingLg),
+                    
+                    // Hunger After scale
+                    HungerScaleWidget(
+                      selectedValue: _hungerLevelAfter,
+                      label: 'How full are you now? (After eating)',
+                      onChanged: (value) {
+                        setState(() {
+                          _hungerLevelAfter = value;
+                          _errorMessage = null;
+                          _successMessage = null;
+                        });
+                      },
+                    ),
+                    
+                    const SizedBox(height: UIConstants.spacingLg),
+                    const Divider(),
+                    const SizedBox(height: UIConstants.spacingMd),
+                    
+                    // Eating reasons
+                    EatingReasonsWidget(
+                      selectedReasons: _selectedEatingReasons,
+                      onChanged: (reasons) {
+                        setState(() {
+                          _selectedEatingReasons = reasons;
+                          _errorMessage = null;
+                          _successMessage = null;
+                        });
+                      },
                     ),
                   ],
                 ),

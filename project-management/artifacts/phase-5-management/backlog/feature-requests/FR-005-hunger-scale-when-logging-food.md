@@ -1,11 +1,11 @@
 # Feature Request: FR-005 - Hunger Scale and Eating Reasons When Logging Food
 
-**Status**: ⭕ Not Started  
+**Status**: ✅ Completed  
 **Priority**: 🟡 Medium  
 **Story Points**: 8  
 **Created**: 2025-01-02  
-**Updated**: 2025-01-02  
-**Assigned Sprint**: Backlog
+**Updated**: 2025-01-03  
+**Assigned Sprint**: [Sprint 11](../../sprints/sprint-11-post-mvp-improvements.md)
 
 ## Description
 
@@ -18,7 +18,7 @@ As a user, I want to rate my hunger level before and after eating and select why
 ## Acceptance Criteria
 
 ### Hunger Scale
-- [ ] Add hunger scale widgets to `MealLoggingPage`:
+- [x] Add hunger scale widgets to `MealLoggingPage`:
   - Display "Hunger Before" scale selector (0-10 scale) before meal is saved
   - Display "Fullness After" scale selector (0-10 scale) after meal is saved (or allow user to update it later)
   - Show descriptive labels for scale values (0 = "Extremely hungry", 5 = "Neutral", 10 = "Extremely full")
@@ -26,49 +26,49 @@ As a user, I want to rate my hunger level before and after eating and select why
   - Store timestamp for "Fullness After" measurement to track when it was logged
   - Make both hunger scales optional (user can skip if they don't want to log them)
   - Display hunger scales visually (slider or segmented buttons)
-- [ ] Update `Meal` entity to include optional `hungerLevelBefore` and `hungerLevelAfter` fields (int, 0-10, nullable)
-- [ ] Update `Meal` entity to include optional `fullnessAfterTimestamp` field (DateTime?, nullable) to track when "after" was measured
-- [ ] Update `MealModel` (Hive model) to include both `hungerLevelBefore`, `hungerLevelAfter`, and `fullnessAfterTimestamp` fields
-- [ ] Update meal logging use case to accept and save both hunger levels and timestamp
-- [ ] Display both hunger levels on meal detail page (if available)
-- [ ] Display hunger levels on meal cards/list (if available, show as "Before: 3, After: 7")
-- [ ] Handle migration for existing meals (hunger levels will be null for existing meals)
-- [ ] Add validation: both hunger levels must be between 0-10 if provided
-- [ ] Handle edge cases gracefully:
+- [x] Update `Meal` entity to include optional `hungerLevelBefore` and `hungerLevelAfter` fields (int, 0-10, nullable)
+- [x] Update `Meal` entity to include optional `fullnessAfterTimestamp` field (DateTime?, nullable) to track when "after" was measured
+- [x] Update `MealModel` (Hive model) to include both `hungerLevelBefore`, `hungerLevelAfter`, and `fullnessAfterTimestamp` fields
+- [x] Update meal logging use case to accept and save both hunger levels and timestamp
+- [x] Display both hunger levels on meal detail page (if available)
+- [x] Display hunger levels on meal cards/list (if available, show as "Before: 3, After: 7")
+- [x] Handle migration for existing meals (hunger levels will be null for existing meals)
+- [x] Add validation: both hunger levels must be between 0-10 if provided
+- [x] Handle edge cases gracefully:
   - Allow any valid combination (don't assume before < after)
-- [ ] Ensure hunger scales are accessible (screen reader support, proper touch targets)
-- [ ] Allow user to update "Fullness After" on meal detail page if not logged initially
+- [x] Ensure hunger scales are accessible (screen reader support, proper touch targets)
+- [x] Allow user to update "Fullness After" on meal detail page if not logged initially
 
 ### Eating Reasons
-- [ ] Create `EatingReason` enum (`lib/features/nutrition_management/domain/entities/eating_reason.dart`):
+- [x] Create `EatingReason` enum (`lib/features/nutrition_management/domain/entities/eating_reason.dart`):
   - Include: hungry, stressed, celebration, bored, tired, scheduled (time to eat)
   - Optional additions: social, craving
   - Include `displayName` getter for UI labels
   - Include `description` getter for tooltips/help text
   - Include `category` getter to group by: physical, emotional, social
-- [ ] Update `Meal` entity to include optional `eatingReasons` field (List<EatingReason>?, nullable)
-- [ ] Update `MealModel` (Hive model) to include `eatingReasons` field (store as List<String> with enum names for better data integrity and debugging)
-- [ ] Update meal logging use case to accept and save eating reasons
-- [ ] Add eating reasons widget to `MealLoggingPage`:
+- [x] Update `Meal` entity to include optional `eatingReasons` field (List<EatingReason>?, nullable)
+- [x] Update `MealModel` (Hive model) to include `eatingReasons` field (store as List<String> with enum names for better data integrity and debugging)
+- [x] Update meal logging use case to accept and save eating reasons
+- [x] Add eating reasons widget to `MealLoggingPage`:
   - Display multi-select chip-based selector
   - Group reasons by category (Physical, Emotional, Social) with section headers
   - Make eating reasons optional (user can skip if they don't want to log it)
   - Allow multiple selections (user can select multiple reasons)
   - Use visual chips with icons for each reason
-- [ ] Display eating reasons on meal detail page (if available)
-- [ ] Display eating reasons on meal cards/list (if available, show as icons or chips)
-- [ ] Handle migration for existing meals (eating reasons will be null/empty for existing meals)
-- [ ] Add validation: eating reasons list must contain valid enum values if provided
-- [ ] Allow empty list for eating reasons (distinct from null - empty = user explicitly chose none, null = not answered)
-- [ ] Ensure eating reasons selector is accessible (screen reader support, proper touch targets)
+- [x] Display eating reasons on meal detail page (if available)
+- [x] Display eating reasons on meal cards/list (if available, show as icons or chips)
+- [x] Handle migration for existing meals (eating reasons will be null/empty for existing meals)
+- [x] Add validation: eating reasons list must contain valid enum values if provided
+- [x] Allow empty list for eating reasons (distinct from null - empty = user explicitly chose none, null = not answered)
+- [x] Ensure eating reasons selector is accessible (screen reader support, proper touch targets)
 
 ### UI/UX Integration
-- [ ] Create "Meal Context" section on `MealLoggingPage`:
+- [x] Create "Meal Context" section on `MealLoggingPage`:
   - Place after meal totals card, before save button
   - Group hunger scale and eating reasons together
   - Show clear section header: "Meal Context (Optional)"
   - Use collapsible/expandable section to reduce visual clutter (optional)
-- [ ] Ensure both features work independently (user can log one, both, or neither)
+- [x] Ensure both features work independently (user can log one, both, or neither)
 
 ## Business Value
 
@@ -498,6 +498,61 @@ The following ASCII layout shows the structure of the Meal Logging Page with the
 - **Integration**: All features work independently - user can log any combination of hunger before, fullness after, and eating reasons
 - **Enum Pattern**: Follow same pattern as `MealType` enum for consistency
 
+## Implementation Notes
+
+**Completed**: 2025-01-03
+
+### Implementation Details
+- Created `EatingReason` enum with 8 values: hungry, stressed, celebration, bored, tired, scheduled, social, craving
+- Created `EatingReasonCategory` enum with 3 categories: physical, emotional, social
+- Updated `Meal` entity to include optional fields:
+  - `hungerLevelBefore` (int?, 0-10)
+  - `hungerLevelAfter` (int?, 0-10)
+  - `fullnessAfterTimestamp` (DateTime?)
+  - `eatingReasons` (List<EatingReason>?)
+- Updated `MealModel` (Hive) with new `@HiveField` annotations for persistence
+- Updated `LogMealUseCase` to accept and validate new behavioral tracking parameters
+- Created `HungerScaleWidget` as reusable slider component:
+  - Uses `Slider` widget for intuitive selection (0-10 scale)
+  - Displays descriptive labels (e.g., "7/10 - Full")
+  - Includes "Clear" button to reset value
+  - Uses neutral theme colors (no color coding for hunger/fullness)
+- Created `EatingReasonsWidget` as reusable multi-select component:
+  - Displays `FilterChip` widgets grouped by category
+  - Shows icons and display names for each reason
+  - Supports multi-selection
+- Updated `MealLoggingPage`:
+  - Added "Meal Context (Optional)" section
+  - Integrated `HungerScaleWidget` for "Hunger Before" and "Fullness After"
+  - Integrated `EatingReasonsWidget` for "Why are you eating?"
+  - Passes behavioral data to `LogMealUseCase`
+- Updated `MealDetailPage` to display behavioral data if available
+- Updated `MealCardWidget` to optionally show compact behavioral indicators
+- Auto-sets `fullnessAfterTimestamp` to `DateTime.now()` if `hungerLevelAfter` provided but timestamp is null
+
+### Technical Changes
+- **New Files Created**:
+  - `lib/features/nutrition_management/domain/entities/eating_reason.dart`
+  - `lib/features/nutrition_management/domain/entities/eating_reason_category.dart`
+  - `lib/features/nutrition_management/presentation/widgets/hunger_scale_widget.dart`
+  - `lib/features/nutrition_management/presentation/widgets/eating_reasons_widget.dart`
+- **Files Modified**:
+  - `lib/features/nutrition_management/domain/entities/meal.dart` - added behavioral tracking fields
+  - `lib/features/nutrition_management/data/models/meal_model.dart` - added Hive fields
+  - `lib/features/nutrition_management/domain/usecases/log_meal.dart` - added parameters and validation
+  - `lib/features/nutrition_management/presentation/pages/meal_logging_page.dart` - integrated widgets
+  - `lib/features/nutrition_management/presentation/pages/meal_detail_page.dart` - display behavioral data
+  - `lib/features/nutrition_management/presentation/widgets/meal_card_widget.dart` - optional display
+
+### Testing
+- Unit tests completed for `LogMealUseCase` with new behavioral tracking parameters
+- Manual testing completed - all features verified and working correctly
+
+### User Feedback Addressed
+- Changed hunger scale from segmented buttons to slider per user request
+- Removed color coding for hunger/fullness levels, using neutral theme colors
+- Slider provides more intuitive selection experience
+
 ## History
 
 - 2025-01-02 - Created based on user request for hunger scale when logging food
@@ -513,4 +568,5 @@ The following ASCII layout shows the structure of the Meal Logging Page with the
   - Framed insights as patterns/correlations, not causes
   - Added visual calibration aid for scale interpretation
   - Removed assumptions about typical ranges (allow any 0-10 combination)
+- 2025-01-03 - Completed - All acceptance criteria met, implementation verified
 

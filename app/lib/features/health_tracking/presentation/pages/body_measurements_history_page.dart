@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
+import 'package:health_app/core/widgets/delete_confirmation_dialog.dart';
+import 'package:health_app/features/health_tracking/domain/usecases/delete_health_metric.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/measurements_page.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
+import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 
 /// Body measurements history page showing all body measurement entries
 class BodyMeasurementsHistoryPage extends ConsumerWidget {
@@ -95,49 +99,145 @@ class BodyMeasurementsHistoryPage extends ConsumerWidget {
               final sortedKeys = measurements.keys.toList()
                 ..sort((a, b) => a.compareTo(b));
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: UIConstants.spacingMd),
-                child: Padding(
-                  padding: const EdgeInsets.all(UIConstants.cardPadding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Date header
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Icon(
-                              Icons.straighten,
-                              color: theme.colorScheme.onPrimaryContainer,
+              return InkWell(
+                onTap: () async {
+                  // Navigate to edit mode on tap
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => MeasurementsPage(metricId: metric.id),
+                    ),
+                  );
+                  // Refresh provider after returning from edit
+                  ref.invalidate(providers.healthMetricsProvider);
+                },
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: UIConstants.spacingMd),
+                  child: Padding(
+                    padding: const EdgeInsets.all(UIConstants.cardPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Date header
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.straighten,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: UIConstants.spacingMd),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isToday
-                                      ? 'Today at ${timeFormat.format(metric.createdAt)}'
-                                      : dateFormat.format(metric.date),
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                if (!isToday)
+                            const SizedBox(width: UIConstants.spacingMd),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    timeFormat.format(metric.createdAt),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                    isToday
+                                        ? 'Today at ${timeFormat.format(metric.createdAt)}'
+                                        : dateFormat.format(metric.date),
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                              ],
+                                  if (!isToday)
+                                    Text(
+                                      timeFormat.format(metric.createdAt),
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                            PopupMenuButton<String>(
+                            icon: Icon(
+                              Icons.more_vert,
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                            onSelected: (value) async {
+                              if (value == 'edit') {
+                                // Navigate to edit mode
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => MeasurementsPage(metricId: metric.id),
+                                  ),
+                                );
+                                // Refresh provider after returning from edit
+                                ref.invalidate(providers.healthMetricsProvider);
+                              } else if (value == 'delete') {
+                                // Show delete confirmation
+                                final measurementsText = sortedKeys
+                                    .map((key) => '${_getMeasurementLabel(key)}: ${measurements[key]!.toStringAsFixed(1)}cm')
+                                    .join(', ');
+                                
+                                final confirmed = await DeleteConfirmationDialog.show(
+                                  context,
+                                  title: 'Delete Body Measurements Entry',
+                                  message: 'Are you sure you want to delete this entry?',
+                                  details: '${measurementsText} • ${dateFormat.format(metric.date)}',
+                                );
+
+                                if (confirmed && context.mounted) {
+                                  // Delete the metric
+                                  final repository = ref.read(healthTrackingRepositoryProvider);
+                                  final useCase = DeleteHealthMetricUseCase(repository);
+                                  final result = await useCase(metric.id);
+
+                                  result.fold(
+                                    (failure) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Failed to delete: ${failure.message}'),
+                                            backgroundColor: theme.colorScheme.error,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    (_) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Entry deleted successfully'),
+                                          ),
+                                        );
+                                      }
+                                      // Refresh provider
+                                      ref.invalidate(providers.healthMetricsProvider);
+                                    },
+                                  );
+                                }
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit),
+                                    SizedBox(width: UIConstants.spacingSm),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete,
+                                      color: theme.colorScheme.error,
+                                    ),
+                                    const SizedBox(width: UIConstants.spacingSm),
+                                    Text(
+                                      'Delete',
+                                      style: TextStyle(color: theme.colorScheme.error),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -205,7 +305,8 @@ class BodyMeasurementsHistoryPage extends ConsumerWidget {
                           ),
                         ),
                       ],
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

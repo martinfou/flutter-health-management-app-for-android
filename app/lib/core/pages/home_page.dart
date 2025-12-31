@@ -51,11 +51,23 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Invalidate all home screen providers to refresh data
+          ref.invalidate(whatNextProvider);
+          ref.invalidate(dailyProgressProvider);
+          ref.invalidate(metricStatusProvider);
+          // Wait for providers to refresh
+          await ref.read(whatNextProvider.future);
+          await ref.read(dailyProgressProvider.future);
+          await ref.read(metricStatusProvider.future);
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // Safety alerts
             const SafetyAlertWidget(),
 
@@ -175,6 +187,7 @@ class HomePage extends ConsumerWidget {
 
             const SizedBox(height: UIConstants.spacingLg),
           ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 
 part 'meal_model.g.dart';
 
@@ -58,11 +59,46 @@ class MealModel extends HiveObject {
   @HiveField(11)
   late DateTime createdAt;
 
+  /// Hunger level before eating (0-10, nullable)
+  @HiveField(12)
+  int? hungerLevelBefore;
+
+  /// Fullness level after eating (0-10, nullable)
+  @HiveField(13)
+  int? hungerLevelAfter;
+
+  /// Timestamp when fullness after was measured (nullable)
+  @HiveField(14)
+  DateTime? fullnessAfterTimestamp;
+
+  /// Eating reasons stored as enum names (nullable List<String>)
+  /// null = not answered, empty list = explicitly no reasons
+  @HiveField(15)
+  List<String>? eatingReasons;
+
   /// Default constructor for Hive
   MealModel();
 
   /// Convert to domain entity
   Meal toEntity() {
+    // Convert eating reasons from strings to enum values
+    List<EatingReason>? eatingReasonsList;
+    if (eatingReasons != null) {
+      eatingReasonsList = eatingReasons!
+          .map((name) {
+            try {
+              return EatingReason.values.firstWhere(
+                (e) => e.name == name,
+              );
+            } catch (e) {
+              // Skip invalid enum values (backward compatibility)
+              return null;
+            }
+          })
+          .whereType<EatingReason>()
+          .toList();
+    }
+
     return Meal(
       id: id,
       userId: userId,
@@ -79,11 +115,21 @@ class MealModel extends HiveObject {
       ingredients: ingredients,
       recipeId: recipeId,
       createdAt: createdAt,
+      hungerLevelBefore: hungerLevelBefore,
+      hungerLevelAfter: hungerLevelAfter,
+      fullnessAfterTimestamp: fullnessAfterTimestamp,
+      eatingReasons: eatingReasonsList,
     );
   }
 
   /// Create from domain entity
   factory MealModel.fromEntity(Meal entity) {
+    // Convert eating reasons from enum values to strings
+    List<String>? eatingReasonsList;
+    if (entity.eatingReasons != null) {
+      eatingReasonsList = entity.eatingReasons!.map((e) => e.name).toList();
+    }
+
     final model = MealModel()
       ..id = entity.id
       ..userId = entity.userId
@@ -96,7 +142,11 @@ class MealModel extends HiveObject {
       ..calories = entity.calories
       ..ingredients = entity.ingredients
       ..recipeId = entity.recipeId
-      ..createdAt = entity.createdAt;
+      ..createdAt = entity.createdAt
+      ..hungerLevelBefore = entity.hungerLevelBefore
+      ..hungerLevelAfter = entity.hungerLevelAfter
+      ..fullnessAfterTimestamp = entity.fullnessAfterTimestamp
+      ..eatingReasons = eatingReasonsList;
     return model;
   }
 }

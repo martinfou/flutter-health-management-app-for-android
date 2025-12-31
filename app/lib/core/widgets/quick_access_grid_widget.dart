@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/navigation/app_router.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/habit_tracking_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/weight_entry_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/sleep_energy_page.dart';
 
 /// Widget for displaying quick access grid to all features
 class QuickAccessGridWidget extends StatelessWidget {
@@ -25,12 +27,30 @@ class QuickAccessGridWidget extends StatelessWidget {
           context,
           'Weight',
           Icons.monitor_weight,
-          () => AppRouter.navigateTo(context, AppRoutes.healthTracking),
+          () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const WeightEntryPage(),
+              ),
+            );
+          },
         ),
         _buildQuickAccessButton(
           context,
           'Sleep',
           Icons.bedtime,
+          () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SleepEnergyPage(),
+              ),
+            );
+          },
+        ),
+        _buildQuickAccessButton(
+          context,
+          'Health',
+          Icons.favorite,
           () => AppRouter.navigateTo(context, AppRoutes.healthTracking),
         ),
         _buildQuickAccessButton(

@@ -4,13 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/delete_confirmation_dialog.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/delete_health_metric.dart';
-import 'package:health_app/features/health_tracking/presentation/pages/sleep_energy_page.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/weight_entry_page.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 
-/// Sleep and energy history page showing all sleep/energy entries
-class SleepEnergyHistoryPage extends ConsumerWidget {
-  const SleepEnergyHistoryPage({super.key});
+/// Weight history page showing all weight entries
+class WeightHistoryPage extends ConsumerWidget {
+  const WeightHistoryPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,36 +19,36 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sleep & Energy History'),
+        title: const Text('Weight History'),
       ),
       body: metricsAsync.when(
         data: (metrics) {
-          // Filter to only sleep/energy metrics and sort by date descending
-          final sleepEnergyMetrics = metrics
-              .where((m) => m.sleepQuality != null || m.energyLevel != null)
+          // Filter to only weight metrics and sort by date descending
+          final weightMetrics = metrics
+              .where((m) => m.weight != null)
               .toList()
             ..sort((a, b) => b.date.compareTo(a.date));
 
-          if (sleepEnergyMetrics.isEmpty) {
+          if (weightMetrics.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.bedtime_outlined,
+                    Icons.scale_outlined,
                     size: 64,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: UIConstants.spacingMd),
                   Text(
-                    'No sleep & energy entries yet',
+                    'No weight entries yet',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: UIConstants.spacingSm),
                   Text(
-                    'Start logging your sleep and energy to see history here',
+                    'Start logging your weight to see history here',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
@@ -61,9 +61,9 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
-            itemCount: sleepEnergyMetrics.length,
+            itemCount: weightMetrics.length,
             itemBuilder: (context, index) {
-              final metric = sleepEnergyMetrics[index];
+              final metric = weightMetrics[index];
               final dateFormat = DateFormat('MMMM d, yyyy');
               final timeFormat = DateFormat('h:mm a');
               final isToday = DateTime(
@@ -83,93 +83,20 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
                   leading: CircleAvatar(
                     backgroundColor: theme.colorScheme.primaryContainer,
                     child: Icon(
-                      Icons.bedtime,
+                      Icons.scale,
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  title: Row(
-                    children: [
-                      if (metric.sleepQuality != null || metric.sleepHours != null) ...[
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Sleep',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                ),
-                              ),
-                              if (metric.sleepQuality != null)
-                                Text(
-                                  '${metric.sleepQuality}/10',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              if (metric.sleepHours != null) ...[
-                                Text(
-                                  () {
-                                    final hours = metric.sleepHours!;
-                                    final hoursInt = hours.toInt();
-                                    final minutes = (hours - hoursInt) * 60;
-                                    if (minutes == 0) {
-                                      return '$hoursInt hours';
-                                    } else {
-                                      return '$hours hours';
-                                    }
-                                  }(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (metric.energyLevel != null) ...[
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Energy',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                ),
-                              ),
-                              Text(
-                                '${metric.energyLevel}/10',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
+                  title: Text(
+                    '${metric.weight!.toStringAsFixed(1)} kg',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isToday
-                            ? 'Today at ${timeFormat.format(metric.createdAt)}'
-                            : dateFormat.format(metric.date),
-                      ),
-                      if (metric.notes != null && metric.notes!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: UIConstants.spacingXs),
-                          child: Text(
-                            metric.notes!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                    ],
+                  subtitle: Text(
+                    isToday
+                        ? 'Today at ${timeFormat.format(metric.createdAt)}'
+                        : dateFormat.format(metric.date),
                   ),
                   trailing: PopupMenuButton<String>(
                     icon: Icon(
@@ -181,24 +108,18 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
                         // Navigate to edit mode
                         await Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => SleepEnergyPage(metricId: metric.id),
+                            builder: (context) => WeightEntryPage(metricId: metric.id),
                           ),
                         );
                         // Refresh provider after returning from edit
                         ref.invalidate(providers.healthMetricsProvider);
                       } else if (value == 'delete') {
                         // Show delete confirmation
-                        final sleepText = metric.sleepQuality != null || metric.sleepHours != null
-                            ? 'Sleep: ${metric.sleepQuality != null ? '${metric.sleepQuality}/10' : ''}${metric.sleepHours != null ? ' ${metric.sleepHours}h' : ''}'
-                            : '';
-                        final energyText = metric.energyLevel != null ? 'Energy: ${metric.energyLevel}/10' : '';
-                        final details = [sleepText, energyText].where((s) => s.isNotEmpty).join(' • ');
-                        
                         final confirmed = await DeleteConfirmationDialog.show(
                           context,
-                          title: 'Delete Sleep & Energy Entry',
-                          message: 'Are you sure you want to delete this entry?',
-                          details: '${details.isNotEmpty ? '$details • ' : ''}${dateFormat.format(metric.date)}',
+                          title: 'Delete Weight Entry',
+                          message: 'Are you sure you want to delete this weight entry?',
+                          details: '${metric.weight!.toStringAsFixed(1)} kg on ${dateFormat.format(metric.date)}',
                         );
 
                         if (confirmed && context.mounted) {
@@ -222,7 +143,7 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Entry deleted successfully'),
+                                    content: Text('Weight entry deleted successfully'),
                                   ),
                                 );
                               }
@@ -266,7 +187,7 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
                     // Navigate to edit mode on tap
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => SleepEnergyPage(metricId: metric.id),
+                        builder: (context) => WeightEntryPage(metricId: metric.id),
                       ),
                     );
                     // Refresh provider after returning from edit
@@ -285,3 +206,4 @@ class SleepEnergyHistoryPage extends ConsumerWidget {
     );
   }
 }
+

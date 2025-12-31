@@ -8,6 +8,12 @@
 **Sprint Review Date**: [Date]  
 **Sprint Retrospective Date**: [Date]
 
+## Related Bug Fixes
+
+This sprint addresses the following bug fixes from the product backlog:
+
+- [BF-001: Export/Import Functionality Not Working Properly](../backlog/bug-fixes/BF-001-export-import-not-working.md) - 5 points
+
 ## Sprint Overview
 
 **Focus Areas**:

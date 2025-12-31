@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
 import 'package:health_app/features/nutrition_management/presentation/pages/meal_detail_page.dart';
 
 /// Widget displaying a meal card in the recent meals list
@@ -70,6 +71,91 @@ class MealCardWidget extends StatelessWidget {
                   _buildMacroChip(theme, '${meal.netCarbs.toStringAsFixed(0)}g C', Colors.green),
                 ],
               ),
+              // Optional: Show hunger levels and eating reasons if available
+              if (meal.hungerLevelBefore != null ||
+                  meal.hungerLevelAfter != null ||
+                  (meal.eatingReasons != null && meal.eatingReasons!.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.only(top: UIConstants.spacingXs),
+                  child: Row(
+                    children: [
+                      // Hunger levels (compact format)
+                      if (meal.hungerLevelBefore != null || meal.hungerLevelAfter != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (meal.hungerLevelBefore != null)
+                              Text(
+                                '${meal.hungerLevelBefore}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 10,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                            if (meal.hungerLevelBefore != null && meal.hungerLevelAfter != null)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacingXs,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_forward,
+                                  size: 12,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                ),
+                              ),
+                            if (meal.hungerLevelAfter != null)
+                              Text(
+                                '${meal.hungerLevelAfter}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 10,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                            if ((meal.hungerLevelBefore != null || meal.hungerLevelAfter != null) &&
+                                meal.eatingReasons != null &&
+                                meal.eatingReasons!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(left: UIConstants.spacingXs),
+                                child: Text(
+                                  '•',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontSize: 10,
+                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      // Eating reasons icons
+                      if (meal.eatingReasons != null && meal.eatingReasons!.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: meal.eatingReasons!.take(3).map((reason) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: UIConstants.spacingXs),
+                              child: Icon(
+                                _getIconForReason(reason),
+                                size: 14,
+                                color: theme.colorScheme.primary,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      if (meal.eatingReasons != null &&
+                          meal.eatingReasons!.length > 3)
+                        Padding(
+                          padding: const EdgeInsets.only(left: UIConstants.spacingXs),
+                          child: Text(
+                            '+${meal.eatingReasons!.length - 3}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
             ],
           ),
           trailing: Row(
@@ -125,6 +211,29 @@ class MealCardWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _getIconForReason(EatingReason reason) {
+    switch (reason.iconName) {
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'mood_bad':
+        return Icons.mood_bad;
+      case 'celebration':
+        return Icons.celebration;
+      case 'sentiment_dissatisfied':
+        return Icons.sentiment_dissatisfied;
+      case 'bedtime':
+        return Icons.bedtime;
+      case 'schedule':
+        return Icons.schedule;
+      case 'groups':
+        return Icons.groups;
+      case 'cake':
+        return Icons.cake;
+      default:
+        return Icons.restaurant_menu;
+    }
   }
 }
 

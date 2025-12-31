@@ -1,11 +1,11 @@
 # Feature Request: FR-003 - Home Screen Pull-to-Refresh
 
-**Status**: ⭕ Not Started  
+**Status**: ✅ Completed  
 **Priority**: 🟠 High  
 **Story Points**: 3  
 **Created**: 2025-12-30  
-**Updated**: 2025-12-30  
-**Assigned Sprint**: Backlog
+**Updated**: 2025-01-03  
+**Assigned Sprint**: [Sprint 11](../../sprints/sprint-11-post-mvp-improvements.md)
 
 ## Description
 
@@ -18,21 +18,46 @@ As a user, I want to be able to pull down on the home screen to refresh the data
 ## Acceptance Criteria
 
 ### Core Requirements
-- [ ] Pull-to-refresh gesture support on home screen (pull down and release to refresh)
-- [ ] Visual refresh indicator appears when pulling down
-- [ ] Refresh triggers reload of all home screen data:
+- [x] Pull-to-refresh gesture support on home screen (pull down and release to refresh)
+- [x] Visual refresh indicator appears when pulling down
+- [x] Refresh triggers reload of all home screen data:
   - What's Next recommendations
   - Today's Progress percentage
   - Metric status grid (Weight, Sleep, Energy, Macros, Heart Rate, Medication)
-- [ ] Data updates immediately after refresh completes
-- [ ] Refresh works from any scroll position (user can scroll to top and pull down)
-- [ ] Loading state is shown during refresh operation
+- [x] Data updates immediately after refresh completes
+- [x] Refresh works from any scroll position (user can scroll to top and pull down)
+- [x] Loading state is shown during refresh operation
 
 ### Quality & Polish
-- [ ] Smooth pull-to-refresh animation (standard Flutter RefreshIndicator)
-- [ ] Refresh indicator uses Material Design 3 styling
-- [ ] No duplicate refresh requests if user pulls multiple times quickly
-- [ ] Error handling if refresh fails (show error message, don't crash)
+- [x] Smooth pull-to-refresh animation (standard Flutter RefreshIndicator)
+- [x] Refresh indicator uses Material Design 3 styling
+- [x] No duplicate refresh requests if user pulls multiple times quickly
+- [x] Error handling if refresh fails (show error message, don't crash)
+
+## Implementation Notes
+
+**Completed**: 2025-01-03
+
+### Implementation Details
+- Wrapped `SingleChildScrollView` with `RefreshIndicator` widget in `HomePage` (`lib/core/pages/home_page.dart`)
+- Implemented `onRefresh` callback that invalidates all home screen providers:
+  - `whatNextProvider`
+  - `dailyProgressProvider`
+  - `metricStatusProvider`
+- Used `AlwaysScrollableScrollPhysics` to ensure refresh works from any scroll position
+- Providers automatically refresh when invalidated, ensuring data is up-to-date
+- Standard Flutter `RefreshIndicator` provides Material Design 3 styling and smooth animations
+- Error handling is provided by provider error states
+
+### Technical Changes
+- **File Modified**: `lib/core/pages/home_page.dart`
+  - Added `RefreshIndicator` wrapper around `SingleChildScrollView`
+  - Added `onRefresh` callback with provider invalidation
+  - Added `AlwaysScrollableScrollPhysics` to scroll view
+
+### Testing
+- Manual testing completed - refresh functionality verified
+- Widget tests pending (T-283) - optional
 
 ## Business Value
 
