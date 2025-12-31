@@ -18,6 +18,8 @@ import 'package:health_app/features/health_tracking/presentation/pages/weight_hi
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/calculate_baseline_heart_rate.dart';
 import 'package:health_app/core/widgets/safety_alert_widget.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 
 /// Main health tracking page with overview
 class HealthTrackingPage extends ConsumerWidget {
@@ -28,6 +30,7 @@ class HealthTrackingPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final metricsAsync = ref.watch(healthMetricsProvider);
     final movingAverage = ref.watch(movingAverageProvider);
+    final useImperial = ref.watch(unitPreferenceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -145,9 +148,9 @@ class HealthTrackingPage extends ConsumerWidget {
                                 return _buildOverviewItem(
                                   theme,
                                   'Weight',
-                                  '${weight.toStringAsFixed(1)} kg',
+                                  FormatUtils.formatWeightValue(weight, useImperial),
                                   avg != null
-                                      ? '↓ ${(weight - avg).abs().toStringAsFixed(1)} kg'
+                                      ? '↓ ${FormatUtils.formatWeightChange((weight - avg).abs(), useImperial)}'
                                       : null,
                                   isEmpty: false,
                                   onTap: () {
@@ -260,11 +263,11 @@ class HealthTrackingPage extends ConsumerWidget {
                   title: 'Weight',
                   value: () {
                     final weight = latestWeightMetric?.weight;
-                    return weight != null ? '${weight.toStringAsFixed(1)} kg' : null;
+                    return weight != null ? FormatUtils.formatWeightValue(weight, useImperial) : null;
                   }(),
                   icon: Icons.scale,
                   subtitle: movingAverage != null
-                      ? '7-Day Avg: ${movingAverage.toStringAsFixed(1)} kg'
+                      ? '7-Day Avg: ${FormatUtils.formatWeightValue(movingAverage, useImperial)}'
                       : null,
                   additionalInfo: () {
                     final weight = latestWeightMetric?.weight;

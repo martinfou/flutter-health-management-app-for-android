@@ -7,6 +7,8 @@ import 'package:health_app/features/health_tracking/domain/usecases/delete_healt
 import 'package:health_app/features/health_tracking/presentation/pages/measurements_page.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 
 /// Body measurements history page showing all body measurement entries
 class BodyMeasurementsHistoryPage extends ConsumerWidget {
@@ -33,6 +35,7 @@ class BodyMeasurementsHistoryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final metricsAsync = ref.watch(providers.healthMetricsProvider);
+    final useImperial = ref.watch(unitPreferenceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -168,7 +171,7 @@ class BodyMeasurementsHistoryPage extends ConsumerWidget {
                               } else if (value == 'delete') {
                                 // Show delete confirmation
                                 final measurementsText = sortedKeys
-                                    .map((key) => '${_getMeasurementLabel(key)}: ${measurements[key]!.toStringAsFixed(1)}cm')
+                                    .map((key) => '${_getMeasurementLabel(key)}: ${FormatUtils.formatLengthValue(measurements[key]!, useImperial)}')
                                     .join(', ');
                                 
                                 final confirmed = await DeleteConfirmationDialog.show(
@@ -265,7 +268,7 @@ class BodyMeasurementsHistoryPage extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
-                                  '${value.toStringAsFixed(1)} cm',
+                                  FormatUtils.formatLengthValue(value, useImperial),
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),

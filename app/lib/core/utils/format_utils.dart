@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:health_app/core/utils/unit_converter.dart';
 
 /// Formatting utilities for displaying data
 class FormatUtils {
@@ -63,22 +64,48 @@ class FormatUtils {
   // ============================================================================
 
   /// Format weight in kilograms (e.g., "75.2 kg")
+  /// 
+  /// Deprecated: Use [formatWeightValue] with [useImperial] parameter instead.
+  @Deprecated('Use formatWeightValue instead')
   static String formatWeightKg(double weight) {
     return '${weight.toStringAsFixed(1)} kg';
   }
 
   /// Format weight in pounds (e.g., "165.8 lbs")
+  /// 
+  /// Deprecated: Use [formatWeightValue] with [useImperial] parameter instead.
+  @Deprecated('Use formatWeightValue instead')
   static String formatWeightLbs(double weight) {
     return '${weight.toStringAsFixed(1)} lbs';
   }
 
-  /// Format weight change (e.g., "+2.3 kg", "-1.5 kg")
-  static String formatWeightChange(double change) {
+  /// Format weight value with appropriate unit based on preference
+  /// 
+  /// [valueInMetric] - Weight value in kilograms (metric)
+  /// [useImperial] - If true, converts to pounds; if false, uses kilograms
+  /// Returns formatted string with unit (e.g., "75.5 kg" or "166.4 lb")
+  static String formatWeightValue(double valueInMetric, bool useImperial) {
+    return UnitConverter.formatWeight(valueInMetric, useImperial);
+  }
+
+  /// Format weight change with appropriate unit based on preference
+  /// 
+  /// [change] - Weight change in kilograms (metric)
+  /// [useImperial] - If true, converts to pounds; if false, uses kilograms
+  /// Returns formatted string (e.g., "+2.3 kg" or "+5.1 lb")
+  static String formatWeightChange(double change, bool useImperial) {
     final sign = change >= 0 ? '+' : '';
-    return '$sign${change.toStringAsFixed(1)} kg';
+    if (useImperial) {
+      final lb = UnitConverter.convertWeightMetricToImperial(change.abs());
+      return '$sign${lb.toStringAsFixed(1)} ${UnitConverter.getWeightUnitLabel(useImperial)}';
+    } else {
+      return '$sign${change.toStringAsFixed(1)} ${UnitConverter.getWeightUnitLabel(useImperial)}';
+    }
   }
 
   /// Format weight change percentage (e.g., "+3.2%", "-2.1%")
+  /// 
+  /// Percentage is unit-independent, so no conversion needed
   static String formatWeightChangePercentage(double percentage) {
     final sign = percentage >= 0 ? '+' : '';
     return '$sign${percentage.toStringAsFixed(1)}%';
@@ -89,13 +116,28 @@ class FormatUtils {
   // ============================================================================
 
   /// Format height in centimeters (e.g., "175 cm")
+  /// 
+  /// Deprecated: Use [formatHeightValue] with [useImperial] parameter instead.
+  @Deprecated('Use formatHeightValue instead')
   static String formatHeightCm(double height) {
     return '${height.toStringAsFixed(0)} cm';
   }
 
   /// Format height in inches (e.g., "69 in")
+  /// 
+  /// Deprecated: Use [formatHeightValue] with [useImperial] parameter instead.
+  @Deprecated('Use formatHeightValue instead')
   static String formatHeightInches(double height) {
     return '${height.toStringAsFixed(0)} in';
+  }
+
+  /// Format height value with appropriate unit based on preference
+  /// 
+  /// [valueInMetric] - Height value in centimeters (metric)
+  /// [useImperial] - If true, converts to ft/in; if false, uses centimeters
+  /// Returns formatted string (e.g., "175 cm" or "5'9\"")
+  static String formatHeightValue(double valueInMetric, bool useImperial) {
+    return UnitConverter.formatHeight(valueInMetric, useImperial);
   }
 
   // ============================================================================
@@ -161,6 +203,44 @@ class FormatUtils {
   /// Format duration in hours (e.g., "2.5 hr")
   static String formatDurationHours(double hours) {
     return '${hours.toStringAsFixed(1)} hr';
+  }
+
+  // ============================================================================
+  // Length Formatting (for body measurements)
+  // ============================================================================
+
+  /// Format length value with appropriate unit based on preference
+  /// 
+  /// [valueInMetric] - Length value in centimeters (metric)
+  /// [useImperial] - If true, converts to inches; if false, uses centimeters
+  /// Returns formatted string (e.g., "81.3 cm" or "32.0 in")
+  static String formatLengthValue(double valueInMetric, bool useImperial) {
+    return UnitConverter.formatLength(valueInMetric, useImperial);
+  }
+
+  // ============================================================================
+  // Unit Label Helpers
+  // ============================================================================
+
+  /// Get weight unit label based on preference
+  /// 
+  /// [useImperial] - If true, returns "lb"; if false, returns "kg"
+  static String getWeightUnitLabel(bool useImperial) {
+    return UnitConverter.getWeightUnitLabel(useImperial);
+  }
+
+  /// Get height unit label based on preference
+  /// 
+  /// [useImperial] - If true, returns "ft/in"; if false, returns "cm"
+  static String getHeightUnitLabel(bool useImperial) {
+    return UnitConverter.getHeightUnitLabel(useImperial);
+  }
+
+  /// Get length unit label based on preference
+  /// 
+  /// [useImperial] - If true, returns "in"; if false, returns "cm"
+  static String getLengthUnitLabel(bool useImperial) {
+    return UnitConverter.getLengthUnitLabel(useImperial);
   }
 }
 

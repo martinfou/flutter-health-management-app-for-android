@@ -7,6 +7,8 @@ import 'package:health_app/features/health_tracking/domain/usecases/delete_healt
 import 'package:health_app/features/health_tracking/presentation/pages/weight_entry_page.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart' as providers;
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 
 /// Weight history page showing all weight entries
 class WeightHistoryPage extends ConsumerWidget {
@@ -16,6 +18,7 @@ class WeightHistoryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final metricsAsync = ref.watch(providers.healthMetricsProvider);
+    final useImperial = ref.watch(unitPreferenceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,7 +91,7 @@ class WeightHistoryPage extends ConsumerWidget {
                     ),
                   ),
                   title: Text(
-                    '${metric.weight!.toStringAsFixed(1)} kg',
+                    FormatUtils.formatWeightValue(metric.weight!, useImperial),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -119,7 +122,7 @@ class WeightHistoryPage extends ConsumerWidget {
                           context,
                           title: 'Delete Weight Entry',
                           message: 'Are you sure you want to delete this weight entry?',
-                          details: '${metric.weight!.toStringAsFixed(1)} kg on ${dateFormat.format(metric.date)}',
+                          details: '${FormatUtils.formatWeightValue(metric.weight!, useImperial)} on ${dateFormat.format(metric.date)}',
                         );
 
                         if (confirmed && context.mounted) {

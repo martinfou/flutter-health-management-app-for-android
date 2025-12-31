@@ -12,6 +12,9 @@ import 'package:health_app/features/health_tracking/presentation/widgets/measure
 import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
 import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
 import 'package:health_app/features/user_profile/domain/entities/gender.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/unit_converter.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 
 /// Body measurements entry page
 /// 
@@ -85,13 +88,19 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
         },
         (metric) {
           if (mounted) {
+            // Convert metric values to display units for editing
+            final useImperial = ref.read(unitPreferenceProvider);
             setState(() {
               _existingMetric = metric;
               _selectedDate = metric.date;
               if (metric.bodyMeasurements != null) {
                 for (final entry in metric.bodyMeasurements!.entries) {
                   if (_controllers.containsKey(entry.key)) {
-                    _controllers[entry.key]!.text = entry.value.toStringAsFixed(1);
+                    // Convert from metric to display units
+                    final displayValue = useImperial
+                        ? UnitConverter.convertLengthMetricToImperial(entry.value)
+                        : entry.value;
+                    _controllers[entry.key]!.text = displayValue.toStringAsFixed(1);
                   }
                 }
               }
@@ -149,13 +158,19 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
   }
 
   Future<void> _saveMeasurements() async {
+    // Convert user input from display units to metric for storage
+    final useImperial = ref.read(unitPreferenceProvider);
     final measurements = <String, double>{};
     for (final entry in _controllers.entries) {
       final value = entry.value.text.trim();
       if (value.isNotEmpty) {
         final numValue = double.tryParse(value);
         if (numValue != null && numValue > 0) {
-          measurements[entry.key] = numValue;
+          // Convert to metric before storing
+          final metricValue = useImperial
+              ? UnitConverter.convertLengthImperialToMetric(numValue)
+              : numValue;
+          measurements[entry.key] = metricValue;
         }
       }
     }
@@ -293,6 +308,7 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final lastMeasurements = _getLastMeasurements();
+    final useImperial = ref.watch(unitPreferenceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -300,11 +316,11 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _buildBody(context, theme, lastMeasurements),
+          : _buildBody(context, theme, lastMeasurements, useImperial),
     );
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme, Map<String, double>? lastMeasurements) {
+  Widget _buildBody(BuildContext context, ThemeData theme, Map<String, double>? lastMeasurements, bool useImperial) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
@@ -359,17 +375,24 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
                       ),
                       const SizedBox(height: UIConstants.spacingSm),
                       ...lastMeasurements.entries.map((entry) {
+                        // Convert last measurement from metric to display units
+                        final lastDisplay = useImperial
+                            ? UnitConverter.convertLengthMetricToImperial(entry.value)
+                            : entry.value;
+                        
                         final currentText = _controllers[entry.key]?.text.trim();
                         final current = currentText != null && currentText.isNotEmpty
                             ? double.tryParse(currentText)
                             : null;
+                        
+                        // For change calculation, compare display values
                         final change = current != null
-                            ? _getChangeIndicator(entry.key, current, entry.value)
+                            ? _getChangeIndicator(entry.key, current, lastDisplay)
                             : '';
 
                         return ListTile(
                           title: Text(entry.key.toUpperCase()),
-                          subtitle: Text('${entry.value.toStringAsFixed(1)} cm'),
+                          subtitle: Text(FormatUtils.formatLengthValue(entry.value, useImperial)),
                           trailing: current != null
                               ? Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -387,7 +410,7 @@ class _MeasurementsPageState extends ConsumerState<MeasurementsPage> {
                                     ),
                                     const SizedBox(width: UIConstants.spacingXs),
                                     Text(
-                                      '${(current - entry.value).abs().toStringAsFixed(1)} cm',
+                                      FormatUtils.formatLengthValue((current - lastDisplay).abs(), useImperial),
                                       style: theme.textTheme.bodyMedium,
                                     ),
                                   ],

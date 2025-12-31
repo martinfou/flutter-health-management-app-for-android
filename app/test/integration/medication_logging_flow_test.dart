@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:matcher/matcher.dart';
-import 'package:health_app/core/providers/database_initializer.dart';
+import 'package:hive/hive.dart';
+import 'dart:io';
+import 'package:health_app/core/providers/database_provider.dart';
 import 'package:health_app/features/medication_management/domain/entities/medication.dart';
 import 'package:health_app/features/medication_management/domain/entities/medication_frequency.dart';
 import 'package:health_app/features/medication_management/domain/entities/medication_log.dart';
@@ -8,6 +9,8 @@ import 'package:health_app/features/medication_management/domain/entities/time_o
 import 'package:health_app/features/medication_management/domain/repositories/medication_repository.dart';
 import 'package:health_app/features/medication_management/data/repositories/medication_repository_impl.dart';
 import 'package:health_app/features/medication_management/data/datasources/local/medication_local_datasource.dart';
+import 'package:health_app/features/medication_management/data/models/medication_model.dart';
+import 'package:health_app/features/medication_management/data/models/medication_log_model.dart';
 import 'package:health_app/features/medication_management/domain/usecases/add_medication.dart';
 import 'package:health_app/features/medication_management/domain/usecases/log_medication_dose.dart';
 
@@ -21,12 +24,29 @@ void main() {
     late MedicationRepository repository;
 
     setUpAll(() async {
-      // Initialize Hive for testing
-      try {
-        await DatabaseInitializer.initialize();
-      } catch (e) {
-        // If initialization fails, skip database-dependent tests
+      // Initialize Hive for testing with a test directory
+      final testDir = Directory.systemTemp.createTempSync('hive_test_');
+      Hive.init(testDir.path);
+      
+      // Register adapters manually for testing
+      if (!Hive.isAdapterRegistered(3)) {
+        Hive.registerAdapter(MedicationModelAdapter());
       }
+      if (!Hive.isAdapterRegistered(4)) {
+        Hive.registerAdapter(MedicationLogModelAdapter());
+      }
+      
+      // Open test boxes with correct type
+      if (!Hive.isBoxOpen(HiveBoxNames.medications)) {
+        await Hive.openBox<MedicationModel>(HiveBoxNames.medications);
+      }
+      if (!Hive.isBoxOpen(HiveBoxNames.medicationLogs)) {
+        await Hive.openBox<MedicationLogModel>(HiveBoxNames.medicationLogs);
+      }
+    });
+
+    tearDownAll(() async {
+      await Hive.close();
     });
 
     setUp(() {
@@ -101,6 +121,7 @@ void main() {
         dosage: dosage,
         frequency: frequency,
         times: times,
+        startDate: DateTime.now(),
       );
 
       // Assert - Verify save was successful
@@ -235,7 +256,8 @@ void main() {
         name: '', // Invalid: empty name
         dosage: '10mg',
         frequency: MedicationFrequency.daily,
-        times: [TimeOfDay.morning],
+        times: [TimeOfDay(hour: 8, minute: 0)],
+        startDate: DateTime.now(),
       );
 
       // Assert - Verify validation failure

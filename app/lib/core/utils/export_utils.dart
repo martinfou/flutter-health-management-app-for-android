@@ -564,29 +564,509 @@ class ExportService {
 
   /// Import data into a Hive box
   static Future<void> _importBox(Box box, List<dynamic> data) async {
-    // Clear existing data (optional - could merge instead)
     await box.clear();
-    
-    // Import each item
+
     for (final item in data) {
-      if (item is Map<String, dynamic>) {
-        // Extract key and value
-        final key = item['_key'];
-        
-        if (key != null) {
-          // Remove the _key from the map before storing
-          final itemData = Map<String, dynamic>.from(item);
-          itemData.remove('_key');
-          itemData.remove('_value'); // In case it was a primitive
-          
-          // For now, we can't easily reconstruct HiveObjects from JSON
-          // This would require implementing fromJson methods on models
-          // For MVP, we'll store the map representation
-          // TODO: Implement proper import with model reconstruction
-          await box.put(key, itemData);
-        }
+      if (item is! Map<String, dynamic>) {
+        continue;
+      }
+
+      final key = item['_key'];
+      if (key == null) {
+        continue;
+      }
+
+      final value = _reconstructHiveValue(box, item);
+      if (value != null) {
+        await box.put(key, value);
       }
     }
+  }
+
+  static dynamic _reconstructHiveValue(Box box, Map<String, dynamic> item) {
+    final itemData = Map<String, dynamic>.from(item);
+    itemData.remove('_key');
+
+    if (itemData.containsKey('_value')) {
+      return itemData['_value'];
+    }
+
+    if (box is Box<HealthMetricModel>) {
+      return _mapToHealthMetricModel(itemData);
+    } else if (box is Box<UserProfileModel>) {
+      return _mapToUserProfileModel(itemData);
+    } else if (box is Box<UserPreferencesModel>) {
+      return _mapToUserPreferencesModel(itemData);
+    } else if (box is Box<MedicationModel>) {
+      return _mapToMedicationModel(itemData);
+    } else if (box is Box<MedicationLogModel>) {
+      return _mapToMedicationLogModel(itemData);
+    } else if (box is Box<MealModel>) {
+      return _mapToMealModel(itemData);
+    } else if (box is Box<ExerciseModel>) {
+      return _mapToExerciseModel(itemData);
+    } else if (box is Box<RecipeModel>) {
+      return _mapToRecipeModel(itemData);
+    } else if (box is Box<SaleItemModel>) {
+      return _mapToSaleItemModel(itemData);
+    } else if (box is Box<ProgressPhotoModel>) {
+      return _mapToProgressPhotoModel(itemData);
+    } else if (box is Box<HabitModel>) {
+      return _mapToHabitModel(itemData);
+    } else if (box is Box<GoalModel>) {
+      return _mapToGoalModel(itemData);
+    }
+
+    // Fallback: store raw map when type is unknown
+    return Map<String, dynamic>.from(itemData);
+  }
+
+  static UserProfileModel? _mapToUserProfileModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final name = data['name'] as String?;
+    final email = data['email'] as String?;
+    final dateOfBirth = _parseDateTime(data['dateOfBirth']);
+    final gender = data['gender'] as String?;
+    final height = _parseDouble(data['height']);
+    final targetWeight = _parseDouble(data['targetWeight']);
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, name, email, dateOfBirth, gender, height, targetWeight, createdAt, updatedAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = UserProfileModel()
+      ..id = id!
+      ..name = name!
+      ..email = email!
+      ..dateOfBirth = dateOfBirth!
+      ..gender = gender!
+      ..height = height!
+      ..targetWeight = targetWeight!
+      ..syncEnabled = data['syncEnabled'] as bool? ?? false
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static HealthMetricModel? _mapToHealthMetricModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final userId = data['userId'] as String?;
+    final date = _parseDateTime(data['date']);
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, userId, date, createdAt, updatedAt].contains(null)) {
+      return null;
+    }
+
+    Map<String, double>? measurements;
+    if (data['bodyMeasurements'] is Map) {
+      measurements = (data['bodyMeasurements'] as Map).map(
+        (key, value) => MapEntry(
+          key.toString(),
+          _parseDouble(value) ?? 0.0,
+        ),
+      );
+    }
+
+    final model = HealthMetricModel()
+      ..id = id!
+      ..userId = userId!
+      ..date = date!
+      ..weight = _parseDouble(data['weight'])
+      ..sleepQuality = _parseInt(data['sleepQuality'])
+      ..sleepHours = _parseDouble(data['sleepHours'])
+      ..energyLevel = _parseInt(data['energyLevel'])
+      ..restingHeartRate = _parseInt(data['restingHeartRate'])
+      ..systolicBP = _parseInt(data['systolicBP'])
+      ..diastolicBP = _parseInt(data['diastolicBP'])
+      ..bodyMeasurements = measurements
+      ..notes = data['notes'] as String?
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static MedicationModel? _mapToMedicationModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final userId = data['userId'] as String?;
+    final name = data['name'] as String?;
+    final dosage = data['dosage'] as String?;
+    final frequency = data['frequency'] as String?;
+    final startDate = _parseDateTime(data['startDate']);
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, userId, name, dosage, frequency, startDate, createdAt, updatedAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = MedicationModel()
+      ..id = id!
+      ..userId = userId!
+      ..name = name!
+      ..dosage = dosage!
+      ..frequency = frequency!
+      ..times = _parseStringList(data['times'])
+      ..startDate = startDate!
+      ..endDate = _parseDateTime(data['endDate'])
+      ..reminderEnabled = data['reminderEnabled'] as bool? ?? false
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static MedicationLogModel? _mapToMedicationLogModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final medicationId = data['medicationId'] as String?;
+    final takenAt = _parseDateTime(data['takenAt']);
+    final dosage = data['dosage'] as String?;
+    final createdAt = _parseDateTime(data['createdAt']);
+
+    if ([id, medicationId, takenAt, dosage, createdAt].contains(null)) {
+      return null;
+    }
+
+    final model = MedicationLogModel()
+      ..id = id!
+      ..medicationId = medicationId!
+      ..takenAt = takenAt!
+      ..dosage = dosage!
+      ..notes = data['notes'] as String?
+      ..createdAt = createdAt!;
+
+    return model;
+  }
+
+  static MealModel? _mapToMealModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final userId = data['userId'] as String?;
+    final date = _parseDateTime(data['date']);
+    final mealType = data['mealType'] as String?;
+    final name = data['name'] as String?;
+    final protein = _parseDouble(data['protein']);
+    final fats = _parseDouble(data['fats']);
+    final netCarbs = _parseDouble(data['netCarbs']);
+    final calories = _parseDouble(data['calories']);
+    final ingredients = _parseStringList(data['ingredients']);
+    final createdAt = _parseDateTime(data['createdAt']);
+
+    if ([id, userId, date, mealType, name, protein, fats, netCarbs, calories, createdAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = MealModel()
+      ..id = id!
+      ..userId = userId!
+      ..date = date!
+      ..mealType = mealType!
+      ..name = name!
+      ..protein = protein!
+      ..fats = fats!
+      ..netCarbs = netCarbs!
+      ..calories = calories!
+      ..ingredients = ingredients
+      ..recipeId = data['recipeId'] as String?
+      ..createdAt = createdAt!
+      ..hungerLevelBefore = _parseInt(data['hungerLevelBefore'])
+      ..hungerLevelAfter = _parseInt(data['hungerLevelAfter'])
+      ..fullnessAfterTimestamp = _parseDateTime(data['fullnessAfterTimestamp'])
+      ..eatingReasons = _parseStringListNullable(data['eatingReasons']);
+
+    return model;
+  }
+
+  static ExerciseModel? _mapToExerciseModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final userId = data['userId'] as String?;
+    final name = data['name'] as String?;
+    final type = data['type'] as String?;
+    final muscleGroups = _parseStringList(data['muscleGroups']);
+    final equipment = _parseStringList(data['equipment']);
+    final date = _parseDateTime(data['date']);
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, userId, name, type, date, createdAt, updatedAt].contains(null)) {
+      return null;
+    }
+
+    final model = ExerciseModel()
+      ..id = id!
+      ..userId = userId!
+      ..name = name!
+      ..type = type!
+      ..muscleGroups = muscleGroups
+      ..equipment = equipment
+      ..duration = _parseInt(data['duration'])
+      ..sets = _parseInt(data['sets'])
+      ..reps = _parseInt(data['reps'])
+      ..weight = _parseDouble(data['weight'])
+      ..distance = _parseDouble(data['distance'])
+      ..date = date!
+      ..notes = data['notes'] as String?
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static RecipeModel? _mapToRecipeModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final name = data['name'] as String?;
+    final servings = _parseInt(data['servings']);
+    final prepTime = _parseInt(data['prepTime']);
+    final cookTime = _parseInt(data['cookTime']);
+    final difficulty = data['difficulty'] as String?;
+    final protein = _parseDouble(data['protein']);
+    final fats = _parseDouble(data['fats']);
+    final netCarbs = _parseDouble(data['netCarbs']);
+    final calories = _parseDouble(data['calories']);
+    final ingredients = _parseStringList(data['ingredients']);
+    final instructions = _parseStringList(data['instructions']);
+    final tags = _parseStringList(data['tags']);
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, name, servings, prepTime, cookTime, difficulty, protein, fats, netCarbs, calories, createdAt, updatedAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = RecipeModel()
+      ..id = id!
+      ..name = name!
+      ..description = data['description'] as String?
+      ..servings = servings!
+      ..prepTime = prepTime!
+      ..cookTime = cookTime!
+      ..difficulty = difficulty!
+      ..protein = protein!
+      ..fats = fats!
+      ..netCarbs = netCarbs!
+      ..calories = calories!
+      ..ingredients = ingredients
+      ..instructions = instructions
+      ..tags = tags
+      ..imageUrl = data['imageUrl'] as String?
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static SaleItemModel? _mapToSaleItemModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final name = data['name'] as String?;
+    final category = data['category'] as String?;
+    final store = data['store'] as String?;
+    final regularPrice = _parseDouble(data['regularPrice']);
+    final salePrice = _parseDouble(data['salePrice']);
+    final discountPercent = _parseDouble(data['discountPercent']);
+    final unit = data['unit'] as String?;
+    final validFrom = _parseDateTime(data['validFrom']);
+    final validTo = _parseDateTime(data['validTo']);
+    final source = data['source'] as String?;
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, name, category, store, regularPrice, salePrice, discountPercent, unit, validFrom, validTo, source, createdAt, updatedAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = SaleItemModel()
+      ..id = id!
+      ..name = name!
+      ..category = category!
+      ..store = store!
+      ..regularPrice = regularPrice!
+      ..salePrice = salePrice!
+      ..discountPercent = discountPercent!
+      ..unit = unit!
+      ..validFrom = validFrom!
+      ..validTo = validTo!
+      ..description = data['description'] as String?
+      ..imageUrl = data['imageUrl'] as String?
+      ..source = source!
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static ProgressPhotoModel? _mapToProgressPhotoModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final healthMetricId = data['healthMetricId'] as String?;
+    final photoType = data['photoType'] as String?;
+    final imagePath = data['imagePath'] as String?;
+    final date = _parseDateTime(data['date']);
+    final createdAt = _parseDateTime(data['createdAt']);
+
+    if ([id, healthMetricId, photoType, imagePath, date, createdAt].contains(null)) {
+      return null;
+    }
+
+    final model = ProgressPhotoModel()
+      ..id = id!
+      ..healthMetricId = healthMetricId!
+      ..photoType = photoType!
+      ..imagePath = imagePath!
+      ..date = date!
+      ..createdAt = createdAt!;
+
+    return model;
+  }
+
+  static UserPreferencesModel _mapToUserPreferencesModel(Map<String, dynamic> data) {
+    final model = UserPreferencesModel()
+      ..dietaryApproach = data['dietaryApproach'] as String? ?? ''
+      ..preferredMealTimes = _parseStringList(data['preferredMealTimes'])
+      ..allergies = _parseStringList(data['allergies'])
+      ..dislikes = _parseStringList(data['dislikes'])
+      ..fitnessGoals = _parseStringList(data['fitnessGoals'])
+      ..notificationPreferences = Map<String, bool>.from(
+        (data['notificationPreferences'] as Map?)?.map(
+              (key, value) => MapEntry(key.toString(), value == true),
+            ) ??
+            {},
+      )
+      ..units = data['units'] as String? ?? 'metric'
+      ..theme = data['theme'] as String? ?? 'light';
+
+    return model;
+  }
+
+  static HabitModel? _mapToHabitModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final userId = data['userId'] as String?;
+    final name = data['name'] as String?;
+    final category = data['category'] as String?;
+    final completedDates = _parseDateTimeList(data['completedDates']);
+    final currentStreak = _parseInt(data['currentStreak']);
+    final longestStreak = _parseInt(data['longestStreak']);
+    final startDate = _parseDateTime(data['startDate']);
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, userId, name, category, completedDates, currentStreak, longestStreak, startDate, createdAt, updatedAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = HabitModel()
+      ..id = id!
+      ..userId = userId!
+      ..name = name!
+      ..category = category!
+      ..description = data['description'] as String?
+      ..completedDates = completedDates!
+      ..currentStreak = currentStreak!
+      ..longestStreak = longestStreak!
+      ..startDate = startDate!
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static GoalModel? _mapToGoalModel(Map<String, dynamic> data) {
+    final id = data['id'] as String?;
+    final userId = data['userId'] as String?;
+    final type = data['type'] as String?;
+    final description = data['description'] as String?;
+    final currentValue = _parseDouble(data['currentValue']);
+    final status = data['status'] as String?;
+    final createdAt = _parseDateTime(data['createdAt']);
+    final updatedAt = _parseDateTime(data['updatedAt']);
+
+    if ([id, userId, type, description, currentValue, status, createdAt, updatedAt]
+        .contains(null)) {
+      return null;
+    }
+
+    final model = GoalModel()
+      ..id = id!
+      ..userId = userId!
+      ..type = type!
+      ..description = description!
+      ..target = data['target'] as String?
+      ..targetValue = _parseDouble(data['targetValue'])
+      ..currentValue = currentValue!
+      ..deadline = _parseDateTime(data['deadline'])
+      ..linkedMetric = data['linkedMetric'] as String?
+      ..status = status!
+      ..completedAt = _parseDateTime(data['completedAt'])
+      ..createdAt = createdAt!
+      ..updatedAt = updatedAt!;
+
+    return model;
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString());
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  static List<String> _parseStringList(dynamic value) {
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return [];
+  }
+
+  static List<String>? _parseStringListNullable(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    return _parseStringList(value);
+  }
+
+  static List<DateTime>? _parseDateTimeList(dynamic value) {
+    if (value is List) {
+      final parsed = value
+          .map((e) => _parseDateTime(e))
+          .whereType<DateTime>()
+          .toList();
+      return parsed;
+    }
+    return null;
   }
 
   /// Validate import file format

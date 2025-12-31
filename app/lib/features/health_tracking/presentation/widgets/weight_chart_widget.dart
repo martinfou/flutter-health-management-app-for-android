@@ -8,6 +8,9 @@ import 'package:health_app/features/health_tracking/domain/entities/health_metri
 import 'package:health_app/features/health_tracking/domain/usecases/calculate_moving_average.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
 import 'package:health_app/core/utils/chart_data_optimizer.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/unit_converter.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 
 /// Widget displaying weight trend chart with 7-day moving average
 /// 
@@ -39,6 +42,7 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final metricsAsync = ref.watch(healthMetricsProvider);
     final theme = Theme.of(context);
+    final useImperial = ref.watch(unitPreferenceProvider);
 
     return metricsAsync.when(
       data: (metrics) {
@@ -50,7 +54,7 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
           );
         }
 
-        return _buildChart(context, metrics, theme, widget.daysToShow);
+        return _buildChart(context, metrics, theme, widget.daysToShow, useImperial);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => const EmptyStateWidget(
@@ -66,6 +70,7 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
     List<HealthMetric> metrics,
     ThemeData theme,
     int daysToShow,
+    bool useImperial,
   ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -100,10 +105,11 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
     final movingAverageData = <ChartDataPoint>[];
 
     // Pre-calculate moving averages for all points
+    // Store metric values, convert only for display
     for (int i = 0; i < weightMetrics.length; i++) {
       final metric = weightMetrics[i];
       final date = metric.date;
-      final weight = metric.weight!;
+      final weight = metric.weight!; // Store in metric
 
       chartData.add(ChartDataPoint(
         date: date,
@@ -130,7 +136,7 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
           (_) => null, // Not enough data for moving average
           (avg) => movingAverageData.add(ChartDataPoint(
             date: date,
-            value: avg,
+            value: avg, // Store in metric
           )),
         );
       }
@@ -197,14 +203,14 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            value.toInt().toString(),
+                            '${value.toInt()} ${UnitConverter.getWeightUnitLabel(useImperial)}',
                             style: TextStyle(
                               fontSize: 10,
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           );
                         },
-                        reservedSize: 40,
+                        reservedSize: 50,
                       ),
                     ),
                   ),
@@ -216,13 +222,17 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
                   ),
                   minX: 0,
                   maxX: (chartData.length - 1).toDouble(),
-                  minY: _getMinWeight(chartData) - 2,
-                  maxY: _getMaxWeight(chartData) + 2,
+                  minY: _getMinWeight(chartData, useImperial) - 2,
+                  maxY: _getMaxWeight(chartData, useImperial) + 2,
                   lineBarsData: [
                     // Weight data line
                     LineChartBarData(
                       spots: chartData.asMap().entries.map((entry) {
-                        return FlSpot(entry.key.toDouble(), entry.value.value);
+                        // Convert metric value to display units for chart
+                        final displayValue = useImperial
+                            ? UnitConverter.convertWeightMetricToImperial(entry.value.value)
+                            : entry.value.value;
+                        return FlSpot(entry.key.toDouble(), displayValue);
                       }).toList(),
                       isCurved: true,
                       color: theme.colorScheme.primary,
@@ -250,7 +260,11 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
                                 d.date.day == entry.value.date.day,
                           );
                           if (index == -1) return FlSpot(0, 0);
-                          return FlSpot(index.toDouble(), entry.value.value);
+                          // Convert metric value to display units for chart
+                          final displayValue = useImperial
+                              ? UnitConverter.convertWeightMetricToImperial(entry.value.value)
+                              : entry.value.value;
+                          return FlSpot(index.toDouble(), displayValue);
                         }).where((spot) => spot.y > 0).toList(),
                         isCurved: true,
                         color: theme.colorScheme.secondary,
@@ -267,8 +281,9 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
                           final index = spot.x.toInt();
                           if (index >= 0 && index < chartData.length) {
                             final dataPoint = chartData[index];
+                            // dataPoint.value is in metric, formatWeightValue handles conversion
                             return LineTooltipItem(
-                              '${dataPoint.value.toStringAsFixed(1)} kg\n${DateFormat('MMM d').format(dataPoint.date)}',
+                              '${FormatUtils.formatWeightValue(dataPoint.value, useImperial)}\n${DateFormat('MMM d').format(dataPoint.date)}',
                               TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontWeight: FontWeight.bold,
@@ -316,14 +331,24 @@ class _WeightChartWidgetState extends ConsumerState<WeightChartWidget>
     );
   }
 
-  double _getMinWeight(List<ChartDataPoint> data) {
+  double _getMinWeight(List<ChartDataPoint> data, bool useImperial) {
     if (data.isEmpty) return 0;
-    return data.map((d) => d.value).reduce((a, b) => a < b ? a : b) - 1;
+    final minMetric = data.map((d) => d.value).reduce((a, b) => a < b ? a : b);
+    // Convert to display units for chart Y-axis
+    final minDisplay = useImperial
+        ? UnitConverter.convertWeightMetricToImperial(minMetric)
+        : minMetric;
+    return minDisplay - (useImperial ? 5.0 : 2.0); // Adjust padding based on units
   }
 
-  double _getMaxWeight(List<ChartDataPoint> data) {
-    if (data.isEmpty) return 100;
-    return data.map((d) => d.value).reduce((a, b) => a > b ? a : b) + 1;
+  double _getMaxWeight(List<ChartDataPoint> data, bool useImperial) {
+    if (data.isEmpty) return useImperial ? 220 : 100;
+    final maxMetric = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
+    // Convert to display units for chart Y-axis
+    final maxDisplay = useImperial
+        ? UnitConverter.convertWeightMetricToImperial(maxMetric)
+        : maxMetric;
+    return maxDisplay + (useImperial ? 5.0 : 2.0); // Adjust padding based on units
   }
 }
 

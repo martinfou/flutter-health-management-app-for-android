@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/unit_converter.dart';
 
 /// Form widget for body measurements
-class MeasurementFormWidget extends StatelessWidget {
+class MeasurementFormWidget extends ConsumerWidget {
   final Map<String, TextEditingController> controllers;
   final Function(String, String) onChanged;
 
@@ -13,13 +16,16 @@ class MeasurementFormWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final useImperial = ref.watch(unitPreferenceProvider);
+    final unitLabel = UnitConverter.getLengthUnitLabel(useImperial);
+    
     final measurements = [
-      {'key': 'waist', 'label': 'Waist (cm)', 'icon': Icons.straighten},
-      {'key': 'hips', 'label': 'Hips (cm)', 'icon': Icons.straighten},
-      {'key': 'neck', 'label': 'Neck (cm)', 'icon': Icons.straighten},
-      {'key': 'chest', 'label': 'Chest (cm)', 'icon': Icons.straighten},
-      {'key': 'thigh', 'label': 'Thigh (cm)', 'icon': Icons.straighten},
+      {'key': 'waist', 'label': 'Waist ($unitLabel)', 'icon': Icons.straighten},
+      {'key': 'hips', 'label': 'Hips ($unitLabel)', 'icon': Icons.straighten},
+      {'key': 'neck', 'label': 'Neck ($unitLabel)', 'icon': Icons.straighten},
+      {'key': 'chest', 'label': 'Chest ($unitLabel)', 'icon': Icons.straighten},
+      {'key': 'thigh', 'label': 'Thigh ($unitLabel)', 'icon': Icons.straighten},
     ];
 
     return Column(

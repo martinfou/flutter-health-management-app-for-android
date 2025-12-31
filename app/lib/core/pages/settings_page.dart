@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Project
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/navigation/app_router.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/habit_tracking_page.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/behavioral_support_page.dart';
 
@@ -52,6 +53,11 @@ class SettingsPage extends ConsumerWidget {
               );
             },
           ),
+          const Divider(),
+
+          // Units Section
+          _buildSectionHeader(context, 'Units'),
+          _buildUnitsSelection(context, ref),
           const Divider(),
 
           // Data Management Section
@@ -120,6 +126,76 @@ class SettingsPage extends ConsumerWidget {
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: onTap != null ? const Icon(Icons.chevron_right) : null,
       onTap: onTap,
+    );
+  }
+
+  Widget _buildUnitsSelection(BuildContext context, WidgetRef ref) {
+    final unitPreferenceAsync = ref.watch(userPreferencesProvider);
+
+    return unitPreferenceAsync.when(
+      data: (preferences) {
+        return Column(
+          children: [
+            RadioListTile<String>(
+              title: const Text('Metric'),
+              subtitle: const Text('kg, cm'),
+              value: 'metric',
+              groupValue: preferences.units,
+              onChanged: (String? value) async {
+                if (value != null) {
+                  final updateFn = ref.read(updateUnitPreferenceProvider);
+                  await updateFn(value);
+                  // Show success message
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Unit preference saved'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            RadioListTile<String>(
+              title: const Text('Imperial'),
+              subtitle: const Text('lb, ft/in'),
+              value: 'imperial',
+              groupValue: preferences.units,
+              onChanged: (String? value) async {
+                if (value != null) {
+                  final updateFn = ref.read(updateUnitPreferenceProvider);
+                  await updateFn(value);
+                  // Show success message
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Unit preference saved'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(UIConstants.spacingMd),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stackTrace) => Padding(
+        padding: const EdgeInsets.all(UIConstants.spacingMd),
+        child: Text(
+          'Error loading preferences: $error',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+        ),
+      ),
     );
   }
 }

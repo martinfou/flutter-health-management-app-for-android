@@ -1,11 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:matcher/matcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:health_app/core/pages/main_navigation_page.dart';
-import 'package:health_app/core/providers/database_initializer.dart';
 import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
 import 'dart:io';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/repositories/health_tracking_repository.dart';
@@ -14,7 +9,6 @@ import 'package:health_app/features/health_tracking/data/datasources/local/healt
 import 'package:health_app/features/health_tracking/data/models/health_metric_model.dart';
 import 'package:health_app/core/providers/database_provider.dart';
 import 'package:health_app/features/health_tracking/domain/usecases/save_health_metric.dart';
-import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
 
 /// Integration test for health tracking flow
 /// 
@@ -54,7 +48,7 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('should save weight entry and retrieve it', (WidgetTester tester) async {
+    test('should save weight entry and retrieve it', () async {
       // Arrange
       const userId = 'test-user-id';
       final testDate = DateTime.now();
@@ -102,7 +96,7 @@ void main() {
       );
     });
 
-    testWidgets('should save multiple weight entries and retrieve by date range', (WidgetTester tester) async {
+    test('should save multiple weight entries and retrieve by date range', () async {
       // Arrange
       const userId = 'test-user-id';
       final now = DateTime.now();
@@ -159,7 +153,7 @@ void main() {
       );
     });
 
-    testWidgets('should use SaveHealthMetricUseCase to save weight', (WidgetTester tester) async {
+    test('should use SaveHealthMetricUseCase to save weight', () async {
       // Arrange
       const userId = 'test-user-id';
       final testDate = DateTime.now();
@@ -190,12 +184,13 @@ void main() {
       );
     });
 
-    testWidgets('should validate weight range when saving', (WidgetTester tester) async {
+    test('should validate weight range when saving', () async {
       // Arrange
       const userId = 'test-user-id';
       final testDate = DateTime.now();
-      const invalidWeight = 20.0; // Below minimum (30kg)
+      const invalidWeight = 15.0; // Below minimum (20kg)
 
+      final useCase = SaveHealthMetricUseCase(repository);
       final metric = HealthMetric(
         id: 'test-invalid',
         userId: userId,
@@ -205,8 +200,8 @@ void main() {
         updatedAt: DateTime.now(),
       );
 
-      // Act - Try to save invalid weight
-      final result = await repository.saveHealthMetric(metric);
+      // Act - Try to save invalid weight using use case (which validates)
+      final result = await useCase.call(metric);
 
       // Assert - Verify validation failure
       expect(result.isLeft(), true);

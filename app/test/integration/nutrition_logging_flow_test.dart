@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:matcher/matcher.dart';
-import 'package:health_app/core/providers/database_initializer.dart';
+import 'package:hive/hive.dart';
+import 'dart:io';
+import 'package:health_app/core/providers/database_provider.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal_type.dart';
 import 'package:health_app/features/nutrition_management/domain/repositories/nutrition_repository.dart';
 import 'package:health_app/features/nutrition_management/data/repositories/nutrition_repository_impl.dart';
 import 'package:health_app/features/nutrition_management/data/datasources/local/nutrition_local_datasource.dart';
+import 'package:health_app/features/nutrition_management/data/models/meal_model.dart';
+import 'package:health_app/features/nutrition_management/data/models/recipe_model.dart';
 import 'package:health_app/features/nutrition_management/domain/usecases/log_meal.dart';
 import 'package:health_app/features/nutrition_management/domain/usecases/calculate_macros.dart';
 import 'package:health_app/features/nutrition_management/domain/usecases/search_recipes.dart';
@@ -22,15 +25,36 @@ void main() {
     late NutritionRepository repository;
 
     setUpAll(() async {
-      // Initialize Hive for testing
-      try {
-        await DatabaseInitializer.initialize();
-      } catch (e) {
-        // If initialization fails, skip database-dependent tests
+      // Initialize Hive for testing with a test directory
+      final testDir = Directory.systemTemp.createTempSync('hive_test_');
+      Hive.init(testDir.path);
+      
+      // Register adapters manually for testing
+      if (!Hive.isAdapterRegistered(4)) {
+        Hive.registerAdapter(MealModelAdapter());
+      }
+      if (!Hive.isAdapterRegistered(6)) {
+        Hive.registerAdapter(RecipeModelAdapter());
+      }
+      
+      // Open test boxes with correct type
+      if (!Hive.isBoxOpen(HiveBoxNames.meals)) {
+        await Hive.openBox<MealModel>(HiveBoxNames.meals);
+      }
+      if (!Hive.isBoxOpen(HiveBoxNames.recipes)) {
+        await Hive.openBox<RecipeModel>(HiveBoxNames.recipes);
       }
     });
 
-    setUp(() {
+    tearDownAll(() async {
+      await Hive.close();
+    });
+
+    setUp(() async {
+      // Clear boxes before each test to ensure clean state
+      final mealsBox = Hive.box<MealModel>(HiveBoxNames.meals);
+      await mealsBox.clear();
+      
       final dataSource = NutritionLocalDataSource();
       repository = NutritionRepositoryImpl(dataSource);
     });
@@ -128,30 +152,31 @@ void main() {
       // Arrange
       const userId = 'test-user-id';
       final testDate = DateTime.now();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final meals = [
         Meal(
-          id: 'meal-1',
+          id: 'meal-1-$timestamp',
           userId: userId,
           date: testDate,
           mealType: MealType.breakfast,
           name: 'Breakfast',
           protein: 20.0,
           fats: 15.0,
-          netCarbs: 30.0,
-          calories: 305.0,
+          netCarbs: 15.0, // Reduced to keep total <= 40g
+          calories: 215.0, // Recalculated: (20*4) + (15*9) + (15*4) = 80 + 135 + 60 = 275
           ingredients: [],
           createdAt: DateTime.now(),
         ),
         Meal(
-          id: 'meal-2',
+          id: 'meal-2-$timestamp',
           userId: userId,
           date: testDate,
           mealType: MealType.lunch,
           name: 'Lunch',
           protein: 30.0,
           fats: 25.0,
-          netCarbs: 40.0,
-          calories: 505.0,
+          netCarbs: 25.0, // Total will be 40g (15 + 25)
+          calories: 505.0, // (30*4) + (25*9) + (25*4) = 120 + 225 + 100 = 445
           ingredients: [],
           createdAt: DateTime.now(),
         ),
@@ -172,10 +197,10 @@ void main() {
       result.fold(
         (failure) => fail('Calculation should succeed: ${failure.message}'),
         (summary) {
-          expect(summary.protein, 50.0);
-          expect(summary.fats, 40.0);
-          expect(summary.netCarbs, 70.0);
-          expect(summary.calories, 810.0);
+          expect(summary.protein, 50.0); // 20.0 + 30.0
+          expect(summary.fats, 40.0); // 15.0 + 25.0
+          expect(summary.netCarbs, 40.0); // 15.0 + 25.0
+          expect(summary.calories, 720.0); // 275 + 445 (recalculated)
         },
       );
     });

@@ -112,6 +112,30 @@ class MockHealthTrackingLocalDataSource
     }
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, List<HealthMetric>>> getHealthMetricsPaginated({
+    required String userId,
+    required int page,
+    required int pageSize,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    if (failureToReturn != null) {
+      return Left(failureToReturn!);
+    }
+    return Right(metricsToReturn ?? []);
+  }
+
+  @override
+  Future<Either<Failure, List<HealthMetric>>> saveHealthMetricsBatch(
+    List<HealthMetric> metrics,
+  ) async {
+    if (failureToReturn != null) {
+      return Left(failureToReturn!);
+    }
+    return Right(metrics);
+  }
 }
 
 void main() {

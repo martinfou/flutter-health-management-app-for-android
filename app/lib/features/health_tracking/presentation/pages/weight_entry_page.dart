@@ -15,6 +15,9 @@ import 'package:health_app/features/health_tracking/presentation/providers/healt
 import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
 import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
 import 'package:health_app/features/user_profile/domain/entities/gender.dart';
+import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/utils/unit_converter.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 
 /// Weight entry page for logging daily weight
 /// 
@@ -82,11 +85,19 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
         },
         (metric) {
           if (mounted) {
+            // Convert weight from metric to user's preferred units for display
+            final useImperial = ref.read(unitPreferenceProvider);
+            final displayWeight = metric.weight != null
+                ? (useImperial
+                    ? UnitConverter.convertWeightMetricToImperial(metric.weight!)
+                    : metric.weight!)
+                : null;
+            
             setState(() {
               _existingMetric = metric;
               _selectedDate = metric.date;
-              if (metric.weight != null) {
-                _weightController.text = metric.weight!.toStringAsFixed(1);
+              if (displayWeight != null) {
+                _weightController.text = displayWeight.toStringAsFixed(1);
               }
               _isLoading = false;
             });
@@ -132,6 +143,23 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
     if (weight == null) {
       setState(() {
         _errorMessage = 'Please enter a valid number';
+      });
+      return;
+    }
+
+    // Convert weight from user's preferred units to metric for storage
+    final useImperial = ref.read(unitPreferenceProvider);
+    final weightInMetric = useImperial
+        ? UnitConverter.convertWeightImperialToMetric(weight)
+        : weight;
+
+    // Validate weight range based on selected units
+    final minWeight = UnitConverter.getMinWeight(useImperial);
+    final maxWeight = UnitConverter.getMaxWeight(useImperial);
+    if (weight < minWeight || weight > maxWeight) {
+      final unitLabel = UnitConverter.getWeightUnitLabel(useImperial);
+      setState(() {
+        _errorMessage = 'Weight must be between $minWeight and $maxWeight $unitLabel';
       });
       return;
     }
@@ -197,7 +225,7 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
       final useCase = UpdateHealthMetricUseCase(repository);
       
       final updatedMetric = _existingMetric!.copyWith(
-        weight: weight,
+        weight: weightInMetric,
         date: _selectedDate,
         updatedAt: DateTime.now(),
       );
@@ -236,7 +264,7 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
         id: '',
         userId: finalUserId,
         date: _selectedDate,
-        weight: weight,
+        weight: weightInMetric,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -270,6 +298,8 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
     final theme = Theme.of(context);
     final movingAverage = ref.watch(movingAverageProvider);
     final weightTrend = ref.watch(weightTrendProvider);
+    final useImperial = ref.watch(unitPreferenceProvider);
+    final unitLabel = UnitConverter.getWeightUnitLabel(useImperial);
 
     return Scaffold(
       appBar: AppBar(
@@ -309,7 +339,7 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
                       ),
                       decoration: InputDecoration(
                         hintText: '0.0',
-                        suffixText: 'kg',
+                        suffixText: unitLabel,
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surface,
                         contentPadding: const EdgeInsets.symmetric(
@@ -373,7 +403,7 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
                     const SizedBox(height: UIConstants.spacingSm),
                     if (movingAverage != null) ...[
                       Text(
-                        'Average: ${movingAverage.toStringAsFixed(1)} kg',
+                        'Average: ${FormatUtils.formatWeightValue(movingAverage, useImperial)}',
                         style: theme.textTheme.titleLarge,
                       ),
                       if (weightTrend != null) ...[
@@ -394,7 +424,12 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
                             ),
                             const SizedBox(width: UIConstants.spacingXs),
                             Text(
-                              weightTrend.message,
+                              // Format change value with proper units
+                              weightTrend.change > 0
+                                  ? 'Weight is increasing by ${FormatUtils.formatWeightChange(weightTrend.change, useImperial)}'
+                                  : weightTrend.change < 0
+                                      ? 'Weight is decreasing by ${FormatUtils.formatWeightChange(weightTrend.change.abs(), useImperial)}'
+                                      : 'Weight is stable (change: ${FormatUtils.formatWeightChange(weightTrend.change.abs(), useImperial)})',
                               style: theme.textTheme.bodyMedium,
                             ),
                           ],

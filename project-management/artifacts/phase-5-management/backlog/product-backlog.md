@@ -2,7 +2,7 @@
 
 This is the main product backlog tracking all feature requests and bug fixes.
 
-**Last Updated**: 2025-01-03  
+**Last Updated**: 2025-01-27  
 **Implementation Order**: See [Implementation Order Recommendation](./implementation-order-recommendation.md)
 
 ## Feature Requests
@@ -15,7 +15,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-004](../backlog/feature-requests/FR-004-food-suggestion-based-on-remaining-macros.md) | Food Suggestion Based on Remaining Macros | 🟠 High | 8 | ⭕ | Sprint 18 | 2025-01-02 | 2025-01-03 |
 | [FR-005](../backlog/feature-requests/FR-005-hunger-scale-when-logging-food.md) | Hunger Scale and Eating Reasons When Logging Food | 🟡 Medium | 8 | ✅ | [Sprint 11](../sprints/sprint-11-post-mvp-improvements.md) | 2025-01-02 | 2025-01-03 |
 | [FR-006](../backlog/feature-requests/FR-006-update-health-tracking-history.md) | Update Health Tracking History | 🟠 High | 8 | ✅ | [Sprint 11](../sprints/sprint-11-post-mvp-improvements.md) | 2025-01-02 | 2025-01-03 |
-| [FR-007](../backlog/feature-requests/FR-007-metric-imperial-units.md) | Metric/Imperial Units Support | 🟠 High | 13 | ⭕ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-01-02 | 2025-01-03 |
+| [FR-007](../backlog/feature-requests/FR-007-metric-imperial-units.md) | Metric/Imperial Units Support | 🟠 High | 13 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-01-02 | 2025-01-27 |
 | [FR-008](../backlog/feature-requests/FR-008-cloud-sync-multi-device-support.md) | Cloud Sync & Multi-Device Support | 🟠 High | 21 | ⭕ | Sprint 16-17 | 2025-01-03 | 2025-01-03 |
 | [FR-009](../backlog/feature-requests/FR-009-user-authentication.md) | User Authentication | 🟠 High | 13 | ⭕ | Sprint 14-15 | 2025-01-03 | 2025-01-03 |
 | [FR-010](../backlog/feature-requests/FR-010-llm-integration.md) | LLM Integration | 🟠 High | 21 | ⭕ | Sprint 14-15 | 2025-01-03 | 2025-01-03 |
@@ -30,7 +30,8 @@ This is the main product backlog tracking all feature requests and bug fixes.
 
 | ID | Title | Priority | Points | Status | Sprint | Created | Updated |
 |----|-------|----------|--------|--------|--------|---------|---------|
-| [BF-001](../backlog/bug-fixes/BF-001-export-import-not-working.md) | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ⏳ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-12-30 | 2025-01-03 |
+| [BF-001](../backlog/bug-fixes/BF-001-export-import-not-working.md) | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-12-30 | 2025-01-27 |
+| [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ⭕ | Backlog | 2025-01-03 | 2025-01-03 |
 
 ---
 

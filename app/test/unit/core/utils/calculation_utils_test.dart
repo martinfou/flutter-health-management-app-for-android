@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health_app/core/utils/calculation_utils.dart';
-import 'package:health_app/core/constants/health_constants.dart';
 
 void main() {
   group('CalculationUtils', () {

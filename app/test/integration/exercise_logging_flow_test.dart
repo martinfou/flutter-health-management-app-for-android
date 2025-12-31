@@ -1,11 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:matcher/matcher.dart';
-import 'package:health_app/core/providers/database_initializer.dart';
+import 'package:hive/hive.dart';
+import 'dart:io';
+import 'package:health_app/core/providers/database_provider.dart';
 import 'package:health_app/features/exercise_management/domain/entities/exercise.dart';
 import 'package:health_app/features/exercise_management/domain/entities/exercise_type.dart';
 import 'package:health_app/features/exercise_management/domain/repositories/exercise_repository.dart';
 import 'package:health_app/features/exercise_management/data/repositories/exercise_repository_impl.dart';
 import 'package:health_app/features/exercise_management/data/datasources/local/exercise_local_datasource.dart';
+import 'package:health_app/features/exercise_management/data/models/exercise_model.dart';
 import 'package:health_app/features/exercise_management/domain/usecases/log_workout.dart';
 import 'package:health_app/features/exercise_management/domain/usecases/get_workout_history.dart';
 
@@ -19,12 +21,23 @@ void main() {
     late ExerciseRepository repository;
 
     setUpAll(() async {
-      // Initialize Hive for testing
-      try {
-        await DatabaseInitializer.initialize();
-      } catch (e) {
-        // If initialization fails, skip database-dependent tests
+      // Initialize Hive for testing with a test directory
+      final testDir = Directory.systemTemp.createTempSync('hive_test_');
+      Hive.init(testDir.path);
+      
+      // Register adapters manually for testing
+      if (!Hive.isAdapterRegistered(5)) {
+        Hive.registerAdapter(ExerciseModelAdapter());
       }
+      
+      // Open test boxes with correct type
+      if (!Hive.isBoxOpen(HiveBoxNames.exercises)) {
+        await Hive.openBox<ExerciseModel>(HiveBoxNames.exercises);
+      }
+    });
+
+    tearDownAll(() async {
+      await Hive.close();
     });
 
     setUp(() {
@@ -64,7 +77,7 @@ void main() {
         (savedExercise) {
           expect(savedExercise.id, exercise.id);
           expect(savedExercise.name, exerciseName);
-          expect(savedExercise.duration, duration);
+          expect(savedExercise.duration, duration.toInt());
           expect(savedExercise.distance, distance);
           expect(savedExercise.userId, userId);
         },
@@ -88,7 +101,7 @@ void main() {
       // Arrange
       const userId = 'test-user-id';
       const exerciseName = 'Weight Training';
-      const duration = 45.0;
+      const duration = 45; // int, not double
       const sets = 3;
       const reps = 10;
       const weight = 50.0; // kg
@@ -155,9 +168,9 @@ void main() {
       final startDate = dates.first.subtract(Duration(days: 1));
       final endDate = dates.last.add(Duration(days: 1));
       final rangeResult = await repository.getExercisesByDateRange(
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
+        userId,
+        startDate,
+        endDate,
       );
 
       // Assert - Verify exercises are retrieved
