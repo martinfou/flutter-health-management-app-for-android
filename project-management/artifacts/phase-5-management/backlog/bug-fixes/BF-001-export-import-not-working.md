@@ -4,8 +4,8 @@
 **Priority**: 🔴 Critical  
 **Story Points**: 5  
 **Created**: 2025-12-30  
-**Updated**: 2025-01-02  
-**Assigned Sprint**: [Sprint 10](../../sprints/sprint-10-mvp-release.md)
+**Updated**: 2025-01-03  
+**Assigned Sprint**: [Sprint 12](../../sprints/sprint-12-metric-imperial-units.md)
 
 ## Description
 

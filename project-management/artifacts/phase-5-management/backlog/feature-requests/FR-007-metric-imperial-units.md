@@ -4,8 +4,8 @@
 **Priority**: 🟠 High  
 **Story Points**: 13  
 **Created**: 2025-01-02  
-**Updated**: 2025-01-02  
-**Assigned Sprint**: Backlog
+**Updated**: 2025-01-03  
+**Assigned Sprint**: [Sprint 12](../sprints/sprint-12-metric-imperial-units.md)
 
 ## Description
 
