@@ -1,5 +1,26 @@
 # Project Reorganization: TCREI Framework Prompt
 
+## Current Status (Updated)
+
+**✅ REORGANIZATION MOSTLY COMPLETE** (as of review)
+
+The reorganization has been successfully executed:
+- ✅ All application files moved to `app/` directory
+- ✅ All project management files moved to `project-management/` directory  
+- ✅ All personas moved to `project-management/personas/`
+- ✅ Files moved using `git mv` (history preserved - shown as "R" in git status)
+- ✅ Documentation paths in `app/docs/` already updated correctly
+
+**Cleanup Tasks Completed** (latest update):
+- ✅ Updated `README.md` to reflect new structure (all paths updated)
+- ✅ Removed leftover `android/.gradle` directory at root (Gradle cache)
+- ✅ Verified Flutter functionality from `app/` directory (Flutter 3.29.0 working)
+- ✅ Verified all old path references removed from README.md
+
+**Optional Future Tasks** (not critical):
+- ⚠️ Create `app/README.md` for application-specific documentation (optional)
+- ⚠️ Create `project-management/README.md` for project management overview (optional)
+
 ## Task
 
 Reorganize the Flutter Health Management App project by splitting the codebase into three distinct sections:
@@ -9,6 +30,42 @@ Reorganize the Flutter Health Management App project by splitting the codebase i
 3. **Persona Definitions** → Move to dedicated folder structure
 
 The goal is to create clear separation between application code/documentation and project management/persona materials, improving navigation and maintainability for both developers and project managers.
+
+## Quick Reference Command Summary
+
+**Essential Commands (Execute in Order)**:
+
+```bash
+# 1. Backup current state
+git checkout -b backup/pre-reorganization
+git add . && git commit -m "chore: backup before reorganization"
+git checkout -  # Return to previous branch
+git checkout -b chore/reorganize-project-structure
+
+# 2. Create directories
+mkdir -p app project-management
+
+# 3. Move application files
+git mv lib test android docs coverage app/ 2>/dev/null || true
+git mv pubspec.yaml pubspec.lock analysis_options.yaml app/
+git mv health_app.iml app/ 2>/dev/null || true
+
+# 4. Move project management files
+git mv artifacts orchestration-guide.md personas project-management/
+
+# 5. Update paths in documentation (see Path Update Reference Guide section)
+
+# 6. Verify Flutter functionality
+cd app && flutter pub get && flutter analyze && flutter test && cd ..
+
+# 7. Commit changes
+git add . && git status  # Verify moves
+git commit -m "chore: reorganize project into app/ and project-management/ directories..."
+```
+
+**Key Files to Move**:
+- To `app/`: `lib/`, `test/`, `android/`, `docs/`, `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`, `coverage/`
+- To `project-management/`: `artifacts/`, `personas/`, `orchestration-guide.md`
 
 ## Context
 
@@ -218,20 +275,68 @@ Search and update paths in the following file categories:
 #### Phase 7: Verify and Test
 
 1. **Flutter Functionality**
-   - `cd app/ && flutter pub get` (should succeed)
-   - `cd app/ && flutter analyze` (should work)
-   - `cd app/ && flutter test` (should work)
-   - Verify IDE can open project from `app/` directory
+
+   ```bash
+   cd app/
+   flutter pub get
+   ```
+   **Expected Output**: Should show "Running 'flutter pub get' in app..." and complete with exit code 0. No errors about missing `pubspec.yaml`.
+
+   ```bash
+   flutter analyze
+   ```
+   **Expected Output**: Should analyze Dart files and show analysis results. May have pre-existing warnings, but should not error about missing files or path issues.
+
+   ```bash
+   flutter test
+   ```
+   **Expected Output**: Should run all tests successfully. Test count should match pre-reorganization count. No "file not found" errors.
+
+   ```bash
+   cd ..
+   ```
+   - Verify IDE can open project from `app/` directory (manual verification)
 
 2. **Path Verification**
-   - Use grep to find any remaining old path references
-   - Verify all markdown links are valid
+
+   ```bash
+   # Find any remaining old path references
+   grep -r "artifacts/" app/docs/ 2>/dev/null | grep -v "project-management/artifacts/" || echo "No old artifact references found"
+   grep -r "personas/" app/docs/ 2>/dev/null | grep -v "project-management/personas/" || echo "No old persona references found"
+   grep -r "\"docs/\"" project-management/ 2>/dev/null | grep -v "app/docs" || echo "No old docs references found"
+   grep -r "\"lib/\"" project-management/ 2>/dev/null | grep -v "app/lib" || echo "No old lib references found"
+   ```
+   **Expected Output**: Should show "No old X references found" for each check, or list only legitimate references that were correctly updated.
+
+   ```bash
+   # Verify markdown links (if link checker available)
+   # Manual check: Open key markdown files and verify links work
+   ```
+   - Verify all markdown links are valid (check key files manually)
    - Check for broken relative paths
 
 3. **Git Status**
-   - Verify all moves are tracked correctly
-   - Check for any untracked files that should be moved
-   - Ensure no files were accidentally deleted
+
+   ```bash
+   git status
+   ```
+   **Expected Output**: Should show:
+   - All moved files as "renamed" (not "deleted" and "new file")
+   - Modified files (README updates, path reference updates)
+   - No unexpected deleted files
+   - No untracked files that should have been moved
+
+   ```bash
+   # Verify git history preservation
+   git log --follow --oneline app/lib/main.dart | head -5
+   ```
+   **Expected Output**: Should show commit history for the file, demonstrating history is preserved.
+
+   ```bash
+   # Check for any files left in root that should have been moved
+   ls -la | grep -E "^(lib|test|android|docs|artifacts|personas|pubspec)" || echo "No unexpected root files"
+   ```
+   **Expected Output**: Should show only expected root files (README.md, reorg.md, reorg2.md, .gitignore, etc.). No `lib/`, `test/`, `artifacts/`, etc.
 
 ## Implementation
 
@@ -372,11 +477,16 @@ git mv personas project-management/
 #### Step 8: Verify Flutter Functionality
 ```bash
 cd app
-flutter pub get
-flutter analyze
-flutter test
+flutter pub get      # Expected: Successful dependency resolution, exit code 0
+flutter analyze      # Expected: Analysis completes, may show warnings but no path errors
+flutter test         # Expected: All tests pass, no file not found errors
 cd ..
 ```
+
+**Troubleshooting Verification**:
+- If `flutter pub get` fails: Check that `pubspec.yaml` is in `app/` directory
+- If `flutter analyze` shows path errors: Check import statements haven't broken
+- If `flutter test` fails: Verify test files were moved correctly and paths are updated
 
 #### Step 9: Commit Changes
 ```bash
@@ -466,4 +576,316 @@ The reorganization is successful when:
 6. **Testing**: Thoroughly test Flutter functionality after reorganization to ensure nothing is broken.
 
 7. **Rollback Plan**: The backup branch created in Phase 1 can be used to rollback if issues are discovered.
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Issue 1: `git mv` fails with "fatal: bad source"
+
+**Symptoms**: `git mv lib app/` returns error about bad source
+
+**Causes**:
+- File/directory doesn't exist at specified path
+- File is not tracked by git
+- Path contains typos
+
+**Solutions**:
+```bash
+# Verify file exists and is tracked
+git ls-files | grep "^lib/"
+ls -la lib/  # Verify directory exists
+
+# If file exists but isn't tracked, add it first
+git add lib/
+git mv lib app/
+
+# Check current directory
+pwd  # Should be project root
+```
+
+#### Issue 2: Flutter commands fail after move
+
+**Symptoms**: `cd app && flutter pub get` fails with path errors
+
+**Causes**:
+- `pubspec.yaml` not moved correctly
+- Still in wrong directory when running commands
+- Import paths in code need updating
+
+**Solutions**:
+```bash
+# Verify pubspec.yaml location
+ls -la app/pubspec.yaml  # Should exist
+
+# Ensure you're in app directory
+cd app
+pwd  # Should end with /app
+
+# Clean and retry
+flutter clean
+flutter pub get
+
+# If import errors persist, check import statements
+grep -r "package:" app/lib/ | head -20  # Check for broken imports
+```
+
+#### Issue 3: Tests fail with "file not found" errors
+
+**Symptoms**: `flutter test` fails with file not found errors
+
+**Causes**:
+- Test files not moved correctly
+- Test fixtures or assets not moved
+- Test imports reference old paths
+
+**Solutions**:
+```bash
+# Verify test directory exists
+ls -la app/test/
+
+# Check for fixture files
+find app/test/ -name "*.json" -o -name "*.txt" -o -name "fixtures"
+
+# Check test imports
+grep -r "import.*test/" app/test/ | head -20
+
+# Verify test references correct paths
+cd app
+flutter test --verbose  # See detailed error messages
+```
+
+#### Issue 4: IDE shows errors after reorganization
+
+**Symptoms**: IDE (VS Code, Android Studio) shows red squiggles or can't find files
+
+**Causes**:
+- IDE still pointing to old project root
+- IDE cache needs refresh
+- Workspace file not updated
+
+**Solutions**:
+```bash
+# Close IDE completely
+
+# If using VS Code, open workspace from app/ directory
+cd app
+code .  # Opens app/ as workspace root
+
+# If using Android Studio/IntelliJ
+# 1. File → Open → Select app/ directory
+# 2. File → Invalidate Caches → Invalidate and Restart
+
+# Clean IDE cache manually (if needed)
+rm -rf app/.dart_tool/
+rm -rf app/.idea/  # For IntelliJ/Android Studio
+cd app && flutter pub get  # Regenerate tool files
+```
+
+#### Issue 5: Git history appears lost
+
+**Symptoms**: `git log` shows files as new instead of moved
+
+**Causes**:
+- Used regular `mv` instead of `git mv`
+- Files were copied instead of moved
+
+**Solutions**:
+```bash
+# Check if history exists
+git log --follow -- app/lib/main.dart
+
+# If history exists but git status shows as new files:
+# - This is actually fine, git tracks moves correctly
+# - History is preserved even if status shows differently
+
+# If history truly lost, restore from backup branch
+git checkout backup/pre-reorganization -- lib/
+git mv lib app/lib  # Use git mv this time
+git commit -m "chore: correctly move lib/ preserving history"
+```
+
+#### Issue 6: Path references not updating correctly
+
+**Symptoms**: Documentation links broken, grep shows old paths
+
+**Causes**:
+- Paths updated incorrectly
+- Relative path calculations wrong
+- Some files missed in update
+
+**Solutions**:
+```bash
+# Find all old path references
+grep -r "artifacts/" app/docs/ project-management/
+grep -r '"docs/"' project-management/ | grep -v "app/docs"
+
+# Use Path Update Reference Guide section for correct mappings
+# Update paths systematically using search_replace tool
+
+# Verify updates
+grep -r "../../project-management/artifacts/" app/docs/ | wc -l
+# Should match expected number of references
+```
+
+#### Issue 7: Build directory issues
+
+**Symptoms**: Build fails or build artifacts in wrong location
+
+**Causes**:
+- Build directory moved when it shouldn't be
+- `.gitignore` not updated
+- Build cache pointing to old paths
+
+**Solutions**:
+```bash
+# Build directory should NOT be moved (it's in .gitignore)
+# If accidentally moved, remove it
+rm -rf app/build/
+
+# Clean build cache
+cd app
+flutter clean
+flutter pub get
+
+# Verify .gitignore
+grep "build/" .gitignore  # Should ignore build directories
+
+# Regenerate build
+flutter build apk --debug  # Test build works
+```
+
+#### Issue 8: Coverage reports broken
+
+**Symptoms**: Coverage reports show wrong paths or can't be generated
+
+**Causes**:
+- Coverage directory moved but paths in config not updated
+- Coverage tool still using old paths
+
+**Solutions**:
+```bash
+# Verify coverage directory exists
+ls -la app/coverage/
+
+# If using coverage package, check configuration
+grep -r "coverage" app/pubspec.yaml
+
+# Regenerate coverage from new location
+cd app
+flutter test --coverage
+# Coverage should be in app/coverage/
+
+# Update any CI/CD scripts that reference coverage paths
+```
+
+#### Issue 9: Cannot commit - "nothing to commit"
+
+**Symptoms**: `git commit` says nothing to commit after moves
+
+**Causes**:
+- Files not staged
+- All changes already committed
+- Working on wrong branch
+
+**Solutions**:
+```bash
+# Check git status
+git status  # Should show staged moves
+
+# If nothing staged, stage all changes
+git add -A
+git status  # Verify files are staged
+
+# Check current branch
+git branch  # Should be on chore/reorganize-project-structure
+
+# If on wrong branch, switch branches
+git checkout chore/reorganize-project-structure
+```
+
+#### Issue 10: Merge conflicts or branch issues
+
+**Symptoms**: Can't create branch, merge conflicts when returning
+
+**Causes**:
+- Uncommitted changes
+- Branch already exists
+- Remote branch conflicts
+
+**Solutions**:
+```bash
+# Check for uncommitted changes
+git status
+
+# Stash changes if needed
+git stash
+git checkout -b chore/reorganize-project-structure
+git stash pop
+
+# If branch exists, delete and recreate (if safe)
+git branch -D chore/reorganize-project-structure
+git checkout -b chore/reorganize-project-structure
+
+# If remote conflicts, pull latest first
+git checkout main  # or your base branch
+git pull
+git checkout -b chore/reorganize-project-structure
+```
+
+### Recovery Procedures
+
+#### Complete Rollback
+
+If reorganization fails catastrophically:
+
+```bash
+# Return to backup branch
+git checkout backup/pre-reorganization
+
+# Or reset current branch to backup
+git reset --hard backup/pre-reorganization
+
+# Verify everything is back
+ls -la lib/ test/ android/  # Should exist at root
+flutter pub get  # Should work from root
+```
+
+#### Partial Rollback
+
+If only some steps need to be undone:
+
+```bash
+# Undo specific moves (example: undo lib/ move)
+git checkout HEAD -- app/lib/
+git mv app/lib .  # Move back
+git add .
+git commit -m "chore: revert lib/ move"
+
+# Or use git restore for uncommitted changes
+git restore --staged app/lib/
+git restore app/lib/
+```
+
+#### Verification After Issues
+
+After fixing any issues:
+
+```bash
+# 1. Verify file structure
+tree -L 2 app/ project-management/  # or use ls -R
+
+# 2. Verify Flutter works
+cd app && flutter doctor && flutter pub get && flutter test
+
+# 3. Verify git status
+git status  # Should show clean or only expected changes
+
+# 4. Verify no broken links
+grep -r "artifacts/" app/docs/ | grep -v "project-management" || echo "OK"
+
+# 5. Check git log for moves
+git log --oneline --name-status -10  # Should show renames
+```
+
 

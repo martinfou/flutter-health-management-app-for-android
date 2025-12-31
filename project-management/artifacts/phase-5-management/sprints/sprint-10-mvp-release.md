@@ -43,7 +43,7 @@
 - [x] Bug tracking updated
 
 **Reference Documents**:
-- `artifacts/phase-5-management/product-backlog-structure.md` - Bug fix templates
+- `../backlog/product-backlog-structure.md` - Bug fix templates
 - `artifacts/phase-4-testing/testing-strategy.md` - Testing requirements
 
 **Technical References**:

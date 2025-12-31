@@ -387,7 +387,7 @@ X-RateLimit-Reset: 1640995200
 
 ## References
 
-- **Sync Architecture**: `artifacts/phase-3-integration/sync-architecture-design.md`
+- **Sync Architecture**: `../../project-management/artifacts/phase-3-integration/sync-architecture-design.md`
 - **Backend Requirements**: Post-MVP requirements
 
 ---

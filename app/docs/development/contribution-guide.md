@@ -346,9 +346,9 @@ flutter test --coverage
 
 ### Reporting Bugs
 
-Create a bug fix document in `artifacts/phase-5-management/bug-fixes/`:
+Create a bug fix document in `../../project-management/artifacts/phase-5-management/bug-fixes/`:
 
-- Use template from `artifacts/phase-5-management/product-backlog-structure.md`
+- Use template from `../../project-management/artifacts/phase-5-management/product-backlog-structure.md`
 - Include steps to reproduce
 - Describe expected vs actual behavior
 - Include environment details
@@ -378,8 +378,8 @@ Create a bug fix document in `artifacts/phase-5-management/bug-fixes/`:
 
 ## Questions?
 
-- Review project documentation in `artifacts/`
-- Check architecture documentation: `artifacts/phase-1-foundations/architecture-documentation.md`
+- Review project documentation in `../../project-management/artifacts/`
+- Check architecture documentation: `../../project-management/artifacts/phase-1-foundations/architecture-documentation.md`
 - See coding standards in repository rules
 - Ask in project discussions/chat
 

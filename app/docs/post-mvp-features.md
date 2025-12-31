@@ -23,8 +23,8 @@ Multi-device data synchronization using DreamHost PHP/MySQL backend with Slim Fr
 - **Bidirectional Sync**: Sync from server to device and device to server
 
 ### Documentation
-- `artifacts/phase-3-integration/sync-architecture-design.md` - Complete sync architecture
-- `artifacts/phase-3-integration/api-documentation.md` - API documentation
+- `../../project-management/artifacts/phase-3-integration/sync-architecture-design.md` - Complete sync architecture
+- `../../project-management/artifacts/phase-3-integration/api-documentation.md` - API documentation
 - `docs/api/api-documentation.md` - API reference
 
 ### Status
@@ -46,8 +46,8 @@ User account system with JWT authentication, allowing users to create accounts, 
 - **Password Reset**: Password recovery functionality
 
 ### Documentation
-- `artifacts/phase-3-integration/api-documentation.md` - Authentication endpoints
-- `artifacts/phase-3-integration/sync-architecture-design.md` - Auth implementation
+- `../../project-management/artifacts/phase-3-integration/api-documentation.md` - Authentication endpoints
+- `../../project-management/artifacts/phase-3-integration/sync-architecture-design.md` - Auth implementation
 
 ### Status
 **Post-MVP Phase 1** - Required for cloud sync
@@ -76,8 +76,8 @@ Cost-effective large language model API integration for personalized health insi
 - No code changes required when switching providers
 
 ### Documentation
-- `artifacts/phase-3-integration/integration-specifications.md` - LLM integration specs
-- `artifacts/requirements.md` - LLM API interface specification
+- `../../project-management/artifacts/phase-3-integration/integration-specifications.md` - LLM integration specs
+- `../../project-management/artifacts/requirements.md` - LLM API interface specification
 
 ### Status
 **Post-MVP Phase 1** - Architecture designed with abstraction layer
@@ -124,7 +124,7 @@ Comprehensive analytics module providing advanced trend analysis, predictive ana
   - Custom insights on demand
 
 ### Documentation
-- `artifacts/phase-2-features/analytics-module-specification.md` - Complete analytics spec
+- `../../project-management/artifacts/phase-2-features/analytics-module-specification.md` - Complete analytics spec
 
 ### Status
 **Post-MVP Phase 1** - Full specification complete
@@ -150,8 +150,8 @@ Integration with grocery store APIs or web scraping for current sale items and p
 - Other regional stores (extensible)
 
 ### Documentation
-- `artifacts/requirements.md` - Grocery store integration requirements
-- `artifacts/phase-2-features/nutrition-module-specification.md` - Sale-based meal planning
+- `../../project-management/artifacts/requirements.md` - Grocery store integration requirements
+- `../../project-management/artifacts/phase-2-features/nutrition-module-specification.md` - Sale-based meal planning
 
 ### Status
 **Post-MVP Phase 2** - Manual entry available in MVP, API integration deferred
@@ -170,8 +170,8 @@ Extend the Flutter application to support iOS platform in addition to Android.
 - **iOS Design Guidelines**: Follow iOS Human Interface Guidelines
 
 ### Documentation
-- `artifacts/requirements.md` - iOS support mentioned as future phase
-- `artifacts/orchestration-analysis-report/project-summary.md` - iOS in future phase
+- `../../project-management/artifacts/requirements.md` - iOS support mentioned as future phase
+- `../../project-management/artifacts/orchestration-analysis-report/project-summary.md` - iOS in future phase
 
 ### Status
 **Post-MVP Phase 2** - Android-only in MVP
@@ -276,13 +276,13 @@ Advanced content management system for recipes, exercises, and educational conte
 ## References
 
 ### Documentation Files
-- `artifacts/requirements.md` - Complete requirements and MVP decisions
-- `artifacts/phase-2-features/analytics-module-specification.md` - Analytics module
-- `artifacts/phase-3-integration/sync-architecture-design.md` - Sync architecture
-- `artifacts/phase-3-integration/integration-specifications.md` - LLM integration
-- `artifacts/phase-3-integration/api-documentation.md` - API documentation
-- `artifacts/orchestration-analysis-report/project-summary.md` - Project summary
-- `artifacts/final-product/executive-summary.md` - Executive summary
+- `../../project-management/artifacts/requirements.md` - Complete requirements and MVP decisions
+- `../../project-management/artifacts/phase-2-features/analytics-module-specification.md` - Analytics module
+- `../../project-management/artifacts/phase-3-integration/sync-architecture-design.md` - Sync architecture
+- `../../project-management/artifacts/phase-3-integration/integration-specifications.md` - LLM integration
+- `../../project-management/artifacts/phase-3-integration/api-documentation.md` - API documentation
+- `../../project-management/artifacts/orchestration-analysis-report/project-summary.md` - Project summary
+- `../../project-management/artifacts/final-product/executive-summary.md` - Executive summary
 
 ### Key Decisions
 - **MVP Scope**: Subset of core modules, no LLM, no cloud sync, no authentication

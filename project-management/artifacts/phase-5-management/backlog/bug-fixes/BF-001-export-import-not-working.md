@@ -99,7 +99,7 @@ No error messages are displayed, but files cannot be selected during import proc
 
 - `artifacts/phase-1-foundations/database-schema.md` - Export Strategy, Import Strategy sections
 - `artifacts/phase-3-integration/platform-specifications.md` - File storage section
-- `artifacts/phase-5-management/sprint/sprint-08-integration-polish.md` - Story 8.4: Data Export/Import UI
+- `../../sprints/sprint-08-integration-polish.md` - Story 8.4: Data Export/Import UI
 
 ## Technical References
 

@@ -5,9 +5,9 @@
 This document defines the process for managing the product backlog, including how items are added, updated, prioritized, and linked to sprint planning.
 
 **Reference**: 
-- Product Backlog Structure: `artifacts/phase-5-management/product-backlog-structure.md`
-- Sprint Planning Template: `artifacts/phase-5-management/sprint-planning-template.md`
-- Requirements: `artifacts/requirements.md`
+- Product Backlog Structure: `product-backlog-structure.md`
+- Sprint Planning Template: `../sprints/sprint-planning-template.md`
+- Requirements: `../../requirements.md`
 
 ## Backlog Lifecycle
 
@@ -30,7 +30,7 @@ This document defines the process for managing the product backlog, including ho
    - Use feature request template from `product-backlog-structure.md`
    - Assign unique ID (FR-XXX)
    - Fill in all required fields
-   - Save to `artifacts/phase-5-management/feature-requests/FR-XXX-feature-name.md`
+   - Save to `feature-requests/FR-XXX-feature-name.md`
 
 2. **Add to Main Backlog**:
    - Add entry to product backlog table in `product-backlog.md`
@@ -50,7 +50,7 @@ This document defines the process for managing the product backlog, including ho
    - Use bug fix template from `product-backlog-structure.md`
    - Assign unique ID (BF-XXX)
    - Fill in all required fields including steps to reproduce
-   - Save to `artifacts/phase-5-management/bug-fixes/BF-XXX-bug-description.md`
+   - Save to `bug-fixes/BF-XXX-bug-description.md`
 
 2. **Add to Main Backlog**:
    - Add entry to product backlog table
@@ -284,9 +284,9 @@ For each backlog item:
 
 ## References
 
-- **Product Backlog Structure**: `artifacts/phase-5-management/product-backlog-structure.md`
-- **Sprint Planning Template**: `artifacts/phase-5-management/sprint-planning-template.md`
-- **Requirements**: `artifacts/requirements.md` - Backlog Management Requirements
+- **Product Backlog Structure**: `product-backlog-structure.md`
+- **Sprint Planning Template**: `../sprints/sprint-planning-template.md`
+- **Requirements**: `../../requirements.md` - Backlog Management Requirements
 
 ---
 

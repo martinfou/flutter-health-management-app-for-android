@@ -475,7 +475,7 @@ If team velocity differs from target:
 ## References
 
 - **Implementation Order**: `artifacts/implementation-order.md`
-- **Sprint Planning Template**: `artifacts/phase-5-management/sprint/sprint-planning-template.md`
+- **Sprint Planning Template**: `sprint-planning-template.md`
 - **Architecture**: `artifacts/phase-1-foundations/architecture-documentation.md`
 - **Requirements**: `artifacts/requirements.md`
 

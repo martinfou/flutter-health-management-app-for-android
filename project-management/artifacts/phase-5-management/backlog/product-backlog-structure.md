@@ -4,7 +4,7 @@
 
 This document defines the structure and templates for the product backlog, including feature requests and bug fixes. The backlog is managed using markdown files with structured templates.
 
-**Reference**: Based on CRISPE Framework standards in `artifacts/requirements.md`.
+**Reference**: Based on CRISPE Framework standards in `../../requirements.md`.
 
 ## Backlog Organization
 
@@ -12,15 +12,20 @@ This document defines the structure and templates for the product backlog, inclu
 
 ```
 artifacts/phase-5-management/
-├── product-backlog.md (main backlog file)
-├── feature-requests/
-│   ├── FR-001-feature-name.md
-│   ├── FR-002-feature-name.md
-│   └── ...
-└── bug-fixes/
-    ├── BF-001-bug-description.md
-    ├── BF-002-bug-description.md
-    └── ...
+├── backlog/
+│   ├── product-backlog.md (main backlog file)
+│   ├── product-backlog-structure.md (this file)
+│   ├── backlog-management-process.md
+│   ├── feature-requests/
+│   │   ├── FR-001-feature-name.md
+│   │   ├── FR-002-feature-name.md
+│   │   └── ...
+│   └── bug-fixes/
+│       ├── BF-001-bug-description.md
+│       ├── BF-002-bug-description.md
+│       └── ...
+└── sprints/
+    └── sprint-XX-*.md
 ```
 
 ## Product Backlog Table
@@ -400,9 +405,9 @@ This is a common edge case that should be handled gracefully. Similar checks sho
 
 ## References
 
-- **Requirements**: `artifacts/requirements.md` - Backlog Management Requirements
-- **CRISPE Framework**: `artifacts/requirements.md` - CRISPE Framework sections
-- **Sprint Planning**: `artifacts/phase-5-management/sprint-planning-template.md`
+- **Requirements**: `../../requirements.md` - Backlog Management Requirements
+- **CRISPE Framework**: `../../requirements.md` - CRISPE Framework sections
+- **Sprint Planning**: `../sprints/sprint-planning-template.md`
 
 ---
 

@@ -215,7 +215,7 @@ For release builds, configure app signing in:
 - `android/app/build.gradle.kts`
 - Create `android/key.properties` (not committed to git)
 
-See `artifacts/deployment-guide.md` for detailed signing instructions.
+See `../../project-management/artifacts/deployment-guide.md` for detailed signing instructions.
 
 ## Architecture Guidelines
 
@@ -366,14 +366,14 @@ flutter pub run build_runner build --delete-conflicting-outputs
 - **Dart Documentation**: https://dart.dev/guides
 - **Riverpod Documentation**: https://riverpod.dev/
 - **Hive Documentation**: https://docs.hivedb.dev/
-- **Project Architecture**: `artifacts/phase-1-foundations/architecture-documentation.md`
-- **Testing Strategy**: `artifacts/phase-4-testing/testing-strategy.md`
+- **Project Architecture**: `../../project-management/artifacts/phase-1-foundations/architecture-documentation.md`
+- **Testing Strategy**: `../../project-management/artifacts/phase-4-testing/testing-strategy.md`
 
 ## Getting Help
 
-- Review project documentation in `artifacts/`
-- Check `artifacts/phase-1-foundations/architecture-documentation.md` for architecture details
-- See `artifacts/phase-4-testing/testing-strategy.md` for testing guidelines
+- Review project documentation in `../../project-management/artifacts/`
+- Check `../../project-management/artifacts/phase-1-foundations/architecture-documentation.md` for architecture details
+- See `../../project-management/artifacts/phase-4-testing/testing-strategy.md` for testing guidelines
 - Refer to Flutter and Dart official documentation
 
 ---
