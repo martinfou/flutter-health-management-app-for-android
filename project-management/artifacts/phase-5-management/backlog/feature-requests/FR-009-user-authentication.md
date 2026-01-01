@@ -1,11 +1,11 @@
 # Feature Request: FR-009 - User Authentication
 
-**Status**: ⭕ Not Started  
+**Status**: ⏳ In Progress  
 **Priority**: 🟠 High  
 **Story Points**: 13  
 **Created**: 2025-01-03  
-**Updated**: 2025-01-03  
-**Assigned Sprint**: Backlog (Post-MVP Phase 1)
+**Updated**: 2025-12-31  
+**Assigned Sprint**: [Sprint 14](../sprints/sprint-14-user-authentication.md)
 
 ## Description
 
