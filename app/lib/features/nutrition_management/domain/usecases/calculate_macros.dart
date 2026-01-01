@@ -71,12 +71,8 @@ class CalculateMacrosUseCase {
       totalCalories += meal.calories;
     }
 
-    // Validate net carbs limit
-    if (totalNetCarbs > 40.0) {
-      return Left(ValidationFailure(
-        'Net carbs exceed 40g limit. Current: ${totalNetCarbs.toStringAsFixed(1)}g',
-      ));
-    }
+    // Note: Net carbs 40g limit is a guideline, not a hard validation rule.
+    // Calculation should proceed even if total exceeds 40g, with warnings displayed in UI.
 
     // Calculate percentages by calories
     final proteinPercent = totalCalories > 0

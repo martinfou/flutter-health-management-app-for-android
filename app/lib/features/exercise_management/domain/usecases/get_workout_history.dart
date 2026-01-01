@@ -52,8 +52,11 @@ class GetWorkoutHistoryUseCase {
               .toList();
         }
 
-        // Sort by date (newest first)
-        filteredExercises.sort((a, b) => b.date.compareTo(a.date));
+        // Filter out templates (date == null) and sort by date (newest first)
+        filteredExercises = filteredExercises
+            .where((e) => e.date != null)
+            .toList();
+        filteredExercises.sort((a, b) => b.date!.compareTo(a.date!));
 
         return Right(filteredExercises);
       },

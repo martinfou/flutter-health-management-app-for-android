@@ -105,12 +105,8 @@ class LogMealUseCase {
       return ValidationFailure('Meal name cannot be empty');
     }
 
-    // Validate net carbs limit (40g absolute maximum)
-    if (netCarbs > 40.0) {
-      return ValidationFailure(
-        'Net carbs exceed 40g limit. Current: ${netCarbs.toStringAsFixed(1)}g',
-      );
-    }
+    // Note: Net carbs 40g limit is a guideline, not a hard validation rule.
+    // Users should be able to log meals exceeding 40g with a warning displayed in UI.
 
     // Validate calories are non-negative (individual meals can be any positive value)
     // Daily calorie limits should be checked at the daily summary level, not per meal

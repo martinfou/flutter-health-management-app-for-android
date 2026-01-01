@@ -274,7 +274,7 @@ class ExportService {
         'reps': obj.reps,
         'weight': obj.weight,
         'distance': obj.distance,
-        'date': obj.date.toIso8601String(),
+        'date': obj.date?.toIso8601String(), // Nullable for template exercises
         'notes': obj.notes,
         'createdAt': obj.createdAt.toIso8601String(),
         'updatedAt': obj.updatedAt.toIso8601String(),

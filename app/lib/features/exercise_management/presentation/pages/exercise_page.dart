@@ -11,6 +11,7 @@ import 'package:health_app/core/widgets/loading_indicator.dart';
 import 'package:health_app/core/widgets/error_widget.dart' as core_error;
 import 'package:health_app/features/exercise_management/domain/entities/exercise.dart';
 import 'package:health_app/features/exercise_management/presentation/providers/exercise_providers.dart';
+import 'package:health_app/features/exercise_management/presentation/pages/exercise_library_page.dart';
 import 'package:health_app/features/exercise_management/presentation/pages/workout_plan_page.dart';
 import 'package:health_app/features/exercise_management/presentation/pages/workout_logging_page.dart';
 import 'package:health_app/features/exercise_management/presentation/widgets/workout_card_widget.dart';
@@ -37,6 +38,19 @@ class ExercisePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exercise'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.library_books),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ExerciseLibraryPage(),
+                ),
+              );
+            },
+            tooltip: 'Exercise Library',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
@@ -226,8 +240,10 @@ class ExercisePage extends ConsumerWidget {
                     uniqueExercises[exercise.id] = exercise;
                   }
                 }
-                final recentUnique = uniqueExercises.values.toList()
-                  ..sort((a, b) => b.date.compareTo(a.date));
+                final recentUnique = uniqueExercises.values
+                    .where((e) => e.date != null) // Filter out templates
+                    .toList()
+                  ..sort((a, b) => b.date!.compareTo(a.date!));
                 return ExerciseListWidget(
                   exercises: recentUnique.take(5).toList(),
                 );

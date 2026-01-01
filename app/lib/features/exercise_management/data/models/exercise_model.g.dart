@@ -28,7 +28,7 @@ class ExerciseModelAdapter extends TypeAdapter<ExerciseModel> {
       ..reps = fields[8] as int?
       ..weight = fields[9] as double?
       ..distance = fields[10] as double?
-      ..date = fields[11] as DateTime
+      ..date = fields[11] as DateTime?
       ..notes = fields[12] as String?
       ..createdAt = fields[13] as DateTime
       ..updatedAt = fields[14] as DateTime;

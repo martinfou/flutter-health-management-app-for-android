@@ -82,7 +82,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     if (exercise.distance != null && exercise.distance! <= 0) {
       return Left(ValidationFailure('Distance must be greater than 0 if provided'));
     }
-    if (exercise.date.isAfter(DateTime.now())) {
+    // Only validate date if it's provided (templates have null date)
+    if (exercise.date != null && exercise.date!.isAfter(DateTime.now())) {
       return Left(ValidationFailure('Date cannot be in the future'));
     }
 

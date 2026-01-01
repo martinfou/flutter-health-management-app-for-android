@@ -208,9 +208,10 @@ void main() {
         (exercises) {
           expect(exercises, isA<List<Exercise>>());
           // All exercises should be within date range
+          // Workout history only includes exercises with dates (templates filtered out)
           for (final exercise in exercises) {
-            expect(exercise.date.isAfter(startDate.subtract(Duration(days: 1))), true);
-            expect(exercise.date.isBefore(endDate.add(Duration(days: 1))), true);
+            expect(exercise.date!.isAfter(startDate.subtract(Duration(days: 1))), true);
+            expect(exercise.date!.isBefore(endDate.add(Duration(days: 1))), true);
           }
         },
       );

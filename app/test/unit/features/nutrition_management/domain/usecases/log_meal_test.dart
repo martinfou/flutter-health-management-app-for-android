@@ -223,27 +223,28 @@ void main() {
       );
     });
 
-    test('should return ValidationFailure when net carbs exceed 40g', () async {
+    test('should allow saving meal when net carbs exceed 40g (guideline, not hard limit)', () async {
       // Act
+      // Calories: 20*4 + 10*9 + 45*4 = 80 + 90 + 180 = 350
       final result = await useCase.call(
         userId: 'user-id',
         mealType: MealType.breakfast,
         name: 'High Carb Meal',
         protein: 20.0,
         fats: 10.0,
-        netCarbs: 45.0, // Exceeds 40g limit
-        calories: 800.0, // Valid calories for testing net carbs validation
+        netCarbs: 45.0, // Exceeds 40g guideline (but should still save)
+        calories: 350.0, // Matches calculated: 20*4 + 10*9 + 45*4 = 350
         ingredients: ['bread'],
       );
 
-      // Assert
-      expect(result.isLeft(), true);
+      // Assert - should succeed (40g is a guideline, not a hard validation)
+      expect(result.isRight(), true);
       result.fold(
-        (failure) {
-          expect(failure, isA<ValidationFailure>());
-          expect(failure.message, contains('Net carbs exceed 40g limit'));
+        (failure) => fail('Should allow saving meal with netCarbs > 40g: ${failure.message}'),
+        (meal) {
+          expect(meal.netCarbs, 45.0);
+          expect(meal.name, 'High Carb Meal');
         },
-        (_) => fail('Should return ValidationFailure'),
       );
     });
 
