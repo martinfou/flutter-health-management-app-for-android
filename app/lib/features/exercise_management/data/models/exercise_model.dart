@@ -54,9 +54,9 @@ class ExerciseModel extends HiveObject {
   @HiveField(10)
   double? distance;
 
-  /// Date of the exercise
+  /// Date of the exercise (nullable for template exercises)
   @HiveField(11)
-  late DateTime date;
+  DateTime? date;
 
   /// Optional notes
   @HiveField(12)

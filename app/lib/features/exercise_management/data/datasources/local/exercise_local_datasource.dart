@@ -62,10 +62,12 @@ class ExerciseLocalDataSource {
       final models = box.values
           .where((model) {
             if (model.userId != userId) return false;
+            // Exclude template exercises (null date)
+            if (model.date == null) return false;
             final modelDate = DateTime(
-              model.date.year,
-              model.date.month,
-              model.date.day,
+              model.date!.year,
+              model.date!.month,
+              model.date!.day,
             );
             return modelDate.isAfter(start.subtract(const Duration(days: 1))) &&
                 modelDate.isBefore(end.add(const Duration(days: 1)));
@@ -91,10 +93,12 @@ class ExerciseLocalDataSource {
       final models = box.values
           .where((model) {
             if (model.userId != userId) return false;
+            // Exclude template exercises (null date)
+            if (model.date == null) return false;
             final modelDate = DateTime(
-              model.date.year,
-              model.date.month,
-              model.date.day,
+              model.date!.year,
+              model.date!.month,
+              model.date!.day,
             );
             return modelDate == targetDate;
           })

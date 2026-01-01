@@ -75,11 +75,8 @@ class NutritionRepositoryImpl implements NutritionRepository {
     if (meal.netCarbs < 0) {
       return Left(ValidationFailure('Net carbs cannot be negative'));
     }
-    if (meal.netCarbs >= 40) {
-      return Left(
-        ValidationFailure('Net carbs must be less than 40g for low-carb diet'),
-      );
-    }
+    // Note: Net carbs 40g limit is a guideline, not a hard validation rule.
+    // Users should be able to save meals exceeding 40g with a warning displayed in UI.
     if (meal.calories < 0) {
       return Left(ValidationFailure('Calories cannot be negative'));
     }

@@ -234,7 +234,7 @@ void main() {
       );
     });
 
-    test('should return validation failure when net carbs >= 40g', () async {
+    test('should allow saving meal when net carbs >= 40g (guideline, not hard limit)', () async {
       // Arrange
       final meal = Meal(
         id: 'test-id',
@@ -244,7 +244,7 @@ void main() {
         name: 'Test Meal',
         protein: 30.0,
         fats: 25.0,
-        netCarbs: 40.0, // >= 40g
+        netCarbs: 40.0, // >= 40g guideline (but should still save)
         calories: 305.0,
         ingredients: [],
         createdAt: DateTime.now(),
@@ -253,14 +253,44 @@ void main() {
       // Act
       final result = await repository.saveMeal(meal);
 
-      // Assert
-      expect(result.isLeft(), isTrue);
+      // Assert - should succeed (40g is a guideline, not a hard validation)
+      expect(result.isRight(), isTrue);
       result.fold(
-        (failure) {
-          expect(failure, isA<ValidationFailure>());
-          expect(failure.message, contains('Net carbs must be less than 40g'));
+        (failure) => fail('Should allow saving meal with netCarbs >= 40g: ${failure.message}'),
+        (savedMeal) {
+          expect(savedMeal.netCarbs, 40.0);
+          expect(savedMeal.name, 'Test Meal');
         },
-        (_) => fail('Should fail'),
+      );
+    });
+
+    test('should allow saving meal when net carbs > 40g', () async {
+      // Arrange
+      final meal = Meal(
+        id: 'test-id-2',
+        userId: 'user-1',
+        date: DateTime.now(),
+        mealType: MealType.lunch,
+        name: 'High Carb Meal',
+        protein: 20.0,
+        fats: 15.0,
+        netCarbs: 50.0, // > 40g guideline (but should still save)
+        calories: 395.0,
+        ingredients: [],
+        createdAt: DateTime.now(),
+      );
+
+      // Act
+      final result = await repository.saveMeal(meal);
+
+      // Assert - should succeed (40g is a guideline, not a hard validation)
+      expect(result.isRight(), isTrue);
+      result.fold(
+        (failure) => fail('Should allow saving meal with netCarbs > 40g: ${failure.message}'),
+        (savedMeal) {
+          expect(savedMeal.netCarbs, 50.0);
+          expect(savedMeal.name, 'High Carb Meal');
+        },
       );
     });
 

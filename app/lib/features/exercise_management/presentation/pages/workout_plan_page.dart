@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Project
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/custom_button.dart';
+import 'package:health_app/features/exercise_management/domain/entities/exercise.dart';
 import 'package:health_app/features/exercise_management/domain/entities/workout_plan.dart';
 import 'package:health_app/features/exercise_management/presentation/providers/exercise_providers.dart';
+import 'package:health_app/features/exercise_management/presentation/widgets/exercise_selection_dialog.dart';
 
 /// Workout plan page for creating and managing workout plans
 class WorkoutPlanPage extends ConsumerStatefulWidget {
@@ -26,7 +28,8 @@ class _WorkoutPlanPageState extends ConsumerState<WorkoutPlanPage> {
   final _durationController = TextEditingController(text: '4');
   
   final Set<String> _selectedDays = {};
-  final Map<String, List<String>> _dayExercises = {};
+  final Map<String, List<String>> _dayExercises = {}; // Stores Exercise IDs
+  final Map<String, Exercise> _exerciseCache = {}; // Cache of Exercise ID -> Exercise entity
   final Map<String, String?> _dayFocus = {};
   final Map<String, int?> _dayDuration = {};
   
@@ -73,14 +76,17 @@ class _WorkoutPlanPageState extends ConsumerState<WorkoutPlanPage> {
   }
 
   Future<void> _addExerciseToDay(String day) async {
-    final result = await showDialog<String>(
+    final result = await showDialog<Exercise>(
       context: context,
-      builder: (context) => _AddExerciseDialog(),
+      builder: (context) => const ExerciseSelectionDialog(),
     );
 
-    if (result != null && result.trim().isNotEmpty) {
+    if (result != null) {
       setState(() {
-        _dayExercises[day] = [...(_dayExercises[day] ?? []), result.trim()];
+        // Store Exercise ID
+        _dayExercises[day] = [...(_dayExercises[day] ?? []), result.id];
+        // Cache Exercise entity for display
+        _exerciseCache[result.id] = result;
         _errorMessage = null;
         _successMessage = null;
       });
@@ -398,7 +404,8 @@ class _WorkoutPlanPageState extends ConsumerState<WorkoutPlanPage> {
                         ..._selectedDays.map((day) {
                           return _DayScheduleCard(
                             day: day,
-                            exercises: _dayExercises[day] ?? [],
+                            exerciseIds: _dayExercises[day] ?? [],
+                            exerciseCache: _exerciseCache,
                             focus: _dayFocus[day],
                             duration: _dayDuration[day],
                             onAddExercise: () => _addExerciseToDay(day),
@@ -489,7 +496,8 @@ class _WorkoutPlanPageState extends ConsumerState<WorkoutPlanPage> {
 /// Day schedule card widget
 class _DayScheduleCard extends StatelessWidget {
   final String day;
-  final List<String> exercises;
+  final List<String> exerciseIds;
+  final Map<String, Exercise> exerciseCache;
   final String? focus;
   final int? duration;
   final VoidCallback onAddExercise;
@@ -499,7 +507,8 @@ class _DayScheduleCard extends StatelessWidget {
 
   const _DayScheduleCard({
     required this.day,
-    required this.exercises,
+    required this.exerciseIds,
+    required this.exerciseCache,
     required this.focus,
     required this.duration,
     required this.onAddExercise,
@@ -563,7 +572,7 @@ class _DayScheduleCard extends StatelessWidget {
                 avatar: const Icon(Icons.timer, size: 16),
               ),
             ],
-            if (exercises.isEmpty)
+            if (exerciseIds.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(UIConstants.spacingMd),
                 child: Text(
@@ -574,12 +583,13 @@ class _DayScheduleCard extends StatelessWidget {
                 ),
               )
             else
-              ...exercises.asMap().entries.map((entry) {
+              ...exerciseIds.asMap().entries.map((entry) {
                 final index = entry.key;
-                final exercise = entry.value;
+                final exerciseId = entry.value;
+                final exercise = exerciseCache[exerciseId];
                 return ListTile(
                   dense: true,
-                  title: Text(exercise),
+                  title: Text(exercise?.name ?? 'Unknown Exercise (ID: $exerciseId)'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () => onRemoveExercise(index),

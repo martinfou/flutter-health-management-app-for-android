@@ -42,12 +42,13 @@ class ExerciseListWidget extends StatelessWidget {
                   Text('Duration: ${exercise.duration} min'),
                 if (exercise.distance != null)
                   Text('Distance: ${exercise.distance} km'),
-                Text(
-                  DateFormat('MMM d, yyyy').format(exercise.date),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                if (exercise.date != null)
+                  Text(
+                    DateFormat('MMM d, yyyy').format(exercise.date!),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
               ],
             ),
           );

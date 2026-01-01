@@ -38,8 +38,8 @@ class Exercise {
   /// Distance in kilometers (nullable)
   final double? distance;
 
-  /// Date of the exercise
-  final DateTime date;
+  /// Date of the exercise (nullable for template exercises)
+  final DateTime? date;
 
   /// Optional notes
   final String? notes;
@@ -63,7 +63,7 @@ class Exercise {
     this.reps,
     this.weight,
     this.distance,
-    required this.date,
+    this.date,
     this.notes,
     required this.createdAt,
     required this.updatedAt,

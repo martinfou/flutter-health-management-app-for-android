@@ -124,7 +124,8 @@ void main() {
         (history) {
           expect(history.length, 2);
           // Should be sorted by date (newest first)
-          expect(history[0].date.isAfter(history[1].date), true);
+          // Workout history only includes exercises with dates (templates filtered out)
+          expect(history[0].date!.isAfter(history[1].date!), true);
         },
       );
       expect(mockRepository.lastUserId, 'user-id');
@@ -341,10 +342,11 @@ void main() {
           (failure) => fail('Should not return failure'),
           (history) {
             expect(history.length, 1);
+            // Workout history only includes exercises with dates (templates filtered out)
             final exerciseDate = DateTime(
-              history[0].date.year,
-              history[0].date.month,
-              history[0].date.day,
+              history[0].date!.year,
+              history[0].date!.month,
+              history[0].date!.day,
             );
             final expectedDate = DateTime(
               targetDate.year,
