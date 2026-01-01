@@ -10,6 +10,7 @@ import 'package:health_app/core/pages/main_navigation_page.dart';
 import 'package:health_app/core/pages/login_page.dart';
 import 'package:health_app/core/providers/database_initializer.dart';
 import 'package:health_app/core/providers/auth_provider.dart';
+import 'package:health_app/core/constants/auth_config.dart';
 import 'package:health_app/core/errors/error_handler.dart';
 
 void main() async {
@@ -42,6 +43,20 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // If authentication is disabled, skip auth check and go directly to main navigation
+    if (!AuthConfig.isEnabled(ref)) {
+      return MaterialApp(
+        title: 'Health Management App',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        home: const MainNavigationPage(),
+        onGenerateRoute: AppRouter.generateRoute,
+        initialRoute: AppRoutes.home,
+      );
+    }
+
     // Watch authentication state to determine initial route
     final authState = ref.watch(authStateProvider);
 

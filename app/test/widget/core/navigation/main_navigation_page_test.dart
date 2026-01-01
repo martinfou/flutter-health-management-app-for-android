@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:health_app/core/pages/main_navigation_page.dart';
 import 'package:health_app/core/data/models/user_preferences_model.dart';
 import 'package:health_app/core/entities/user_preferences.dart';
+import 'package:health_app/core/constants/auth_config.dart';
 
 void main() {
   group('MainNavigationPage', () {
@@ -75,12 +76,19 @@ void main() {
     testWidgets('should display bottom navigation bar', (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            // Disable authentication for testing
+            authEnabledProvider.overrideWith((ref) => false),
+          ],
+          child: const MaterialApp(
             home: MainNavigationPage(),
           ),
         ),
       );
+
+      // Wait for initial load
+      await tester.pumpAndSettle();
 
       // Assert
       expect(find.byType(NavigationBar), findsOneWidget);
@@ -89,12 +97,19 @@ void main() {
     testWidgets('should display all navigation destinations', (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            // Disable authentication for testing
+            authEnabledProvider.overrideWith((ref) => false),
+          ],
+          child: const MaterialApp(
             home: MainNavigationPage(),
           ),
         ),
       );
+
+      // Wait for initial load
+      await tester.pumpAndSettle();
 
       // Assert - check for navigation destination labels in NavigationBar
       // Use find.byType to find NavigationBar first, then check for labels within it
@@ -113,12 +128,19 @@ void main() {
     testWidgets('should switch pages when navigation item is tapped', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            // Disable authentication for testing
+            authEnabledProvider.overrideWith((ref) => false),
+          ],
+          child: const MaterialApp(
             home: MainNavigationPage(),
           ),
         ),
       );
+
+      // Wait for initial load
+      await tester.pumpAndSettle();
 
       // Initially should show Home page (first page)
       expect(find.text('Health Tracker'), findsOneWidget);

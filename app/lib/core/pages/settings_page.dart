@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Project
 import 'package:health_app/core/constants/ui_constants.dart';
+import 'package:health_app/core/constants/auth_config.dart';
 import 'package:health_app/core/navigation/app_router.dart';
 import 'package:health_app/core/providers/user_preferences_provider.dart';
 import 'package:health_app/core/pages/user_profile_page.dart';
@@ -41,6 +42,8 @@ class SettingsPage extends ConsumerWidget {
               );
             },
           ),
+          // Authentication Toggle (Development/Testing)
+          _buildAuthToggle(context, ref),
           const Divider(),
 
           // Behavioral Support Section
@@ -213,6 +216,39 @@ class SettingsPage extends ConsumerWidget {
                 color: Theme.of(context).colorScheme.error,
               ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAuthToggle(BuildContext context, WidgetRef ref) {
+    final isAuthEnabled = ref.watch(authEnabledProvider);
+
+    return SwitchListTile(
+      title: const Text('Authentication'),
+      subtitle: Text(
+        isAuthEnabled
+            ? 'Login required to access app'
+            : 'Authentication disabled (development mode)',
+      ),
+      value: isAuthEnabled,
+      onChanged: (value) {
+        ref.read(authEnabledProvider.notifier).state = value;
+        // Show a snackbar to inform user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value
+                  ? 'Authentication enabled. Please restart the app.'
+                  : 'Authentication disabled. App will skip login.',
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        // Note: User may need to restart app for full effect
+        // For immediate effect, we could navigate, but that's disruptive
+      },
+      secondary: Icon(
+        isAuthEnabled ? Icons.lock : Icons.lock_open,
       ),
     );
   }

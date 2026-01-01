@@ -1,6 +1,161 @@
 // Dart SDK
 import 'dart:core';
 
+// Project
+import 'package:health_app/core/constants/health_constants.dart';
+
+/// General validation utilities for health metrics
+class ValidationUtils {
+  ValidationUtils._();
+
+  /// Validate weight in kilograms
+  static String? validateWeightKg(double? weight) {
+    if (weight == null) {
+      return 'Weight is required';
+    }
+    if (weight < HealthConstants.minWeightKg) {
+      return 'Weight must be at least ${HealthConstants.minWeightKg} kg';
+    }
+    if (weight > HealthConstants.maxWeightKg) {
+      return 'Weight must not exceed ${HealthConstants.maxWeightKg} kg';
+    }
+    return null;
+  }
+
+  /// Validate weight in pounds
+  static String? validateWeightLbs(double? weight) {
+    if (weight == null) {
+      return 'Weight is required';
+    }
+    // Convert to kg for validation
+    final weightKg = weight / 2.20462;
+    return validateWeightKg(weightKg);
+  }
+
+  /// Validate height in centimeters
+  static String? validateHeightCm(double? height) {
+    if (height == null) {
+      return 'Height is required';
+    }
+    if (height < HealthConstants.minHeightCm) {
+      return 'Height must be at least ${HealthConstants.minHeightCm} cm';
+    }
+    return null;
+  }
+
+  /// Validate height in inches
+  static String? validateHeightInches(double? height) {
+    if (height == null) {
+      return 'Height is required';
+    }
+    // Convert to cm for validation
+    final heightCm = height * 2.54;
+    return validateHeightCm(heightCm);
+  }
+
+  /// Validate resting heart rate
+  static String? validateRestingHeartRate(int? heartRate) {
+    if (heartRate == null) {
+      return 'Resting heart rate is required';
+    }
+    if (heartRate < HealthConstants.minRestingHeartRate) {
+      return 'Resting heart rate must be at least ${HealthConstants.minRestingHeartRate} BPM';
+    }
+    if (heartRate > HealthConstants.maxRestingHeartRate) {
+      return 'Resting heart rate must not exceed ${HealthConstants.maxRestingHeartRate} BPM';
+    }
+    return null;
+  }
+
+  /// Validate sleep quality
+  static String? validateSleepQuality(int? quality) {
+    if (quality == null) {
+      return 'Sleep quality is required';
+    }
+    if (quality < HealthConstants.minSleepQuality) {
+      return 'Sleep quality must be at least ${HealthConstants.minSleepQuality}';
+    }
+    if (quality > HealthConstants.maxSleepQuality) {
+      return 'Sleep quality must not exceed ${HealthConstants.maxSleepQuality}';
+    }
+    return null;
+  }
+
+  /// Validate daily calories
+  static String? validateDailyCalories(int? calories) {
+    if (calories == null) {
+      return 'Calories are required';
+    }
+    if (calories < HealthConstants.minDailyCalories) {
+      return 'Calories must be at least ${HealthConstants.minDailyCalories}';
+    }
+    return null;
+  }
+
+  /// Validate macro percentage
+  static String? validateMacroPercentage(double? percentage) {
+    if (percentage == null) {
+      return 'Percentage is required';
+    }
+    if (percentage < HealthConstants.minProteinPercentage) {
+      return 'Percentage must be at least ${HealthConstants.minProteinPercentage}%';
+    }
+    return null;
+  }
+
+  /// Validate macro percentages sum to approximately 100%
+  static String? validateMacroPercentagesSum(
+    double? protein,
+    double? carbs,
+    double? fat,
+  ) {
+    if (protein == null || carbs == null || fat == null) {
+      return 'All macro percentages are required';
+    }
+    final sum = protein + carbs + fat;
+    const tolerance = 5.0; // 5% tolerance
+    if ((sum - 100.0).abs() > tolerance) {
+      return 'Macro percentages must sum to approximately 100% (current: ${sum.toStringAsFixed(1)}%)';
+    }
+    return null;
+  }
+
+  /// Validate value is not null
+  static String? validateNotNull<T>(T? value, String fieldName) {
+    if (value == null) {
+      return '$fieldName is required';
+    }
+    return null;
+  }
+
+  /// Validate string is not empty
+  static String? validateNotEmpty(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName is required';
+    }
+    return null;
+  }
+
+  /// Validate string length
+  static String? validateStringLength(
+    String? value,
+    String fieldName,
+    int minLength,
+    int maxLength,
+  ) {
+    if (value == null) {
+      return '$fieldName is required';
+    }
+    if (value.length < minLength) {
+      return '$fieldName must be at least $minLength characters';
+    }
+    if (value.length > maxLength) {
+      return '$fieldName must not exceed $maxLength characters';
+    }
+    return null;
+  }
+}
+
 /// Email validation utility
 class EmailValidator {
   EmailValidator._();

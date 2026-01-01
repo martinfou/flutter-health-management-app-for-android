@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Project
 import 'package:health_app/core/providers/auth_provider.dart';
+import 'package:health_app/core/constants/auth_config.dart';
 import 'package:health_app/core/pages/login_page.dart';
 
 /// Protected route wrapper that requires authentication
@@ -17,6 +18,11 @@ class ProtectedRoute extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // If authentication is disabled, allow access without checking
+    if (!AuthConfig.isEnabled(ref)) {
+      return child;
+    }
+
     final authState = ref.watch(authStateProvider);
 
     // Show loading while checking authentication
