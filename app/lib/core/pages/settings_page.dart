@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/navigation/app_router.dart';
 import 'package:health_app/core/providers/user_preferences_provider.dart';
+import 'package:health_app/core/pages/user_profile_page.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/habit_tracking_page.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/behavioral_support_page.dart';
 
@@ -25,6 +26,23 @@ class SettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
         children: [
+          // Account Section
+          _buildSectionHeader(context, 'Account'),
+          _buildSettingsTile(
+            context,
+            title: 'Profile',
+            subtitle: 'View and edit your profile',
+            icon: Icons.person,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const UserProfilePage(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+
           // Behavioral Support Section
           _buildSectionHeader(context, 'Behavioral Support'),
           _buildSettingsTile(

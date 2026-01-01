@@ -117,3 +117,9 @@ class CacheFailure extends Failure {
   CacheFailure(super.message);
 }
 
+/// Authentication failure for authentication-related errors
+class AuthenticationFailure extends Failure {
+  /// Creates an AuthenticationFailure with a message
+  AuthenticationFailure(super.message);
+}
+

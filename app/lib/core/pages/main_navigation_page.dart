@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/pages/home_page.dart';
 import 'package:health_app/core/pages/analytics_page.dart';
 import 'package:health_app/core/pages/settings_page.dart';
+import 'package:health_app/core/widgets/protected_route.dart';
 import 'package:health_app/features/health_tracking/presentation/pages/health_tracking_page.dart';
 import 'package:health_app/features/nutrition_management/presentation/pages/nutrition_page.dart';
 import 'package:health_app/features/exercise_management/presentation/pages/exercise_page.dart';
@@ -82,22 +83,24 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationIndexProvider);
 
-    return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          ref.read(navigationIndexProvider.notifier).state = index;
-        },
-        destinations: NavigationItem.values.map((item) {
-          return NavigationDestination(
-            icon: Icon(item.icon),
-            label: item.label,
-          );
-        }).toList(),
+    return ProtectedRoute(
+      child: Scaffold(
+        body: IndexedStack(
+          index: currentIndex,
+          children: _pages,
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: currentIndex,
+          onDestinationSelected: (index) {
+            ref.read(navigationIndexProvider.notifier).state = index;
+          },
+          destinations: NavigationItem.values.map((item) {
+            return NavigationDestination(
+              icon: Icon(item.icon),
+              label: item.label,
+            );
+          }).toList(),
+        ),
       ),
     );
   }

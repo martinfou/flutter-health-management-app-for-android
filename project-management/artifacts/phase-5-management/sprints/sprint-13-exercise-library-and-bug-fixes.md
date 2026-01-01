@@ -145,10 +145,10 @@ This sprint implements the following items from the product backlog:
 
 **Priority**: 🟠 High
 
-**Status**: ⭕ Not Started
+**Status**: ✅ Completed
 
 **Implementation Notes**:
-- Exercise entity design decision needed: Make `Exercise.date` optional for templates (Option A - recommended), OR create separate `ExerciseTemplate` entity (Option B), OR use special date value (Option C)
+- Exercise entity design decision completed: Made `Exercise.date` optional for templates (Option A - implemented)
 - Exercise selection dialog should be modal dialog with "Create New" button that opens form dialog
 - Exercise deletion should warn user but allow deletion if exercise is used in workout plans
 - Data migration strategy: On first access, attempt to match exercise names to Exercise entities, create exercises for unmatched names
@@ -188,15 +188,15 @@ This sprint implements the following items from the product backlog:
 **User Story**: As a user, I want to save food entries with net carbs exceeding 40g with a warning, so that I can log my actual food intake even when it exceeds the low-carb guideline.
 
 **Acceptance Criteria**:
-- [ ] Users can save food entries with netCarbs > 40g without validation error
-- [ ] Warning message is displayed when netCarbs exceed 40g (e.g., "Warning: Net carbs exceed 40g limit. Current: 45.0g")
-- [ ] Warning is non-blocking (user can acknowledge and proceed)
-- [ ] Food entry is saved successfully despite exceeding 40g limit
-- [ ] Warning appears in macro tracking displays (already partially implemented)
-- [ ] Hard validation removed from `LogMealUseCase._validateMeal()`
-- [ ] Hard validation removed from `NutritionRepositoryImpl.saveMeal()`
-- [ ] Unit tests updated to verify meals with netCarbs > 40g can be saved
-- [ ] Warning display logic tested
+- [x] ✅ Users can save food entries with netCarbs > 40g without validation error
+- [x] ✅ Warning message is displayed when netCarbs exceed 40g (e.g., "Warning: Net carbs exceed 40g limit. Current: 45.0g")
+- [x] ✅ Warning is non-blocking (user can acknowledge and proceed)
+- [x] ✅ Food entry is saved successfully despite exceeding 40g limit
+- [x] ✅ Warning appears in macro tracking displays (already partially implemented)
+- [x] ✅ Hard validation removed from `LogMealUseCase._validateMeal()`
+- [x] ✅ Hard validation removed from `NutritionRepositoryImpl.saveMeal()`
+- [x] ✅ Unit tests updated to verify meals with netCarbs > 40g can be saved
+- [x] ✅ Warning display logic tested
 
 **Reference Documents**:
 - `../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md` - Bug fix specification
@@ -215,7 +215,7 @@ This sprint implements the following items from the product backlog:
 
 **Priority**: 🟠 High
 
-**Status**: ⭕ Not Started
+**Status**: ✅ Completed
 
 **Implementation Notes**:
 - The 40g carb limit is a guideline for low-carb diet tracking, not a hard requirement
@@ -261,14 +261,14 @@ This sprint implements the following items from the product backlog:
 **Progress Summary**:
 
 ### Story 13.1: Exercise Library and Workout Plan Integration
-- **Status**: ⭕ Not Started
-- **Progress**: 0/19 tasks completed (0%)
-- **Key Decisions Needed**: Exercise entity design for templates (T-401)
+- **Status**: ✅ Completed
+- **Progress**: 19/19 tasks completed (100%)
+- **Key Decisions**: Exercise entity design for templates completed (T-401)
 
 ### Story 13.2: Food Save Blocked by 40g Carb Limit Validation
-- **Status**: ⭕ Not Started
-- **Progress**: 0/6 tasks completed (0%)
-- **Key Decisions**: None - straightforward bug fix
+- **Status**: ✅ Completed
+- **Progress**: 6/6 tasks completed (100%)
+- **Key Decisions**: None - straightforward bug fix completed
 
 **Sprint Review Notes**:
 - [Notes from sprint review]
@@ -344,7 +344,7 @@ This sprint implements the following items from the product backlog:
 
 ---
 
-**Last Updated**: 2025-01-27  
+**Last Updated**: 2025-12-31  
 **Version**: 1.0  
-**Status**: Sprint Planning Complete
+**Status**: ✅ Sprint Completed
 

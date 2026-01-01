@@ -12,6 +12,10 @@ import 'package:health_app/core/pages/settings_page.dart';
 import 'package:health_app/core/pages/analytics_page.dart';
 import 'package:health_app/core/pages/export_page.dart';
 import 'package:health_app/core/pages/import_page.dart';
+import 'package:health_app/core/pages/login_page.dart';
+import 'package:health_app/core/pages/registration_page.dart';
+import 'package:health_app/core/pages/user_profile_page.dart';
+import 'package:health_app/core/pages/password_reset_request_page.dart';
 
 /// Route names for navigation
 class AppRoutes {
@@ -27,6 +31,10 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String export = '/export';
   static const String import = '/import';
+  static const String login = '/login';
+  static const String register = '/register';
+  static const String profile = '/profile';
+  static const String passwordReset = '/password-reset';
 }
 
 /// App router configuration for navigation
@@ -84,6 +92,26 @@ class AppRouter {
       case AppRoutes.import:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const ImportPage(),
+          settings: settings,
+        );
+      case AppRoutes.login:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const LoginPage(),
+          settings: settings,
+        );
+      case AppRoutes.register:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const RegistrationPage(),
+          settings: settings,
+        );
+      case AppRoutes.profile:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const UserProfilePage(),
+          settings: settings,
+        );
+      case AppRoutes.passwordReset:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const PasswordResetRequestPage(),
           settings: settings,
         );
       default:
