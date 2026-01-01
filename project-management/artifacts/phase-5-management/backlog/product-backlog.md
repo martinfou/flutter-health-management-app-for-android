@@ -25,6 +25,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-014](../backlog/feature-requests/FR-014-social-features.md) | Social Features | 🟢 Low | 21 | ⭕ | Sprint 21+ (Post-MVP Phase 2) | 2025-01-03 | 2025-01-03 |
 | [FR-015](../backlog/feature-requests/FR-015-enhanced-content-management.md) | Enhanced Content Management | 🟡 Medium | 13 | ⭕ | Sprint 21+ (Post-MVP Phase 2) | 2025-01-03 | 2025-01-03 |
 | [FR-016](../backlog/feature-requests/FR-016-exercise-library-and-workout-plan-integration.md) | Exercise Library and Workout Plan Integration | 🟠 High | 13 | ⭕ | Sprint 13 | 2025-01-03 | 2025-01-03 |
+| [FR-017](../backlog/feature-requests/FR-017-comprehensive-exercise-tracking.md) | Comprehensive Exercise Tracking | 🟠 High | 21 | ⭕ | Backlog | 2025-01-27 | 2025-01-27 |
 
 ## Bug Fixes
 

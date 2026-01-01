@@ -84,7 +84,7 @@ void main() {
       );
     });
 
-    test('should return ValidationFailure when net carbs exceed 40g', () {
+    test('should calculate macros successfully even when net carbs exceed 40g (guideline, not hard limit)', () {
       // Arrange
       final now = DateTime.now();
       final meals = [
@@ -96,7 +96,7 @@ void main() {
           name: 'High Carb Meal',
           protein: 20.0,
           fats: 10.0,
-          netCarbs: 45.0, // Exceeds 40g limit
+          netCarbs: 45.0, // Exceeds 40g guideline
           calories: 330.0,
           ingredients: ['bread', 'pasta'],
           createdAt: now,
@@ -107,13 +107,17 @@ void main() {
       final result = useCase.call(meals);
 
       // Assert
-      expect(result.isLeft(), true);
+      // Net carbs 40g limit is a guideline, not a hard validation rule.
+      // Calculation should proceed even if total exceeds 40g.
+      expect(result.isRight(), true);
       result.fold(
-        (failure) {
-          expect(failure, isA<ValidationFailure>());
-          expect(failure.message, contains('Net carbs exceed 40g limit'));
+        (_) => fail('Should return MacroSummary, not ValidationFailure'),
+        (summary) {
+          expect(summary.netCarbs, 45.0);
+          expect(summary.protein, 20.0);
+          expect(summary.fats, 10.0);
+          expect(summary.calories, 330.0);
         },
-        (_) => fail('Should return ValidationFailure'),
       );
     });
 
