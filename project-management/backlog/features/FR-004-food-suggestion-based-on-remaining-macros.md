@@ -1,11 +1,11 @@
 # Feature Request: FR-004 - Food Suggestion Based on Remaining Macros
 
-**Status**: ⭕ Not Started  
-**Priority**: 🟠 High  
-**Story Points**: 8  
-**Created**: 2025-01-02  
-**Updated**: 2025-01-02  
-**Assigned Sprint**: Backlog
+**Status**: ✅ Completed
+**Priority**: 🟠 High
+**Story Points**: 8
+**Created**: 2025-01-02
+**Updated**: 2026-01-03
+**Assigned Sprint**: [Sprint 18](../../sprints/sprint-18-food-suggestion-based-on-remaining-macros.md)
 
 ## Description
 
@@ -17,28 +17,28 @@ As a user, I want to receive food suggestions based on my remaining macro target
 
 ## Acceptance Criteria
 
-- [ ] Calculate remaining macros (target macros - consumed macros) for the current day
-- [ ] Display remaining macros clearly (protein, fats, net carbs, calories)
-- [ ] Add "Get Food Suggestions" button/action on macro tracking page
-- [ ] LLM analyzes user's food log (past meals) to understand eating patterns and preferences
-- [ ] LLM generates food suggestions that:
+- [x] Calculate remaining macros (target macros - consumed macros) for the current day
+- [x] Display remaining macros clearly (protein, fats, net carbs, calories)
+- [x] Add "Get Food Suggestions" button/action on macro tracking page
+- [x] LLM analyzes user's food log (past meals) to understand eating patterns and preferences
+- [x] LLM generates food suggestions that:
   - Match remaining macro targets (prioritize foods that fit remaining macros)
   - Are inspired by foods the user has previously logged
   - Include macro breakdown for each suggestion
   - Provide portion sizes that help meet remaining targets
-- [ ] Display suggestions in a user-friendly format (list or cards)
-- [ ] Each suggestion shows:
+- [x] Display suggestions in a user-friendly format (list or cards)
+- [x] Each suggestion shows:
   - Food name
   - Portion size
   - Macro breakdown (protein, fats, net carbs, calories)
   - How it fits remaining macros (e.g., "Covers 50% of remaining protein")
-- [ ] User can select a suggestion to quickly log it as a meal
-- [ ] Handle edge cases:
+- [ ] User can select a suggestion to quickly log it as a meal (see FR-021)
+- [x] Handle edge cases:
   - No remaining macros (all targets met) → show message
   - No food log history → use general suggestions
   - Remaining macros are very small → suggest appropriate portion sizes
-- [ ] Loading state while LLM processes request
-- [ ] Error handling for LLM API failures
+- [x] Loading state while LLM processes request
+- [x] Error handling for LLM API failures
 
 ## Business Value
 
@@ -161,4 +161,10 @@ This feature significantly improves user experience by:
 ## History
 
 - 2025-01-02 - Created based on user request for food suggestions based on remaining macros with food log inspiration
+- 2026-01-03 - Status changed to ✅ Completed
+  - SuggestMealsUseCase implemented (lib/features/nutrition_management/domain/usecases/suggest_meals_use_case.dart)
+  - LLM-powered meal suggestions working with user preferences
+  - Considers dietary approach, allergies, and dislikes
+  - Remaining macros calculation and display implemented
+  - Quick log functionality moved to FR-021
 

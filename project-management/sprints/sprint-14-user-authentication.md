@@ -1,6 +1,6 @@
 # Sprint 14: User Authentication
 
-**Sprint Goal**: Implement user account system with JWT authentication, enabling users to create accounts, log in securely, and manage their profiles. This foundational feature enables cloud sync and multi-device support.
+**Sprint Goal**: Implement user account system using Google OAuth and backend-issued JWT authentication, enabling users to sign in with Google, log in securely, and manage their profiles. This foundational feature enables cloud sync and multi-device support while leveraging Google's security infrastructure.
 
 **Duration**: 2025-12-31 - 2026-01-14 (2 weeks)  
 **Team Velocity**: Target 13 points  
@@ -39,15 +39,20 @@ This sprint implements the following items from the product backlog:
 ## Sprint Overview
 
 **Focus Areas**:
-- User registration and login flows
-- JWT token-based authentication system
+- User registration and login flows via Google OAuth
+- JWT token-based authentication system (JWTs issued by backend after Google OAuth verification)
+- All authentication endpoints require backend to verify Google ID token using Google API Client (PHP/Node/etc.) and issue short-lived JWT on success
+- End-to-end sign-in UI and backend flow follow Google OAuth platform best practices
 - Secure token storage on device
 - User profile management
 - Password reset functionality
 - Protected routes and authentication state management
 
 **Key Deliverables**:
-- Authentication service layer with JWT support
+- Google Sign-In UI & authentication service layer with JWT support
+- OAuth flow with Google Sign-In (google_sign_in package)
+- Backend verification of Google ID token (php-google-auth-library)
+- App issues API calls with backend-provided JWTs after Google OAuth login
 - Login and registration UI screens
 - Secure token storage implementation
 - User profile management UI
@@ -57,10 +62,12 @@ This sprint implements the following items from the product backlog:
 
 **Dependencies**:
 - Backend infrastructure must be set up on DreamHost (may need to be done in parallel)
+- Google OAuth 2.0 credentials & consent screen must be set up in Google Cloud Console
 - Database schema for users table must be created
 - SSL certificate must be configured
 - Email service must be configured for password reset
 - `flutter_secure_storage` package must be added to dependencies
+- OAuth token verification (Google API PHP client) and JWT issuing on backend
 
 **Risks & Blockers**:
 - Backend infrastructure setup may be a blocker if not ready
@@ -88,18 +95,17 @@ This sprint implements the following items from the product backlog:
 
 ### Story 14.1: User Authentication System - 13 Points
 
-**User Story**: As a user, I want to create an account and securely log in to the app, so that my health data is protected and accessible across multiple devices.
+**User Story**: As a user, I want to log in with my Google account through a seamless Google OAuth sign-in flow, so that my health data is protected, secure, and accessible across devices—without needing a separate password for the app.
 
 **Acceptance Criteria**:
 
-#### Registration and Login
-- [ ] Users can register with email and password
-- [ ] Users can log in with email and password
-- [ ] Input validation for email format
-- [ ] Password requirements validation (min 8 chars, uppercase, lowercase, number, special char)
-- [ ] Error handling for invalid credentials
-- [ ] Error handling for network failures during auth
-- [ ] "Remember me" option for login (optional, stores refresh token)
+#### Registration and Login (Via Google OAuth)
+- [ ] Users can sign in with Google OAuth (no password management required)
+- [ ] OAuth flow works for new and existing Google users
+- [ ] Backend receives and verifies Google ID token, issues app JWT
+- [ ] Error handling for OAuth failures (including user cancellation, permissions denial)
+- [ ] Remember me option (Google session and backend refresh token)
+- [ ] Input validation for Google Account scenarios (network, Google Play Services issues)
 
 #### Authentication System
 - [ ] JWT token-based authentication implemented
@@ -164,10 +170,12 @@ This sprint implements the following items from the product backlog:
 
 **Implementation Notes**:
 - This is a foundational feature for cloud sync (FR-008)
+- Google OAuth is the mandatory authentication standard (see backlog-management-process.md and FR-009)
 - Backend infrastructure setup may need to be done in parallel or before this sprint
-- Password hashing should use bcrypt or Argon2 (backend responsibility)
-- JWT tokens should be signed with a secret key (backend responsibility)
-- Consider implementing social login in future (out of scope for this sprint)
+- Google Cloud project and OAuth credentials must be correctly configured and referenced
+- Password hashing required only for non-OAuth flows (deferred/post-MVP)
+- JWT tokens should be signed with a secret key
+- Consider implementing other social login types in future (out of scope for this sprint)
 - GDPR compliance requires account deletion functionality
 - Secure storage implementation must work correctly on Android API 24-34
 

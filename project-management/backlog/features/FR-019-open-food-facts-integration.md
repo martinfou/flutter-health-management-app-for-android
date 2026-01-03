@@ -1,11 +1,11 @@
 # Feature Request: FR-019 - Open Food Facts Integration with Barcode Scanning
 
-**Status**: ⭕ Not Started  
-**Priority**: 🟠 High  
-**Story Points**: 13  
-**Created**: 2025-01-27  
-**Updated**: 2025-01-27  
-**Assigned Sprint**: Backlog
+**Status**: ⭕ Not Started
+**Priority**: 🟠 High
+**Story Points**: 13
+**Created**: 2025-01-27
+**Updated**: 2026-01-03
+**Assigned Sprint**: [Sprint 20](../../sprints/sprint-20-open-food-facts-integration.md)
 
 ## Description
 
@@ -305,4 +305,8 @@ This feature provides significant value by:
 ## History
 
 - 2025-01-27 - Created
+- 2026-01-03 - Status updated to ⭕ Not Started
+  - No Open Food Facts integration in codebase
+  - No barcode scanning functionality implemented
+  - openfoodfacts package not added to dependencies
 

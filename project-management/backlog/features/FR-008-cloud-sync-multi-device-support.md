@@ -1,11 +1,11 @@
 # Feature Request: FR-008 - Cloud Sync & Multi-Device Support
 
-**Status**: ⭕ Not Started  
-**Priority**: 🟠 High  
-**Story Points**: 21  
-**Created**: 2025-01-03  
-**Updated**: 2025-01-03  
-**Assigned Sprint**: Backlog (Post-MVP Phase 1)
+**Status**: ⭕ Not Started
+**Priority**: 🟠 High
+**Story Points**: 21
+**Created**: 2025-01-03
+**Updated**: 2026-01-03
+**Assigned Sprint**: [Sprint 16-17](../../sprints/sprint-16-17-cloud-sync-multi-device-support.md)
 
 ## Description
 
@@ -95,5 +95,10 @@ This feature enables multi-device access to health data, significantly improving
 ## History
 
 - 2025-01-03 - Created
+- 2026-01-03 - Status updated to ⭕ Not Started
+  - No sync service implementation exists in codebase
+  - All data currently stored locally in Hive database only
+  - Requires FR-020 (Backend Infrastructure) to be completed first
+  - Requires FR-009 (User Authentication) to be completed first
 
 

@@ -1,11 +1,11 @@
 # Feature Request: FR-018 - Google Health Connect Planned Exercise Integration
 
-**Status**: ⭕ Not Started  
-**Priority**: 🟡 Medium  
-**Story Points**: 13  
-**Created**: 2025-01-27  
-**Updated**: 2025-01-27  
-**Assigned Sprint**: Backlog
+**Status**: ⭕ Not Started
+**Priority**: 🟡 Medium
+**Story Points**: 13
+**Created**: 2025-01-27
+**Updated**: 2026-01-03
+**Assigned Sprint**: [Sprint 21](../../sprints/sprint-21-google-health-connect-planned-exercise.md)
 
 ## Description
 
@@ -355,4 +355,8 @@ This feature provides significant value by:
 ## History
 
 - 2025-01-27 - Created - Request to integrate Google Health Connect FEATURE_PLANNED_EXERCISE for training plans
+- 2026-01-03 - Status updated to ⭕ Not Started
+  - No Google Health Connect integration exists in codebase
+  - No health platform integration (Apple HealthKit, Google Fit) implemented
+  - All data managed locally in Hive database only
 
