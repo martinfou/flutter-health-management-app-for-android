@@ -124,6 +124,7 @@ class _Sprint2DemoPageState extends ConsumerState<Sprint2DemoPage> {
         dateOfBirth: DateTime(1990, 1, 1),
         gender: Gender.male,
         height: 175.0,
+        weight: 75.0,
         targetWeight: 75.0,
         syncEnabled: false,
         createdAt: now,

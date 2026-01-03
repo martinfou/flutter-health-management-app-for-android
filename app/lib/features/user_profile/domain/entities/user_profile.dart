@@ -23,8 +23,26 @@ class UserProfile {
   /// Height in centimeters
   final double height;
 
+  /// Current weight in kilograms
+  final double weight;
+
   /// Target weight in kilograms
   final double targetWeight;
+
+  /// List of fitness goals
+  final List<String> fitnessGoals;
+
+  /// Dietary approach (e.g., 'Keto', 'Vegan')
+  final String dietaryApproach;
+
+  /// List of food dislikes
+  final List<String> dislikes;
+
+  /// List of allergies
+  final List<String> allergies;
+
+  /// List of health conditions/limitations
+  final List<String> healthConditions;
 
   /// Whether cloud sync is enabled (false for MVP)
   final bool syncEnabled;
@@ -43,7 +61,13 @@ class UserProfile {
     required this.dateOfBirth,
     required this.gender,
     required this.height,
+    required this.weight,
     required this.targetWeight,
+    this.fitnessGoals = const [],
+    this.dietaryApproach = 'Standard',
+    this.dislikes = const [],
+    this.allergies = const [],
+    this.healthConditions = const [],
     this.syncEnabled = false,
     required this.createdAt,
     required this.updatedAt,
@@ -75,7 +99,13 @@ class UserProfile {
     DateTime? dateOfBirth,
     Gender? gender,
     double? height,
+    double? weight,
     double? targetWeight,
+    List<String>? fitnessGoals,
+    String? dietaryApproach,
+    List<String>? dislikes,
+    List<String>? allergies,
+    List<String>? healthConditions,
     bool? syncEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -87,7 +117,13 @@ class UserProfile {
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       gender: gender ?? this.gender,
       height: height ?? this.height,
+      weight: weight ?? this.weight,
       targetWeight: targetWeight ?? this.targetWeight,
+      fitnessGoals: fitnessGoals ?? this.fitnessGoals,
+      dietaryApproach: dietaryApproach ?? this.dietaryApproach,
+      dislikes: dislikes ?? this.dislikes,
+      allergies: allergies ?? this.allergies,
+      healthConditions: healthConditions ?? this.healthConditions,
       syncEnabled: syncEnabled ?? this.syncEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -105,7 +141,13 @@ class UserProfile {
           dateOfBirth == other.dateOfBirth &&
           gender == other.gender &&
           height == other.height &&
+          weight == other.weight &&
           targetWeight == other.targetWeight &&
+          fitnessGoals == other.fitnessGoals &&
+          dietaryApproach == other.dietaryApproach &&
+          dislikes == other.dislikes &&
+          allergies == other.allergies &&
+          healthConditions == other.healthConditions &&
           syncEnabled == other.syncEnabled;
 
   @override
@@ -116,12 +158,18 @@ class UserProfile {
       dateOfBirth.hashCode ^
       gender.hashCode ^
       height.hashCode ^
+      weight.hashCode ^
       targetWeight.hashCode ^
+      fitnessGoals.hashCode ^
+      dietaryApproach.hashCode ^
+      dislikes.hashCode ^
+      allergies.hashCode ^
+      healthConditions.hashCode ^
       syncEnabled.hashCode;
 
   @override
   String toString() {
-    return 'UserProfile(id: $id, name: $name, email: $email, age: $age, gender: $gender, height: $height, targetWeight: $targetWeight)';
+    return 'UserProfile(id: $id, name: $name, email: $email, age: $age, gender: $gender, height: $height, weight: $weight, targetWeight: $targetWeight)';
   }
 }
 

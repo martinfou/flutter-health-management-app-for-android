@@ -569,3 +569,6 @@ For a clone, focus on:
 
 The core innovation is the adherence-neutral system - making adjustments based on actual behavior rather than target adherence. This requires tracking actual intake separately from targets and calculating adjustments independently.
 
+
+
+

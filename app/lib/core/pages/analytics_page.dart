@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/empty_state_widget.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
+import 'package:health_app/features/analytics/presentation/widgets/weekly_review_insights_widget.dart';
 
 /// Analytics/Progress page showing health trends and insights
 class AnalyticsPage extends ConsumerWidget {
@@ -37,6 +38,8 @@ class AnalyticsPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const WeeklyReviewInsightsWidget(),
+                const SizedBox(height: UIConstants.spacingLg),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(UIConstants.cardPadding),

@@ -24,15 +24,21 @@ class UserProfileModelAdapter extends TypeAdapter<UserProfileModel> {
       ..gender = fields[4] as String
       ..height = fields[5] as double
       ..targetWeight = fields[6] as double
-      ..syncEnabled = fields[7] as bool
-      ..createdAt = fields[8] as DateTime
-      ..updatedAt = fields[9] as DateTime;
+      ..weight = fields[7] as double
+      ..fitnessGoals = (fields[8] as List).cast<String>()
+      ..dietaryApproach = fields[9] as String
+      ..dislikes = (fields[10] as List).cast<String>()
+      ..allergies = (fields[11] as List).cast<String>()
+      ..healthConditions = (fields[12] as List).cast<String>()
+      ..syncEnabled = fields[13] as bool
+      ..createdAt = fields[14] as DateTime
+      ..updatedAt = fields[15] as DateTime;
   }
 
   @override
   void write(BinaryWriter writer, UserProfileModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -48,10 +54,22 @@ class UserProfileModelAdapter extends TypeAdapter<UserProfileModel> {
       ..writeByte(6)
       ..write(obj.targetWeight)
       ..writeByte(7)
-      ..write(obj.syncEnabled)
+      ..write(obj.weight)
       ..writeByte(8)
-      ..write(obj.createdAt)
+      ..write(obj.fitnessGoals)
       ..writeByte(9)
+      ..write(obj.dietaryApproach)
+      ..writeByte(10)
+      ..write(obj.dislikes)
+      ..writeByte(11)
+      ..write(obj.allergies)
+      ..writeByte(12)
+      ..write(obj.healthConditions)
+      ..writeByte(13)
+      ..write(obj.syncEnabled)
+      ..writeByte(14)
+      ..write(obj.createdAt)
+      ..writeByte(15)
       ..write(obj.updatedAt);
   }
 

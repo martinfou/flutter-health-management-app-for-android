@@ -12,6 +12,7 @@ import 'package:health_app/core/providers/user_preferences_provider.dart';
 import 'package:health_app/core/pages/user_profile_page.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/habit_tracking_page.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/behavioral_support_page.dart';
+import 'package:health_app/features/llm_integration/presentation/pages/llm_settings_page.dart';
 
 /// Settings page for app configuration
 class SettingsPage extends ConsumerWidget {
@@ -103,14 +104,29 @@ class SettingsPage extends ConsumerWidget {
           ),
           const Divider(),
 
-          // About Section
-          _buildSectionHeader(context, 'About'),
           _buildSettingsTile(
             context,
             title: 'Version',
             subtitle: '1.0.0',
             icon: Icons.info,
             onTap: null,
+          ),
+          const Divider(),
+
+          // AI Assistant Section
+          _buildSectionHeader(context, 'AI Personal Assistant'),
+          _buildSettingsTile(
+            context,
+            title: 'AI Settings',
+            subtitle: 'Configure AI provider and insights',
+            icon: Icons.auto_awesome,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const LlmSettingsPage(),
+                ),
+              );
+            },
           ),
         ],
       ),

@@ -147,6 +147,7 @@ class _BloodPressureEntryPageState extends ConsumerState<BloodPressureEntryPage>
         dateOfBirth: DateTime(1990, 1, 1),
         gender: Gender.other,
         height: 175.0,
+        weight: 70.0,
         targetWeight: 70.0,
         syncEnabled: false,
         createdAt: now,

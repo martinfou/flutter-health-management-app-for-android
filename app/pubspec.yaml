@@ -63,6 +63,9 @@ dependencies:
   # HTTP Client
   http: ^1.2.0
 
+  # Markdown Support
+  flutter_markdown: ^0.7.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

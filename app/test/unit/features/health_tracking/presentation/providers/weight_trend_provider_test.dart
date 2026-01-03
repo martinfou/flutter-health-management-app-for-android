@@ -132,6 +132,7 @@ void main() {
       dateOfBirth: DateTime(1990, 1, 1),
       gender: Gender.male,
       height: 175.0,
+      weight: 70.0,
       targetWeight: 70.0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

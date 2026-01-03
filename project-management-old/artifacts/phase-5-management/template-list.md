@@ -232,3 +232,4 @@ This document lists all templates available in the project for creating new docu
 
 **Note**: When using embedded templates (Feature Request, Bug Fix, Product Backlog Table), refer to the `product-backlog-structure.md` file for the complete template with examples.
 
+

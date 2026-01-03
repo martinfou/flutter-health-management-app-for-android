@@ -8,6 +8,7 @@ import 'package:health_app/features/nutrition_management/presentation/pages/reci
 import 'package:health_app/features/nutrition_management/presentation/pages/macro_tracking_page.dart';
 import 'package:health_app/features/nutrition_management/presentation/widgets/macro_chart_widget.dart';
 import 'package:health_app/features/nutrition_management/presentation/widgets/meal_card_widget.dart';
+import 'package:health_app/features/nutrition_management/presentation/widgets/ai_meal_suggestion_widget.dart';
 
 /// Main nutrition page showing overview of daily nutrition
 class NutritionPage extends ConsumerWidget {
@@ -186,6 +187,11 @@ class NutritionPage extends ConsumerWidget {
                 ),
               ),
             ),
+
+            const SizedBox(height: UIConstants.spacingMd),
+
+            // AI Meal Suggestions
+            const AiMealSuggestionWidget(),
 
             const SizedBox(height: UIConstants.spacingMd),
 

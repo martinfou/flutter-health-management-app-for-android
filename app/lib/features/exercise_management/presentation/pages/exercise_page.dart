@@ -16,6 +16,7 @@ import 'package:health_app/features/exercise_management/presentation/pages/worko
 import 'package:health_app/features/exercise_management/presentation/pages/workout_logging_page.dart';
 import 'package:health_app/features/exercise_management/presentation/widgets/workout_card_widget.dart';
 import 'package:health_app/features/exercise_management/presentation/widgets/exercise_list_widget.dart';
+import 'package:health_app/features/exercise_management/presentation/widgets/ai_workout_adaptation_widget.dart';
 
 /// Main exercise page showing overview of workouts and activity
 class ExercisePage extends ConsumerWidget {
@@ -244,8 +245,17 @@ class ExercisePage extends ConsumerWidget {
                     .where((e) => e.date != null) // Filter out templates
                     .toList()
                   ..sort((a, b) => b.date!.compareTo(a.date!));
-                return ExerciseListWidget(
-                  exercises: recentUnique.take(5).toList(),
+                
+                return Column(
+                  children: [
+                    ExerciseListWidget(
+                      exercises: recentUnique.take(5).toList(),
+                    ),
+                    const SizedBox(height: UIConstants.spacingMd),
+                    AiWorkoutAdaptationWidget(
+                      selectedExercise: recentUnique.isNotEmpty ? recentUnique.first : null,
+                    ),
+                  ],
                 );
               },
               loading: () => const LoadingIndicator(),
