@@ -8,6 +8,21 @@ This document defines the process for managing the product backlog, including ho
 - Product Backlog Structure: [product-backlog-structure.md](product-backlog-structure.md)
 - Sprint Planning Template: [../templates/sprint-planning-template.md](../templates/sprint-planning-template.md)
 
+## Technical Standards
+
+### Authentication
+
+**Authentication Method**: Google OAuth
+
+All features requiring user authentication must use Google OAuth as the authentication provider. When creating backlog items that involve authentication:
+
+- Reference Google OAuth as the authentication mechanism
+- Consider OAuth flow requirements in technical requirements
+- Include OAuth-specific acceptance criteria where applicable
+- Note dependencies on Google OAuth integration
+
+This standard ensures consistent authentication across all features and simplifies user experience by leveraging Google's authentication infrastructure.
+
 ## Backlog Lifecycle
 
 ### Status Lifecycle
@@ -135,6 +150,7 @@ For each backlog item:
 - [ ] Story points are estimated (Fibonacci: 1, 2, 3, 5, 8, 13)
 - [ ] Priority is assigned (🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low)
 - [ ] Technical references are included
+- [ ] Technical standards are followed (e.g., Google OAuth for authentication)
 - [ ] Dependencies are identified
 - [ ] Business value is documented
 

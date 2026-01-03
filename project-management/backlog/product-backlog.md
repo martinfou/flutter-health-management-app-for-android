@@ -17,6 +17,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-006](../backlog/feature-requests/FR-006-update-health-tracking-history.md) | Update Health Tracking History | 🟠 High | 8 | ✅ | [Sprint 11](../sprints/sprint-11-post-mvp-improvements.md) | 2025-01-02 | 2025-01-03 |
 | [FR-007](../backlog/feature-requests/FR-007-metric-imperial-units.md) | Metric/Imperial Units Support | 🟠 High | 13 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-01-02 | 2025-01-27 |
 | [FR-008](../backlog/feature-requests/FR-008-cloud-sync-multi-device-support.md) | Cloud Sync & Multi-Device Support | 🟠 High | 21 | ⭕ | Sprint 16-17 | 2025-01-03 | 2025-01-03 |
+| [FR-020](../backlog/features/FR-020-backend-infrastructure.md) | Backend Infrastructure | 🟠 High | 21 | ⭕ | Sprint 14 | 2025-01-27 | 2025-01-27 |
 | [FR-009](../backlog/feature-requests/FR-009-user-authentication.md) | User Authentication | 🟠 High | 13 | ⭕ | Sprint 14-15 | 2025-01-03 | 2025-01-03 |
 | [FR-010](../backlog/feature-requests/FR-010-llm-integration.md) | LLM Integration | 🟠 High | 21 | ⭕ | [Sprint 15](../sprints/sprint-15-llm-integration.md) | 2025-01-03 | 2025-01-03 |
 | [FR-011](../backlog/feature-requests/FR-011-advanced-analytics-module.md) | Advanced Analytics Module | 🟠 High | 21 | ⭕ | Sprint 18-20 | 2025-01-03 | 2025-01-03 |
@@ -25,7 +26,9 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-014](../backlog/feature-requests/FR-014-social-features.md) | Social Features | 🟢 Low | 21 | ⭕ | Sprint 21+ (Post-MVP Phase 2) | 2025-01-03 | 2025-01-03 |
 | [FR-015](../backlog/feature-requests/FR-015-enhanced-content-management.md) | Enhanced Content Management | 🟡 Medium | 13 | ⭕ | Sprint 21+ (Post-MVP Phase 2) | 2025-01-03 | 2025-01-03 |
 | [FR-016](../backlog/feature-requests/FR-016-exercise-library-and-workout-plan-integration.md) | Exercise Library and Workout Plan Integration | 🟠 High | 13 | ⭕ | Sprint 13 | 2025-01-03 | 2025-01-03 |
-| [FR-017](../backlog/feature-requests/FR-017-comprehensive-exercise-tracking.md) | Comprehensive Exercise Tracking | 🟠 High | 21 | ⭕ | Backlog | 2025-01-27 | 2025-01-27 |
+| [FR-017](../backlog/features/FR-017-comprehensive-exercise-tracking.md) | Comprehensive Exercise Tracking | 🟠 High | 21 | ⭕ | Backlog | 2025-01-27 | 2025-01-27 |
+| [FR-018](../backlog/features/FR-018-google-health-connect-planned-exercise.md) | Google Health Connect Planned Exercise Integration | 🟡 Medium | 13 | ⭕ | Backlog | 2025-01-27 | 2025-01-27 |
+| [FR-019](../backlog/features/FR-019-open-food-facts-integration.md) | Open Food Facts Integration with Barcode Scanning | 🟠 High | 13 | ⭕ | Backlog | 2025-01-27 | 2025-01-27 |
 
 ## Bug Fixes
 
@@ -48,11 +51,12 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - 🟢 **Low**: Future consideration, low priority
 
 ### Notes
-- Feature request details: See `feature-requests/FR-XXX-*.md` files
+- Feature request details: See `features/FR-XXX-*.md` files
 - Bug fix details: See `bug-fixes/BF-XXX-*.md` files
 - Sprint assignments: See `../sprints/sprint-XX-*.md` files
 - **Implementation Order**: Sprint assignments are based on the [Implementation Order Recommendation](./implementation-order-recommendation.md)
-- **Sprint 14-15**: FR-009 (Authentication) and FR-010 (LLM Integration) can be done in parallel
+- **Sprint 14**: FR-020 (Backend Infrastructure) must be completed before FR-009 (Authentication) can start
+- **Sprint 14-15**: FR-009 (Authentication) and FR-010 (LLM Integration) can be done in parallel (after FR-020 is complete)
 - **Sprint 18**: FR-004 (Food Suggestions) can start after FR-010 (LLM Integration) is complete
 - **Sprint 21+**: Post-MVP Phase 2 features - prioritize based on user feedback and business needs
 

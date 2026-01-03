@@ -4,33 +4,32 @@
 **Priority**: 🟠 High  
 **Story Points**: 13  
 **Created**: 2025-01-03  
-**Updated**: 2025-12-31  
+**Updated**: 2025-01-27  
 **Assigned Sprint**: [Sprint 14](../sprints/sprint-14-user-authentication.md)
 
 ## Description
 
-Implement user account system with JWT authentication, allowing users to create accounts, log in, and securely access their data. This feature is required for cloud sync and multi-device support, enabling secure access to user data across devices.
+Implement user account system with Google OAuth authentication, allowing users to sign in with their Google account and securely access their data. This feature is required for cloud sync and multi-device support, enabling secure access to user data across devices. Google OAuth provides a seamless authentication experience while leveraging Google's security infrastructure.
 
 ## User Story
 
-As a user, I want to create an account and securely log in to the app, so that my health data is protected and accessible across multiple devices.
+As a user, I want to sign in to the app using my Google account, so that my health data is protected and accessible across multiple devices without managing separate credentials.
 
 ## Acceptance Criteria
 
-- [ ] User registration with email and password
-- [ ] User login with email and password
-- [ ] Secure password hashing (bcrypt or Argon2)
-- [ ] JWT token-based authentication
+- [ ] Google OAuth sign-in flow integration
+- [ ] User authentication via Google OAuth
+- [ ] JWT token-based authentication (backend issues JWT after OAuth verification)
 - [ ] JWT token refresh mechanism
 - [ ] User profile management (view/edit profile)
-- [ ] Password reset functionality (email-based)
-- [ ] "Remember me" option for login
-- [ ] Secure token storage on device
-- [ ] Logout functionality
+- [ ] Secure token storage on device (flutter_secure_storage)
+- [ ] Logout functionality (clear tokens and OAuth session)
 - [ ] Account deletion (GDPR compliance)
-- [ ] Input validation for email and password requirements
-- [ ] Error handling for invalid credentials
+- [ ] Error handling for OAuth failures
 - [ ] Error handling for network failures during auth
+- [ ] Handle case when user denies OAuth permissions
+- [ ] Handle case when Google account is not available
+- [ ] Display user's Google profile information (name, email, avatar)
 
 ## Business Value
 
@@ -39,37 +38,36 @@ User authentication is essential for cloud sync and multi-device support, enabli
 ## Technical Requirements
 
 ### Authentication Flow
-- Registration: Email + password → Create account → JWT token
-- Login: Email + password → Verify credentials → JWT token
+- Sign In: Google OAuth → Verify token with backend → Backend issues JWT token
 - Token Refresh: Refresh token → New access token
-- Logout: Invalidate token locally
+- Logout: Clear tokens and OAuth session locally and on backend
 
 ### Security Requirements
-- Password Requirements:
-  - Minimum 8 characters
-  - At least one uppercase letter
-  - At least one lowercase letter
-  - At least one number
-  - At least one special character
-- Password Hashing: bcrypt or Argon2 (never store plain text)
+- OAuth Token Verification: Backend must verify Google OAuth ID token
 - JWT Token: Signed with secret key, expires after 24 hours
 - Refresh Token: Longer expiration (30 days), stored securely
 - HTTPS: All API calls must use HTTPS
+- OAuth Scopes: Request appropriate Google OAuth scopes (email, profile)
 
 ### Backend Implementation
-- Authentication endpoints (register, login, refresh, logout)
+- OAuth verification endpoint (verify Google ID token using Google API Client Library)
+- User creation/lookup based on Google account
+- JWT token generation and validation (using existing firebase/php-jwt library)
+- Authentication endpoints (verify OAuth, refresh, logout)
 - User management endpoints (profile, update, delete)
-- Password reset endpoints (request reset, verify token, reset password)
-- JWT token generation and validation
-- Password hashing and verification
+- Google OAuth client configuration
+- **Note**: Using Google Sign-In directly (not Firebase Auth) - backend verifies Google ID tokens directly
 
 ### Flutter Implementation
+- Google Sign-In integration (`google_sign_in` package - direct Google OAuth, not Firebase)
 - Authentication service layer
 - Secure storage for tokens (flutter_secure_storage)
-- Login/Registration UI screens
+- Google OAuth sign-in UI flow
 - Authentication state management (Riverpod)
 - Protected routes (require authentication)
 - Token refresh interceptor
+- Handle OAuth callbacks and errors
+- **Note**: Using `google_sign_in` package directly (not `firebase_auth`) - sends Google ID token to custom backend
 
 ## Reference Documents
 
@@ -83,24 +81,38 @@ User authentication is essential for cloud sync and multi-device support, enabli
 - Sync Architecture: `../../phase-3-integration/sync-architecture-design.md`
 - Authentication Service: Create `AuthenticationService` in `lib/core/network/`
 - Secure Storage: Use `flutter_secure_storage` package
+- Google Sign-In: Use `google_sign_in` package (Flutter) - **direct Google OAuth, not Firebase Auth**
+- Backend: Use Google API Client Library for PHP (`google/apiclient`) to verify ID tokens
 - State Management: Create `authProvider` in `lib/core/providers/`
+- Backlog Management Process: Authentication standard specifies Google OAuth
+- Decision Analysis: See `FR-009-oauth-decision-analysis.md` for Google Sign-In vs Firebase Auth comparison
 
 ## Dependencies
 
 - Backend infrastructure must be set up on DreamHost
 - Database schema for users table must be created
 - SSL certificate must be configured
-- Email service must be configured for password reset
+- Google Cloud Platform project must be created
+- Google OAuth 2.0 credentials must be configured (Client ID for Android)
+- OAuth consent screen must be configured in Google Cloud Console
 
 ## Notes
 
 - This feature must be completed before FR-008 (Cloud Sync)
-- Password reset requires email service integration
-- Consider implementing social login in future (Google, Apple) - out of scope for initial implementation
+- Google OAuth is the standard authentication method (per backlog management process)
+- **Using Google Sign-In directly (not Firebase Auth)** - see decision analysis document
+- No password management required - Google handles authentication
+- Backend receives Google ID token and verifies it directly using Google API Client Library
+- After verification, backend issues JWT token using existing firebase/php-jwt library
+- User profile data (name, email, avatar) can be retrieved from Google account
 - GDPR compliance: Users must be able to delete their accounts and all associated data
 - MVP currently has no authentication - this is a post-MVP Phase 1 priority
+- Android OAuth configuration requires SHA-1 fingerprint for Google Cloud Console
+- Flutter package: `google_sign_in` (not `firebase_auth`)
+- Backend library: `google/apiclient` for PHP (via Composer)
 
 ## History
 
 - 2025-01-03 - Created
+- 2025-01-27 - Updated to use Google OAuth authentication (standard authentication method)
 
