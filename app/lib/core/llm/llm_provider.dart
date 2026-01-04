@@ -12,6 +12,21 @@ enum LlmProviderType {
 }
 
 /// Configuration for an LLM provider
+/// AI provider preference
+enum AiPreference {
+  /// Prefer on-device AI when available, fallback to cloud
+  preferOnDevice,
+
+  /// Prefer cloud AI, use on-device only as fallback
+  preferCloud,
+
+  /// Always use on-device AI (if available)
+  onDeviceOnly,
+
+  /// Always use cloud AI
+  cloudOnly,
+}
+
 class LlmConfig {
   final LlmProviderType providerType;
   final String model;
@@ -19,6 +34,7 @@ class LlmConfig {
   final String? baseUrl;
   final double temperature;
   final int maxTokens;
+  final AiPreference aiPreference;
 
   const LlmConfig({
     required this.providerType,
@@ -27,6 +43,7 @@ class LlmConfig {
     this.baseUrl,
     this.temperature = 0.7,
     this.maxTokens = 2048,
+    this.aiPreference = AiPreference.preferOnDevice,
   });
 
   LlmConfig copyWith({
@@ -36,6 +53,7 @@ class LlmConfig {
     String? baseUrl,
     double? temperature,
     int? maxTokens,
+    AiPreference? aiPreference,
   }) {
     return LlmConfig(
       providerType: providerType ?? this.providerType,
@@ -44,6 +62,7 @@ class LlmConfig {
       baseUrl: baseUrl ?? this.baseUrl,
       temperature: temperature ?? this.temperature,
       maxTokens: maxTokens ?? this.maxTokens,
+      aiPreference: aiPreference ?? this.aiPreference,
     );
   }
 }
@@ -96,6 +115,6 @@ abstract class LlmProvider {
 /// Failure specific to LLM operations
 class LlmFailure extends Failure {
   final int? statusCode;
-  
+
   LlmFailure(super.message, {this.statusCode});
 }

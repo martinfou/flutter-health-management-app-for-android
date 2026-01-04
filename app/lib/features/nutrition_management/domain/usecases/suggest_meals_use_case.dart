@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/llm/llm_provider.dart';
 import '../../../../core/llm/llm_service.dart';
+import '../../../../core/llm/prompts/prompt_selector.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../user_profile/domain/entities/user_profile.dart';
 import '../../../user_profile/domain/repositories/user_profile_repository.dart';
@@ -14,16 +15,19 @@ class SuggestMealsUseCase {
   final UserProfileRepository _userProfileRepository;
   final CalculateMacrosUseCase _calculateMacrosUseCase;
   final LlmService _llmService;
+  final PromptSelector _promptSelector;
 
   SuggestMealsUseCase({
     required NutritionRepository nutritionRepository,
     required UserProfileRepository userProfileRepository,
     required CalculateMacrosUseCase calculateMacrosUseCase,
     required LlmService llmService,
+    PromptSelector? promptSelector,
   })  : _nutritionRepository = nutritionRepository,
         _userProfileRepository = userProfileRepository,
         _calculateMacrosUseCase = calculateMacrosUseCase,
-        _llmService = llmService;
+        _llmService = llmService,
+        _promptSelector = promptSelector ?? const PromptSelector();
 
   /// Executes the use case
   Future<Either<Failure, String>> execute({
@@ -33,8 +37,9 @@ class SuggestMealsUseCase {
     final today = DateTime(now.year, now.month, now.day);
 
     // 1. Fetch today's meals
-    final mealsResult = await _nutritionRepository.getMealsByDate(userId, today);
-    
+    final mealsResult =
+        await _nutritionRepository.getMealsByDate(userId, today);
+
     return mealsResult.fold(
       (failure) => Left(failure),
       (meals) async {
@@ -53,14 +58,18 @@ class SuggestMealsUseCase {
         } else {
           final macroResult = _calculateMacrosUseCase.call(meals);
           if (macroResult.isLeft()) {
-            return Left(macroResult.getLeft().getOrElse(() => DatabaseFailure('Macro calculation failed')));
+            return Left(macroResult
+                .getLeft()
+                .getOrElse(() => DatabaseFailure('Macro calculation failed')));
           }
-          currentMacros = macroResult.getOrElse((l) => throw Exception('Should not happen'));
+          currentMacros = macroResult
+              .getOrElse((l) => throw Exception('Should not happen'));
         }
 
         // 2. Fetch user profile for context and targets
-        final profileResult = await _userProfileRepository.getUserProfile(userId);
-        
+        final profileResult =
+            await _userProfileRepository.getUserProfile(userId);
+
         return profileResult.fold(
           (failure) => Left(failure),
           (profile) async {
@@ -72,7 +81,7 @@ class SuggestMealsUseCase {
             final prompt = _buildPrompt(currentMacros, profile, recipes);
             final systemPrompt = _buildSystemPrompt();
 
-            final llmResult = await _llmService.generateCompletion(
+            final llmResult = await _llmService.generateCompletionWithFallback(
               LlmRequest(
                 prompt: prompt,
                 systemPrompt: systemPrompt,
@@ -121,45 +130,26 @@ $recipeHints
 '''
         : '';
 
-    return '''
-Please suggest ORIGINAL meals and snacks for me today based on my current progress and targets.
+    // Get the appropriate prompt template based on the active LLM provider
+    final template = _promptSelector
+        .selectFoodSuggestionPrompt(_llmService.config.providerType);
 
-My Macro Targets:
-- Protein: 35% of total calories
-- Fats: 55% of total calories
-- Net Carbs: < 40g (absolute maximum per day)
+    // Calculate remaining carbs
+    final remainingCarbs = (40 - current.netCarbs).toStringAsFixed(1);
 
-My Consumed Macros Today:
-- Protein: ${current.protein}g (${current.proteinPercent}%)
-- Fats: ${current.fats}g (${current.fatsPercent}%)
-- Net Carbs: ${current.netCarbs}g
-- Total Calories: ${current.calories}
-
-Remaining Macros Capacity:
-- Net Carbs: ${(40 - current.netCarbs).toStringAsFixed(1)}g remaining (out of 40g max)
-- Aim to balance protein and fats to reach target percentages (35% protein, 55% fats)
-
-User Context:
-- Name: ${profile.name}
-- Dietary Preferences: ${profile.dietaryApproach}
-- Dislikes: ${profile.dislikes.isEmpty ? 'None' : profile.dislikes.join(', ')}
-- Allergies: ${profile.allergies.isEmpty ? 'None' : profile.allergies.join(', ')}
-
-$recipeContext
-
-Please provide ORIGINAL, creative suggestions:
-1. Suggest 2-3 DIFFERENT meal or snack ideas that are NEW and creative (not just from my library)
-2. Include at least one snack option and one full meal option
-3. For each suggestion, provide:
-   - A creative name for the dish
-   - Estimated macros (protein, fats, net carbs, calories)
-   - A brief list of ingredients
-   - Simple cooking/preparation instructions
-   - A helpful tip or variation idea
-4. Make sure the suggestions help me reach my remaining macro targets
-5. Be creative and think of unique combinations - don't just suggest standard recipes
-
-Format your response in clear markdown with headings for each suggestion.
-''';
+    // Replace placeholders in the template
+    return template
+        .replaceAll('{protein}', current.protein.toString())
+        .replaceAll('{fats}', current.fats.toString())
+        .replaceAll('{netCarbs}', current.netCarbs.toString())
+        .replaceAll('{calories}', current.calories.toString())
+        .replaceAll('{remainingCarbs}', remainingCarbs)
+        .replaceAll('{name}', profile.name)
+        .replaceAll('{dietaryApproach}', profile.dietaryApproach)
+        .replaceAll('{dislikes}',
+            profile.dislikes.isEmpty ? 'None' : profile.dislikes.join(', '))
+        .replaceAll('{allergies}',
+            profile.allergies.isEmpty ? 'None' : profile.allergies.join(', '))
+        .replaceAll('{recipeContext}', recipeContext);
   }
 }

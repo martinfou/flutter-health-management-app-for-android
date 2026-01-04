@@ -1,8 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/ui_constants.dart';
+import '../../../../core/settings/settings_storage.dart';
 import '../../../../core/llm/llm_provider.dart';
 import '../../../../core/llm/providers/llm_providers.dart';
+
+/// Extension to get display name for AI preference
+extension AiPreferenceDisplay on AiPreference {
+  String get displayName {
+    switch (this) {
+      case AiPreference.preferOnDevice:
+        return 'Prefer On-Device (with Cloud Fallback)';
+      case AiPreference.preferCloud:
+        return 'Prefer Cloud (with On-Device Fallback)';
+      case AiPreference.onDeviceOnly:
+        return 'On-Device Only';
+      case AiPreference.cloudOnly:
+        return 'Cloud Only';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case AiPreference.preferOnDevice:
+        return 'Use on-device AI when available, automatically fall back to cloud providers';
+      case AiPreference.preferCloud:
+        return 'Use cloud AI by default, fall back to on-device if cloud unavailable';
+      case AiPreference.onDeviceOnly:
+        return 'Always use on-device AI (faster, offline, private)';
+      case AiPreference.cloudOnly:
+        return 'Always use cloud AI (more capable, requires internet)';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case AiPreference.preferOnDevice:
+        return Icons.smartphone;
+      case AiPreference.preferCloud:
+        return Icons.cloud;
+      case AiPreference.onDeviceOnly:
+        return Icons.phone_android;
+      case AiPreference.cloudOnly:
+        return Icons.cloud_queue;
+    }
+  }
+}
 
 /// Page for configuring LLM (AI) settings
 class LlmSettingsPage extends ConsumerStatefulWidget {
@@ -16,6 +59,7 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
   late TextEditingController _apiKeyController;
   late TextEditingController _baseUrlController;
   late TextEditingController _modelController;
+  AiPreference _aiPreference = AiPreference.preferOnDevice;
 
   @override
   void initState() {
@@ -24,6 +68,14 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
     _apiKeyController = TextEditingController(text: config.apiKey);
     _baseUrlController = TextEditingController(text: config.baseUrl);
     _modelController = TextEditingController(text: config.model);
+    _loadAiPreference();
+  }
+
+  Future<void> _loadAiPreference() async {
+    final preference = await SettingsStorage.loadAiPreference();
+    setState(() {
+      _aiPreference = preference;
+    });
   }
 
   @override
@@ -34,15 +86,21 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
     super.dispose();
   }
 
-  void _saveConfig() {
+  Future<void> _saveConfig() async {
     final currentConfig = ref.read(llmConfigProvider);
     final newConfig = currentConfig.copyWith(
       apiKey: _apiKeyController.text.trim(),
-      baseUrl: _baseUrlController.text.trim().isEmpty ? null : _baseUrlController.text.trim(),
+      baseUrl: _baseUrlController.text.trim().isEmpty
+          ? null
+          : _baseUrlController.text.trim(),
       model: _modelController.text.trim(),
+      aiPreference: _aiPreference,
     );
 
     ref.read(llmConfigProvider.notifier).state = newConfig;
+
+    // Persist the AI preference
+    await SettingsStorage.saveAiPreference(_aiPreference);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('AI settings saved successfully')),
@@ -147,7 +205,8 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
             ),
             items: LlmProviderType.values.map((type) {
               final isOnDevice = type == LlmProviderType.onDevice;
-              final onDeviceIsAvailable = onDeviceAvailable.valueOrNull ?? false;
+              final onDeviceIsAvailable =
+                  onDeviceAvailable.valueOrNull ?? false;
 
               return DropdownMenuItem(
                 value: type,
@@ -156,7 +215,9 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                   children: [
                     if (isOnDevice) ...[
                       Icon(
-                        onDeviceIsAvailable ? Icons.phone_android : Icons.phone_android_outlined,
+                        onDeviceIsAvailable
+                            ? Icons.phone_android
+                            : Icons.phone_android_outlined,
                         size: 18,
                         color: onDeviceIsAvailable ? Colors.green : Colors.grey,
                       ),
@@ -165,7 +226,9 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                     Text(
                       _getProviderDisplayName(type),
                       style: TextStyle(
-                        color: isOnDevice && !onDeviceIsAvailable ? Colors.grey : null,
+                        color: isOnDevice && !onDeviceIsAvailable
+                            ? Colors.grey
+                            : null,
                       ),
                     ),
                     if (isOnDevice && !onDeviceIsAvailable) ...[
@@ -189,6 +252,53 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                 );
               }
             },
+          ),
+          const SizedBox(height: UIConstants.spacingLg),
+
+          // AI Preference Selection
+          const Text(
+            'AI Provider Preference',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: UIConstants.spacingSm),
+          Column(
+            children: AiPreference.values.map((preference) {
+              return RadioListTile<AiPreference>(
+                title: Row(
+                  children: [
+                    Icon(preference.icon, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            preference.displayName,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            preference.description,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                value: preference,
+                groupValue: _aiPreference,
+                onChanged: (AiPreference? newPreference) {
+                  if (newPreference != null) {
+                    setState(() {
+                      _aiPreference = newPreference;
+                    });
+                  }
+                },
+              );
+            }).toList(),
           ),
           const SizedBox(height: UIConstants.spacingLg),
 
@@ -221,7 +331,8 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                     ),
                     const SizedBox(height: UIConstants.spacingXs),
                     _buildBenefitRow(Icons.wifi_off, 'Works offline'),
-                    _buildBenefitRow(Icons.lock, 'Data never leaves your device'),
+                    _buildBenefitRow(
+                        Icons.lock, 'Data never leaves your device'),
                     _buildBenefitRow(Icons.money_off, 'No API costs'),
                     _buildBenefitRow(Icons.speed, 'Fast local processing'),
                   ],
@@ -287,7 +398,8 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           hintText: 'https://api.example.com',
-                          helperText: 'Leave empty to use the provider\'s default URL.',
+                          helperText:
+                              'Leave empty to use the provider\'s default URL.',
                         ),
                       ),
                     ],
@@ -342,7 +454,9 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                         : 'On-Device AI Not Available',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isAvailable ? Colors.green.shade700 : Colors.grey.shade700,
+                      color: isAvailable
+                          ? Colors.green.shade700
+                          : Colors.grey.shade700,
                     ),
                   ),
                   Text(
@@ -351,7 +465,9 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
                         : 'Requires Pixel 8 Pro or newer with Android 14+',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isAvailable ? Colors.green.shade600 : Colors.grey.shade600,
+                      color: isAvailable
+                          ? Colors.green.shade600
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ],

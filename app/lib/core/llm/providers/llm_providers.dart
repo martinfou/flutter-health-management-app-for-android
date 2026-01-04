@@ -14,7 +14,10 @@ final llmConfigProvider = StateProvider<LlmConfig>((ref) {
   // Users need to set their API key in settings
   return const LlmConfig(
     providerType: LlmProviderType.opencodeZen,
-    model: 'big-pickle', // Default model (OpenCode Zen model ID), can be changed in settings
+    model:
+        'big-pickle', // Default model (OpenCode Zen model ID), can be changed in settings
+    aiPreference: AiPreference
+        .preferOnDevice, // Default to preferring on-device when available
   );
 });
 
@@ -43,7 +46,7 @@ final onDeviceAiAvailableProvider = FutureProvider<bool>((ref) async {
 final llmServiceProvider = Provider<LlmService>((ref) {
   final adapters = ref.watch(llmAdaptersProvider);
   final initialConfig = ref.watch(llmConfigProvider);
-  
+
   final service = LlmService(
     adapters: adapters,
     initialConfig: initialConfig,

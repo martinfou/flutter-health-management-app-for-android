@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/loading_indicator.dart';
+import 'package:health_app/shared/widgets/ai_provider_indicator.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
 import 'package:health_app/features/nutrition_management/presentation/pages/meal_logging_page.dart';
 import 'package:health_app/features/nutrition_management/presentation/pages/recipe_library_page.dart';
@@ -19,13 +20,19 @@ class NutritionPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final today = DateTime.now();
     final dateOnly = DateTime(today.year, today.month, today.day);
-    
+
     final mealsAsync = ref.watch(dailyMealsProvider(dateOnly));
     final macroSummary = ref.watch(macroSummaryProvider(dateOnly));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nutrition'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: AiProviderIndicator(showLabel: false),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
@@ -61,7 +68,7 @@ class NutritionPage extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: UIConstants.spacingMd),
-                    
+
                     // Total calories
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -79,9 +86,9 @@ class NutritionPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    
+
                     const Divider(),
-                    
+
                     // Macro breakdown
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -161,7 +168,8 @@ class NutritionPage extends ConsumerWidget {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => const RecipeLibraryPage(),
+                                  builder: (context) =>
+                                      const RecipeLibraryPage(),
                                 ),
                               );
                             },
@@ -175,7 +183,8 @@ class NutritionPage extends ConsumerWidget {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => const MacroTrackingPage(),
+                                  builder: (context) =>
+                                      const MacroTrackingPage(),
                                 ),
                               );
                             },
@@ -228,11 +237,13 @@ class NutritionPage extends ConsumerWidget {
                       data: (meals) {
                         if (meals.isEmpty) {
                           return Padding(
-                            padding: const EdgeInsets.all(UIConstants.spacingMd),
+                            padding:
+                                const EdgeInsets.all(UIConstants.spacingMd),
                             child: Text(
                               'No meals logged today. Tap "Add Meal" to get started!',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -364,4 +375,3 @@ class _QuickActionButton extends StatelessWidget {
     );
   }
 }
-

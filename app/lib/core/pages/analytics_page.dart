@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Project
 import 'package:health_app/core/constants/ui_constants.dart';
 import 'package:health_app/core/widgets/empty_state_widget.dart';
+import 'package:health_app/shared/widgets/ai_provider_indicator.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_provider.dart';
 import 'package:health_app/features/analytics/presentation/widgets/weekly_review_insights_widget.dart';
 
@@ -22,6 +23,12 @@ class AnalyticsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress & Analytics'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: AiProviderIndicator(showLabel: false),
+          ),
+        ],
       ),
       body: metricsAsync.when(
         data: (metrics) {
@@ -29,7 +36,8 @@ class AnalyticsPage extends ConsumerWidget {
             return EmptyStateWidget(
               icon: Icons.trending_up,
               title: 'No Data Yet',
-              description: 'Start tracking your health metrics to see progress and analytics.',
+              description:
+                  'Start tracking your health metrics to see progress and analytics.',
             );
           }
 
@@ -113,4 +121,3 @@ class AnalyticsPage extends ConsumerWidget {
     );
   }
 }
-

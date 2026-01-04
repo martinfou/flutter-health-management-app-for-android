@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/llm/llm_provider.dart';
 import '../../../../core/llm/llm_service.dart';
+import '../../../../core/llm/prompts/prompt_selector.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../health_tracking/domain/entities/health_metric.dart';
 import '../../../health_tracking/domain/repositories/health_tracking_repository.dart';
@@ -13,14 +14,17 @@ class GenerateWeeklyReviewUseCase {
   final HealthTrackingRepository _healthRepository;
   final UserProfileRepository _userProfileRepository;
   final LlmService _llmService;
+  final PromptSelector _promptSelector;
 
   GenerateWeeklyReviewUseCase({
     required HealthTrackingRepository healthRepository,
     required UserProfileRepository userProfileRepository,
     required LlmService llmService,
+    PromptSelector? promptSelector,
   })  : _healthRepository = healthRepository,
         _userProfileRepository = userProfileRepository,
-        _llmService = llmService;
+        _llmService = llmService,
+        _promptSelector = promptSelector ?? const PromptSelector();
 
   /// Executes the use case for a given user and week
   Future<Either<Failure, WeeklyReviewInsight>> execute({
@@ -40,12 +44,14 @@ class GenerateWeeklyReviewUseCase {
       (failure) => Left(failure),
       (metrics) async {
         if (metrics.isEmpty) {
-          return Left(ValidationFailure('No health data available for the selected week.'));
+          return Left(ValidationFailure(
+              'No health data available for the selected week.'));
         }
 
         // 2. Fetch user profile for context
-        final profileResult = await _userProfileRepository.getUserProfile(userId);
-        
+        final profileResult =
+            await _userProfileRepository.getUserProfile(userId);
+
         return profileResult.fold(
           (failure) => Left(failure),
           (profile) async {
@@ -53,8 +59,8 @@ class GenerateWeeklyReviewUseCase {
             final prompt = _buildPrompt(metrics, profile, startDate, endDate);
             final systemPrompt = _buildSystemPrompt();
 
-            // 4. Call LLM Service
-            final llmResult = await _llmService.generateCompletion(
+            // 4. Call LLM Service with fallback
+            final llmResult = await _llmService.generateCompletionWithFallback(
               LlmRequest(
                 prompt: prompt,
                 systemPrompt: systemPrompt,
@@ -65,7 +71,9 @@ class GenerateWeeklyReviewUseCase {
             return llmResult.fold(
               (failure) => Left(failure),
               (response) => Right(WeeklyReviewInsight(
-                id: DateTime.now().millisecondsSinceEpoch.toString(), // Simplified ID
+                id: DateTime.now()
+                    .millisecondsSinceEpoch
+                    .toString(), // Simplified ID
                 userId: userId,
                 startDate: startDate,
                 endDate: endDate,
@@ -99,26 +107,16 @@ Use a professional yet warm tone.
       return '- Date: ${m.date.toIso8601String().split('T')[0]}, Weight: ${m.weight ?? 'N/A'}kg, Sleep: ${m.sleepHours ?? 'N/A'}h (Quality: ${m.sleepQuality ?? 'N/A'}/10), Energy: ${m.energyLevel ?? 'N/A'}/10';
     }).join('\n');
 
-    return '''
-Review my health data for the week of ${start.toIso8601String().split('T')[0]} to ${end.toIso8601String().split('T')[0]}.
+    // Get the appropriate prompt template based on the active LLM provider
+    final template = _promptSelector
+        .selectWeeklyReviewPrompt(_llmService.config.providerType);
 
-User Context:
-- Name: ${profile.name}
-- Current Weight: ${profile.weight}kg
-- Target Weight: ${profile.targetWeight}kg
-- Primary Goal: ${profile.fitnessGoals.join(', ')}
-
-Weekly Data:
-$metricsLog
-
-Please provide:
-1. A brief summary of my progress this week.
-2. Recognition of "Non-Scale Victories" (e.g., consistent sleep, steady energy).
-3. Analysis of any correlations (e.g., how sleep affects energy).
-4. One or two actionable recommendations for the coming week.
-5. A motivational closing.
-
-Keep the response concise and formatted in markdown.
-''';
+    // Replace placeholders in the template
+    return template
+        .replaceAll('{name}', profile.name)
+        .replaceAll('{currentWeight}', profile.weight.toString())
+        .replaceAll('{targetWeight}', profile.targetWeight.toString())
+        .replaceAll('{goals}', profile.fitnessGoals.join(', '))
+        .replaceAll('{metrics}', metricsLog);
   }
 }

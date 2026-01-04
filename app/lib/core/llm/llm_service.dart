@@ -22,22 +22,84 @@ class LlmService {
   LlmConfig get config => _activeConfig;
 
   /// Generate a completion using the active provider
-  Future<Either<Failure, LlmResponse>> generateCompletion(LlmRequest request) async {
+  Future<Either<Failure, LlmResponse>> generateCompletion(
+      LlmRequest request) async {
     final adapter = _adapters[_activeConfig.providerType];
-    
+
     if (adapter == null) {
-      return Left(LlmFailure('No adapter found for provider: ${_activeConfig.providerType}'));
+      return Left(LlmFailure(
+          'No adapter found for provider: ${_activeConfig.providerType}'));
     }
 
     return adapter.generateCompletion(request, _activeConfig);
   }
 
+  /// Generate a completion with automatic fallback based on AI preference
+  Future<Either<Failure, LlmResponse>> generateCompletionWithFallback(
+      LlmRequest request) async {
+    final onDeviceAdapter = _adapters[LlmProviderType.onDevice];
+    final cloudAdapter = _adapters[_activeConfig.providerType];
+
+    // Determine primary and fallback providers based on preference
+    LlmProvider? primaryAdapter;
+    LlmProvider? fallbackAdapter;
+    LlmConfig primaryConfig = _activeConfig;
+    LlmConfig fallbackConfig = _activeConfig;
+
+    switch (_activeConfig.aiPreference) {
+      case AiPreference.preferOnDevice:
+        primaryAdapter = onDeviceAdapter;
+        fallbackAdapter = cloudAdapter;
+        primaryConfig =
+            _activeConfig.copyWith(providerType: LlmProviderType.onDevice);
+        break;
+      case AiPreference.preferCloud:
+        primaryAdapter = cloudAdapter;
+        fallbackAdapter = onDeviceAdapter;
+        fallbackConfig =
+            _activeConfig.copyWith(providerType: LlmProviderType.onDevice);
+        break;
+      case AiPreference.onDeviceOnly:
+        primaryAdapter = onDeviceAdapter;
+        primaryConfig =
+            _activeConfig.copyWith(providerType: LlmProviderType.onDevice);
+        break;
+      case AiPreference.cloudOnly:
+        primaryAdapter = cloudAdapter;
+        break;
+    }
+
+    // Try primary provider first
+    if (primaryAdapter != null) {
+      final primaryResult =
+          await primaryAdapter.generateCompletion(request, primaryConfig);
+      if (primaryResult.isRight()) {
+        return primaryResult;
+      }
+      // If primary fails and we have a fallback, try it
+      if (fallbackAdapter != null &&
+          _activeConfig.aiPreference != AiPreference.onDeviceOnly &&
+          _activeConfig.aiPreference != AiPreference.cloudOnly) {
+        final fallbackResult =
+            await fallbackAdapter.generateCompletion(request, fallbackConfig);
+        if (fallbackResult.isRight()) {
+          return fallbackResult;
+        }
+      }
+      // Return the primary failure if both failed or no fallback available
+      return primaryResult;
+    }
+
+    return Left(LlmFailure('No suitable AI provider available'));
+  }
+
   /// Convenience method for simple prompts
-  Future<Either<Failure, String>> ask(String prompt, {String? systemPrompt}) async {
+  Future<Either<Failure, String>> ask(String prompt,
+      {String? systemPrompt}) async {
     final result = await generateCompletion(
       LlmRequest(prompt: prompt, systemPrompt: systemPrompt),
     );
-    
+
     return result.map((response) => response.content);
   }
 }

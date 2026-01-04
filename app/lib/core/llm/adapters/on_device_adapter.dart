@@ -74,9 +74,11 @@ class OnDeviceLlmAdapter implements LlmProvider {
       debugPrint('🤖 On-Device AI Request');
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       debugPrint('Model: ${config.model}');
-      debugPrint('Prompt length: ${request.prompt.length} chars');
+      debugPrint('Prompt (${request.prompt.length} chars):');
+      debugPrint(request.prompt);
       if (request.systemPrompt != null) {
-        debugPrint('System prompt: ${request.systemPrompt!.substring(0, request.systemPrompt!.length.clamp(0, 50))}...');
+        debugPrint('System Prompt (${request.systemPrompt!.length} chars):');
+        debugPrint(request.systemPrompt!);
       }
       debugPrint('Temperature: ${request.temperature ?? config.temperature}');
       debugPrint('Max tokens: ${request.maxTokens ?? config.maxTokens}');
@@ -94,7 +96,8 @@ class OnDeviceLlmAdapter implements LlmProvider {
       debugPrint('✅ On-Device AI Response');
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       debugPrint('Model: ${response.model}');
-      debugPrint('Content length: ${response.content.length} chars');
+      debugPrint('Content (${response.content.length} chars):');
+      debugPrint(response.content);
       debugPrint('Prompt tokens: ${response.promptTokens}');
       debugPrint('Completion tokens: ${response.completionTokens}');
       debugPrint('Total tokens: ${response.totalTokens}');

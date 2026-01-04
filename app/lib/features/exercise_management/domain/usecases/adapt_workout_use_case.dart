@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/llm/llm_provider.dart';
 import '../../../../core/llm/llm_service.dart';
+import '../../../../core/llm/prompts/prompt_selector.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../user_profile/domain/entities/user_profile.dart';
 import '../../../user_profile/domain/repositories/user_profile_repository.dart';
@@ -12,14 +13,17 @@ class AdaptWorkoutUseCase {
   final ExerciseRepository _exerciseRepository;
   final UserProfileRepository _userProfileRepository;
   final LlmService _llmService;
+  final PromptSelector _promptSelector;
 
   AdaptWorkoutUseCase({
     required ExerciseRepository exerciseRepository,
     required UserProfileRepository userProfileRepository,
     required LlmService llmService,
+    PromptSelector? promptSelector,
   })  : _exerciseRepository = exerciseRepository,
         _userProfileRepository = userProfileRepository,
-        _llmService = llmService;
+        _llmService = llmService,
+        _promptSelector = promptSelector ?? const PromptSelector();
 
   /// Executes the use case
   Future<Either<Failure, String>> execute({
@@ -29,21 +33,23 @@ class AdaptWorkoutUseCase {
   }) async {
     // 1. Fetch user profile for context
     final profileResult = await _userProfileRepository.getUserProfile(userId);
-    
+
     return profileResult.fold(
       (failure) => Left(failure),
       (profile) async {
         // 2. Fetch exercise library for possible substitutions
-        final libraryResult = await _exerciseRepository.getExercisesByUserId(userId);
+        final libraryResult =
+            await _exerciseRepository.getExercisesByUserId(userId);
         final library = libraryResult.getOrElse((l) => []);
         // Filter out actual logs, keep only templates (date == null)
         final templates = library.where((e) => e.date == null).toList();
 
         // 3. Build prompt and call LLM
-        final prompt = _buildPrompt(currentExercise, feedback, profile, templates);
+        final prompt =
+            _buildPrompt(currentExercise, feedback, profile, templates);
         final systemPrompt = _buildSystemPrompt();
 
-        final llmResult = await _llmService.generateCompletion(
+        final llmResult = await _llmService.generateCompletionWithFallback(
           LlmRequest(
             prompt: prompt,
             systemPrompt: systemPrompt,
@@ -73,35 +79,27 @@ Always prioritize safety. If a user reports sharp pain, advise them to stop and 
     UserProfile profile,
     List<Exercise> templates,
   ) {
-    final templateHints = templates.take(10).map((e) => '- ${e.name} (${e.type.name})').join('\n');
+    final templateHints = templates
+        .take(10)
+        .map((e) => '- ${e.name} (${e.type.name})')
+        .join('\n');
 
-    return '''
-I need help modifying an exercise in my workout.
+    // Get the appropriate prompt template based on the active LLM provider
+    final template = _promptSelector
+        .selectWorkoutAdaptationPrompt(_llmService.config.providerType);
 
-Current Exercise:
-- Name: ${exercise.name}
-- Type: ${exercise.type.name}
-- Current Setup: ${exercise.sets ?? 'N/A'} sets of ${exercise.reps ?? 'N/A'} reps @ ${exercise.weight ?? 'N/A'}kg
-- Target Muscles: ${exercise.muscleGroups.join(', ')}
-
-My Feedback:
-"$feedback"
-
-User Context:
-- Name: ${profile.name}
-- Goals: ${profile.fitnessGoals.join(', ')}
-- Physical Limitations/Health Notes: ${profile.healthConditions.join(', ')}
-
-Available Exercises in my Library:
-$templateHints
-
-Please provide:
-1. An explanation of why the current exercise might be challenging or causing issues based on my feedback.
-2. 2-3 specific modifications or alternative exercises.
-3. For each modification, explain how to perform it safely and what to focus on.
-4. Adjusted sets/reps/weight if applicable.
-
-Keep the response supportive, safe, and formatted in markdown.
-''';
+    // Replace placeholders in the template
+    return template
+        .replaceAll('{exerciseName}', exercise.name)
+        .replaceAll('{exerciseType}', exercise.type.name)
+        .replaceAll('{sets}', exercise.sets?.toString() ?? 'N/A')
+        .replaceAll('{reps}', exercise.reps?.toString() ?? 'N/A')
+        .replaceAll('{weight}', exercise.weight?.toString() ?? 'N/A')
+        .replaceAll('{muscleGroups}', exercise.muscleGroups.join(', '))
+        .replaceAll('{feedback}', feedback)
+        .replaceAll('{name}', profile.name)
+        .replaceAll('{goals}', profile.fitnessGoals.join(', '))
+        .replaceAll('{healthConditions}', profile.healthConditions.join(', '))
+        .replaceAll('{exercises}', templateHints);
   }
 }
