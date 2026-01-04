@@ -30,6 +30,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-018](../backlog/features/FR-018-google-health-connect-planned-exercise.md) | Google Health Connect Planned Exercise Integration | 🟡 Medium | 13 | ⭕ | [Sprint 21](../sprints/sprint-21-google-health-connect-planned-exercise.md) | 2025-01-27 | 2026-01-03 |
 | [FR-019](../backlog/features/FR-019-open-food-facts-integration.md) | Open Food Facts Integration with Barcode Scanning | 🟠 High | 13 | ⭕ | [Sprint 20](../sprints/sprint-20-open-food-facts-integration.md) | 2025-01-27 | 2026-01-03 |
 | [FR-021](../backlog/features/FR-021-add-ai-suggestion-to-meal.md) | Add AI Suggestion to Meal or Snack | 🟠 High | 5 | ⭕ | [Sprint 19](../sprints/sprint-19-add-ai-suggestion-to-meal.md) | 2025-01-03 | 2025-01-03 |
+| [FR-022](../backlog/features/FR-022-on-device-slm-integration.md) | On-Device Small Language Model Integration | 🟠 High | 13 | ⭕ | [Sprint 22](../sprints/sprint-22-on-device-slm-integration.md) | 2026-01-03 | 2026-01-03 |
 
 ## Bug Fixes
 
@@ -76,6 +77,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - FR-018: Google Health Connect - No platform integration implemented
 - FR-019: Open Food Facts - No barcode scanning implemented
 - FR-021: Add AI Suggestion to Meal - Depends on FR-004 (complete)
+- FR-022: On-Device SLM Integration - Local AI on Pixel 10/compatible devices for weekly reviews, food/recipe suggestions
 
 ### Dependency Notes
 - **Sprint 14**: FR-020 (Backend Infrastructure) must be completed before FR-009 (Authentication) can start
@@ -83,4 +85,5 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - **Sprint 16-17**: FR-008 (Cloud Sync) requires both FR-020 and FR-009 to be complete
 - **Sprint 19**: FR-021 (Add AI Suggestion to Meal) depends on FR-004 (now complete)
 - **Sprint 21+**: Post-MVP Phase 2 features - prioritize based on user feedback and business needs
+- **FR-022**: On-Device SLM Integration - No blockers, can be implemented independently (requires FR-010 completed ✅)
 
