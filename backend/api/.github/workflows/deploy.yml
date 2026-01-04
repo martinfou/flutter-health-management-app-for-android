@@ -1,0 +1,120 @@
+name: Deploy to DreamHost
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/api/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: backend/api/vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('backend/api/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install PHP dependencies
+        working-directory: backend/api
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Create environment file
+        working-directory: backend/api
+        run: |
+          cp config/.env.example config/.env
+          # Replace environment variables with GitHub secrets
+          sed -i 's/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/' config/.env
+          sed -i 's/DB_NAME=.*/DB_NAME=${{ secrets.DB_NAME }}/' config/.env
+          sed -i 's/DB_USER=.*/DB_USER=${{ secrets.DB_USER }}/' config/.env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' config/.env
+          sed -i 's/JWT_SECRET=.*/JWT_SECRET=${{ secrets.JWT_SECRET }}/' config/.env
+          sed -i 's/GOOGLE_CLIENT_ID=.*/GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}/' config/.env
+          sed -i 's/GOOGLE_CLIENT_SECRET=.*/GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}/' config/.env
+          sed -i 's/API_BASE_URL=.*/API_BASE_URL=${{ secrets.API_BASE_URL }}/' config/.env
+
+      - name: Validate configuration
+        working-directory: backend/api
+        run: |
+          php -l public/index.php
+          php -l src/Controllers/HealthController.php
+          php -l src/Controllers/AuthController.php
+
+      - name: Deploy to DreamHost
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.1
+        with:
+          server: ${{ secrets.DREAMHOST_FTP_SERVER }}
+          username: ${{ secrets.DREAMHOST_FTP_USER }}
+          password: ${{ secrets.DREAMHOST_FTP_PASSWORD }}
+          local-dir: backend/api/
+          server-dir: ${{ secrets.DREAMHOST_SERVER_DIR }}
+          exclude: |
+            **/.git*/
+            **/.git*/**
+            **/node_modules/**
+            **/.env.example
+            **/docs/**
+            **/database/**
+            **/scripts/deploy*.sh
+            **/.github/**
+            **/composer.json
+            **/composer.lock
+            **/README.md
+
+      - name: Health Check
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 30
+          curl -f --max-time 30 ${{ secrets.API_BASE_URL }}/health || exit 1
+
+      - name: Run smoke tests
+        run: |
+          # Test health endpoint
+          curl -f ${{ secrets.API_BASE_URL }}/health | jq -e '.success == true' || exit 1
+
+          # Test CORS headers
+          response=$(curl -I -H "Origin: https://healthapp.example.com" ${{ secrets.API_BASE_URL }}/health 2>/dev/null)
+          echo "$response" | grep -q "Access-Control-Allow-Origin" || exit 1
+
+          echo "Smoke tests passed!"
+
+      - name: Notify deployment success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: "✅ Backend API deployed successfully to ${{ github.event.inputs.environment || 'production' }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify deployment failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: "❌ Backend API deployment failed"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
