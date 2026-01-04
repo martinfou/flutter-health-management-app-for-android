@@ -24,7 +24,7 @@ android {
         applicationId = "com.healthapp.health_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 24  // Android 7.0 Nougat - minimum API level
+        minSdk = 26  // Android 8.0 Oreo - minimum API level (required by ML Kit GenAI Prompt)
         targetSdk = 34  // Android 14 - target API level
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -41,4 +41,12 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Kotlin Coroutines for async AI Core operations
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // ML Kit GenAI Prompt API for Gemini Nano on-device AI
+    implementation("com.google.mlkit:genai-prompt:1.0.0-alpha1")
 }

@@ -7,6 +7,8 @@ enum LlmProviderType {
   openai,
   anthropic,
   ollama,
+  opencodeZen,
+  onDevice, // Gemini Nano via Android AI Core (Pixel 8 Pro+)
 }
 
 /// Configuration for an LLM provider

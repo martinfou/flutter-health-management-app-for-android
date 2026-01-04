@@ -5,13 +5,16 @@ import '../adapters/deepseek_adapter.dart';
 import '../adapters/openai_adapter.dart';
 import '../adapters/anthropic_adapter.dart';
 import '../adapters/ollama_adapter.dart';
+import '../adapters/opencode_zen_adapter.dart';
+import '../adapters/on_device_adapter.dart';
 
 /// Provider for the active LLM configuration
 final llmConfigProvider = StateProvider<LlmConfig>((ref) {
-  // Default to local Ollama with Llama 3
+  // Default to OpenCode Zen (free API from opencode.ai)
+  // Users need to set their API key in settings
   return const LlmConfig(
-    providerType: LlmProviderType.ollama,
-    model: 'llama3',
+    providerType: LlmProviderType.opencodeZen,
+    model: 'big-pickle', // Default model (OpenCode Zen model ID), can be changed in settings
   );
 });
 
@@ -22,7 +25,18 @@ final llmAdaptersProvider = Provider<Map<LlmProviderType, LlmProvider>>((ref) {
     LlmProviderType.openai: OpenAiAdapter(),
     LlmProviderType.anthropic: AnthropicAdapter(),
     LlmProviderType.ollama: OllamaAdapter(),
+    LlmProviderType.opencodeZen: OpenCodeZenAdapter(),
+    LlmProviderType.onDevice: OnDeviceLlmAdapter(),
   };
+});
+
+/// Provider for checking on-device AI availability
+final onDeviceAiAvailableProvider = FutureProvider<bool>((ref) async {
+  final adapter = ref.watch(llmAdaptersProvider)[LlmProviderType.onDevice];
+  if (adapter is OnDeviceLlmAdapter) {
+    return adapter.isAvailable();
+  }
+  return false;
 });
 
 /// Provider for the LlmService
