@@ -23,20 +23,47 @@ $dotenv->load();
 $config = require __DIR__ . '/../config/app.php';
 $dbConfig = require __DIR__ . '/../config/database.php';
 
-// Create services
-$db = new DatabaseService($dbConfig['database']);
-$jwtHelper = new JwtHelper(
-    $config['jwt']['secret'],
-    $config['jwt']['algorithm'],
-    $config['jwt']['access_token_ttl'],
-    $config['jwt']['refresh_token_ttl']
-);
-
 // Create Slim app
 $app = AppFactory::create();
 
-// Create middleware instances
-$authMiddleware = new AuthMiddleware($jwtHelper, $db);
+// Set up dependency injection in Slim's container
+$container = $app->getContainer();
+
+// Register services
+$container['db'] = function() use ($dbConfig) {
+    return new DatabaseService($dbConfig['database']);
+};
+
+$container['jwt'] = function() use ($config) {
+    return new JwtHelper(
+        $config['jwt']['secret'],
+        $config['jwt']['algorithm'],
+        $config['jwt']['access_token_ttl'],
+        $config['jwt']['refresh_token_ttl']
+    );
+};
+
+// Register controllers
+$container['HealthApp\\Controllers\\HealthController'] = function($container) {
+    return new \HealthApp\Controllers\HealthController($container['db']);
+};
+
+$container['HealthApp\\Controllers\\AuthController'] = function($container) use ($config) {
+    return new \HealthApp\Controllers\AuthController(
+        $container['db'],
+        $container['jwt'],
+        $config['google_oauth'] ?? []
+    );
+};
+
+$container['HealthApp\\Controllers\\HealthMetricsController'] = function($container) {
+    return new \HealthApp\Controllers\HealthMetricsController($container['db']);
+};
+
+// Create middleware instances (will be used when we add protected routes)
+$authMiddleware = function($container) {
+    return new AuthMiddleware($container['jwt'], $container['db']);
+};
 
 // Add global middleware
 $app->add(new ErrorMiddleware(
@@ -44,16 +71,18 @@ $app->add(new ErrorMiddleware(
     $config['logging']['level'] !== 'NONE'
 ));
 $app->add(new CorsMiddleware($config['cors']));
-$app->add(new RateLimitMiddleware($db, $config['api']['rate_limit']));
+$app->add(new RateLimitMiddleware($container['db'](), $config['api']['rate_limit']));
 $app->add(new ValidationMiddleware(
     ValidationMiddleware::createRules()
 ));
 
-// Add routes
-$app->group('/api/v1', function (RouteCollectorProxy $group) {
-    // Health check
-    $group->get('/health', \HealthApp\Controllers\HealthController::class . ':check');
+// Instantiate controllers with dependencies
+$healthController = new \HealthApp\Controllers\HealthController($container['db']());
+$authController = new \HealthApp\Controllers\AuthController($container['db'](), $container['jwt'](), $config['google_oauth'] ?? []);
+$healthMetricsController = new \HealthApp\Controllers\HealthMetricsController($container['db']());
 
+// Add routes
+$app->group('/api/v1', function (RouteCollectorProxy $group) use ($healthController, $authController, $healthMetricsController) {
     // API information
     $group->get('/', function ($request, $response) {
         return \HealthApp\Utils\ResponseHelper::success($response, [
@@ -76,15 +105,18 @@ $app->group('/api/v1', function (RouteCollectorProxy $group) {
         ], 'API information retrieved');
     });
 
+    // Health check
+    $group->get('/health', [$healthController, 'check']);
+
     // Authentication routes (no auth required)
-    $group->post('/auth/register', \HealthApp\Controllers\AuthController::class . ':register');
-    $group->post('/auth/login', \HealthApp\Controllers\AuthController::class . ':login');
-    $group->post('/auth/refresh', \HealthApp\Controllers\AuthController::class . ':refresh');
-    $group->post('/auth/verify-google', \HealthApp\Controllers\AuthController::class . ':verifyGoogle');
+    $group->post('/auth/register', [$authController, 'register']);
+    $group->post('/auth/login', [$authController, 'login']);
+    $group->post('/auth/refresh', [$authController, 'refresh']);
+    $group->post('/auth/verify-google', [$authController, 'verifyGoogle']);
 
     // Health metrics (temporarily without auth for testing)
-    $group->get('/health-metrics', \HealthApp\Controllers\HealthMetricsController::class . ':getAll');
-    $group->post('/health-metrics', \HealthApp\Controllers\HealthMetricsController::class . ':create');
+    $group->get('/health-metrics', [$healthMetricsController, 'getAll']);
+    $group->post('/health-metrics', [$healthMetricsController, 'create']);
 });
 
 // Run app
