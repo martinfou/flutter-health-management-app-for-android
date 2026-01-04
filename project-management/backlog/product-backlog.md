@@ -17,7 +17,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-006](../backlog/feature-requests/FR-006-update-health-tracking-history.md) | Update Health Tracking History | 🟠 High | 8 | ✅ | [Sprint 11](../sprints/sprint-11-post-mvp-improvements.md) | 2025-01-02 | 2025-01-03 |
 | [FR-007](../backlog/feature-requests/FR-007-metric-imperial-units.md) | Metric/Imperial Units Support | 🟠 High | 13 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-01-02 | 2025-01-27 |
 | [FR-008](../backlog/features/FR-008-cloud-sync-multi-device-support.md) | Cloud Sync & Multi-Device Support | 🟠 High | 21 | ⭕ | [Sprint 16-17](../sprints/sprint-16-17-cloud-sync-multi-device-support.md) | 2025-01-03 | 2026-01-03 |
-| [FR-020](../backlog/features/FR-020-backend-infrastructure.md) | Backend Infrastructure | 🟠 High | 21 | 📋 | [Sprint 14](../sprints/sprint-14-backend-infrastructure.md) | 2025-01-27 | 2026-01-03 |
+| [FR-020](../backlog/features/FR-020-backend-infrastructure.md) | Backend Infrastructure | 🟠 High | 21 | ⏳ | [Sprint 23](../sprints/sprint-23-backend-infrastructure-completion.md) | 2025-01-27 | 2026-01-03 |
 | [FR-009](../backlog/features/FR-009-user-authentication.md) | User Authentication | 🟠 High | 13 | ⭕ | Sprint 14-15 | 2025-01-03 | 2026-01-03 |
 | [FR-010](../backlog/features/FR-010-llm-integration.md) | LLM Integration | 🟠 High | 21 | ✅ | [Sprint 15](../sprints/sprint-15-llm-integration.md) | 2025-01-03 | 2026-01-03 |
 | [FR-011](../backlog/features/FR-011-advanced-analytics-module.md) | Advanced Analytics Module | 🟠 High | 21 | ⭕ | [Sprint 18-20](../sprints/sprint-18-20-advanced-analytics-module.md) | 2025-01-03 | 2026-01-03 |
@@ -67,9 +67,8 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - FR-004: Food Suggestion Based on Remaining Macros complete
 - FR-022: On-Device SLM Integration complete (Gemini Nano on Pixel devices)
 
-**Planned (Sprint Exists):**
-- FR-020: Backend Infrastructure - Sprint planned but not implemented
-- FR-009: User Authentication - Sprint planned but not implemented
+**In Progress:**
+- FR-020: Backend Infrastructure - Core API controllers implemented, middleware and deployment remaining
 
 **Not Started (Blocking Items):**
 - FR-008: Cloud Sync - Waiting on FR-020 (Backend) and FR-009 (Auth)
@@ -81,8 +80,8 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - FR-021: Add AI Suggestion to Meal - Depends on FR-004 (complete)
 
 ### Dependency Notes
-- **Sprint 14**: FR-020 (Backend Infrastructure) must be completed before FR-009 (Authentication) can start
-- **Sprint 14-15**: FR-009 (Authentication) requires backend to be deployed
+- **Sprint 23**: FR-020 (Backend Infrastructure) actively in progress - core API controllers complete, middleware and deployment remaining
+- **Post-Sprint 23**: FR-009 (Authentication) requires backend to be deployed and operational
 - **Sprint 16-17**: FR-008 (Cloud Sync) requires both FR-020 and FR-009 to be complete
 - **Sprint 19**: FR-021 (Add AI Suggestion to Meal) depends on FR-004 (now complete ✅)
 - **Sprint 21+**: Post-MVP Phase 2 features - prioritize based on user feedback and business needs
