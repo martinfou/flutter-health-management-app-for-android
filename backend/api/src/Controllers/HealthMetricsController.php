@@ -139,7 +139,7 @@ class HealthMetricsController
                 "INSERT INTO health_metrics (user_id, date, weight_kg, sleep_hours, sleep_quality,
                 energy_level, resting_heart_rate, blood_pressure_systolic, blood_pressure_diastolic,
                 steps, calories_burned, water_intake_ml, mood, stress_level, notes, metadata,
-                created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))",
                 $insertData
             );
 
@@ -209,7 +209,7 @@ class HealthMetricsController
                 ]);
             }
 
-            $updateFields[] = "updated_at = NOW()";
+            $updateFields[] = "updated_at = datetime('now')";
             $params[] = $id;
 
             $query = "UPDATE health_metrics SET " . implode(', ', $updateFields) . " WHERE id = ?";
@@ -244,7 +244,7 @@ class HealthMetricsController
 
             // Soft delete
             $this->db->execute(
-                "UPDATE health_metrics SET deleted_at = NOW(), updated_at = NOW() WHERE id = ?",
+                "UPDATE health_metrics SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
                 [$id]
             );
 
@@ -309,7 +309,7 @@ class HealthMetricsController
                             $params[] = $insertData[$i + 1]; // Skip user_id and date
                         }
 
-                        $updateFields[] = "updated_at = NOW()";
+                        $updateFields[] = "updated_at = datetime('now')";
                         $params[] = $existing[0]['id'];
 
                         $query = "UPDATE health_metrics SET " . implode(', ', $updateFields) . " WHERE id = ?";
@@ -320,7 +320,7 @@ class HealthMetricsController
                             "INSERT INTO health_metrics (user_id, date, weight_kg, sleep_hours, sleep_quality,
                             energy_level, resting_heart_rate, blood_pressure_systolic, blood_pressure_diastolic,
                             steps, calories_burned, water_intake_ml, mood, stress_level, notes, metadata,
-                            created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                            created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))",
                             $insertData
                         );
                     }

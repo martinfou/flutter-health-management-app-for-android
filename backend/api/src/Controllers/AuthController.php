@@ -52,16 +52,20 @@ class AuthController
             $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
 
             // Insert user
-            $userId = $this->db->execute(
-                "INSERT INTO users (email, password_hash, name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())",
+            $result = $this->db->execute(
+                "INSERT INTO users (email, password_hash, name, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))",
                 [$data['email'], $passwordHash, $data['name'] ?? null]
             );
 
-            if ($userId === 0) {
-                throw new \Exception('Failed to create user');
+            if ($result === false) {
+                throw new \Exception('Database insert failed');
             }
 
             $userId = (int) $this->db->lastInsertId();
+
+            if ($userId === 0) {
+                throw new \Exception('Failed to get inserted user ID');
+            }
 
             // Generate tokens
             $tokenPayload = ['user_id' => $userId, 'email' => $data['email']];
@@ -80,7 +84,9 @@ class AuthController
             ], 'User registered successfully', 201);
 
         } catch (\Exception $e) {
-            return ResponseHelper::serverError($response, 'Registration failed');
+            // Log the actual error for debugging
+            error_log('Registration error: ' . $e->getMessage());
+            return ResponseHelper::serverError($response, 'Registration failed: ' . $e->getMessage());
         }
     }
 
@@ -119,7 +125,7 @@ class AuthController
 
             // Update last login
             $this->db->execute(
-                "UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?",
+                "UPDATE users SET last_login_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
                 [$user['id']]
             );
 
@@ -244,7 +250,7 @@ class AuthController
 
                 // Create new Google user
                 $this->db->execute(
-                    "INSERT INTO users (email, google_id, name, email_verified_at, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW(), NOW())",
+                    "INSERT INTO users (email, google_id, name, email_verified_at, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'), datetime('now'))",
                     [$email, $googleId, $name]
                 );
 
@@ -260,7 +266,7 @@ class AuthController
 
             // Update last login
             $this->db->execute(
-                "UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?",
+                "UPDATE users SET last_login_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
                 [$user['id']]
             );
 
@@ -353,7 +359,7 @@ class AuthController
                 ]);
             }
 
-            $updateFields[] = "updated_at = NOW()";
+            $updateFields[] = "updated_at = datetime('now')";
             $params[] = $user['id'];
 
             $query = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id = ?";
@@ -377,7 +383,7 @@ class AuthController
         try {
             // Soft delete user account
             $this->db->execute(
-                "UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = ?",
+                "UPDATE users SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
                 [$user['id']]
             );
 
