@@ -65,9 +65,10 @@ class AuthTokens {
 class AuthenticationService {
   AuthenticationService._();
 
-  // Production backend URL
-  static const String _baseUrl =
-      Uri.parse('https://health.martinfourier.com/api');
+  // Production backend URL (will be deployed to DreamHost)
+  // Mock server URL for development/testing (until DreamHost is deployed)
+  // TODO: Replace with 'https://health.martinfourier.com/api' after deployment
+  static final _baseUrl = Uri.parse('http://192.168.5.17:3000/api');
   static const String _registerEndpoint = '/auth/register';
   static const String _loginEndpoint = '/auth/login';
   static const String _googleAuthEndpoint = '/auth/verify-google';
