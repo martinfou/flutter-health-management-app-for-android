@@ -2,7 +2,7 @@
 
 This is the main product backlog tracking all feature requests and bug fixes.
 
-**Last Updated**: 2026-01-03
+**Last Updated**: 2026-01-04
 **Implementation Order**: See [Implementation Order Recommendation](./implementation-order-recommendation.md)
 
 ## Feature Requests
@@ -28,7 +28,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-016](../backlog/feature-requests/FR-016-exercise-library-and-workout-plan-integration.md) | Exercise Library and Workout Plan Integration | 🟠 High | 13 | ⭕ | Sprint 13 | 2025-01-03 | 2025-01-03 |
 | [FR-017](../backlog/features/FR-017-comprehensive-exercise-tracking.md) | Comprehensive Exercise Tracking | 🟠 High | 21 | ⭕ | Backlog | 2025-01-27 | 2025-01-27 |
 | [FR-018](../backlog/features/FR-018-google-health-connect-planned-exercise.md) | Google Health Connect Planned Exercise Integration | 🟡 Medium | 13 | ⭕ | [Sprint 21](../sprints/sprint-21-google-health-connect-planned-exercise.md) | 2025-01-27 | 2026-01-03 |
-| [FR-019](../backlog/features/FR-019-open-food-facts-integration.md) | Open Food Facts Integration with Barcode Scanning | 🟠 High | 13 | ⭕ | [Sprint 20](../sprints/sprint-20-open-food-facts-integration.md) | 2025-01-27 | 2026-01-03 |
+| [FR-019](../backlog/features/FR-019-open-food-facts-integration.md) | Open Food Facts Integration with Autocomplete and Barcode Scanning | 🟠 High | 13 | ⭕ | [Sprint 20](../sprints/sprint-20-open-food-facts-integration.md) | 2025-01-27 | 2026-01-04 |
 | [FR-021](../backlog/features/FR-021-add-ai-suggestion-to-meal.md) | Add AI Suggestion to Meal or Snack | 🟠 High | 5 | ⭕ | [Sprint 19](../sprints/sprint-19-add-ai-suggestion-to-meal.md) | 2025-01-03 | 2025-01-03 |
 | [FR-022](../backlog/features/FR-022-on-device-slm-integration.md) | On-Device Small Language Model Integration | 🟠 High | 13 | ✅ | [Sprint 22](../sprints/sprint-22-on-device-slm-integration.md) | 2026-01-03 | 2026-01-03 |
 | [FR-024](../backlog/features/FR-024-garmin-watch-sync.md) | Garmin Watch Sync via Health Connect | 🟠 High | 13 | ⭕ | Backlog | 2026-01-04 | 2026-01-04 |
@@ -77,7 +77,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 **Not Started (Future Features):**
 - FR-011: Advanced Analytics Module - Only basic weekly LLM insights exist
 - FR-018: Google Health Connect - No platform integration implemented
-- FR-019: Open Food Facts - No barcode scanning implemented
+- FR-019: Open Food Facts - Autocomplete and barcode scanning integration in add food dialog (enhanced 2026-01-04)
 - FR-021: Add AI Suggestion to Meal - Depends on FR-004 (complete)
 
 ### Dependency Notes
