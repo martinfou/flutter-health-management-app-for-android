@@ -7,8 +7,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 // Project
 import 'package:health_app/core/errors/failures.dart';
-import 'package:health_app/core/network/token_storage.dart';
 import 'package:health_app/core/network/authenticated_http_client.dart';
+import 'package:health_app/core/network/token_storage.dart';
 import 'package:fpdart/fpdart.dart';
 
 /// Result type for authentication operations
@@ -65,13 +65,9 @@ class AuthTokens {
 class AuthenticationService {
   AuthenticationService._();
 
-  // Mock server URL for development
-  // For Android emulator: use 'http://10.0.2.2:3000/api'
-  // For iOS simulator: use 'http://localhost:3000/api'
-  // For physical device: use your computer's IP address, e.g., 'http://192.168.1.100:3000/api'
-  // TODO: Replace with actual backend URL for production
+  // Production backend URL
   static const String _baseUrl =
-      'http://192.168.5.17:3000/api'; // Android emulator default
+      Uri.parse('https://health.martinfourier.com/api');
   static const String _registerEndpoint = '/auth/register';
   static const String _loginEndpoint = '/auth/login';
   static const String _googleAuthEndpoint = '/auth/verify-google';
@@ -111,7 +107,6 @@ class AuthenticationService {
         final tokens = AuthTokens.fromJson(data);
         final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
 
-        // Save tokens
         await TokenStorage.saveAccessToken(tokens.accessToken);
         await TokenStorage.saveRefreshToken(tokens.refreshToken);
 
@@ -152,7 +147,6 @@ class AuthenticationService {
         final tokens = AuthTokens.fromJson(data);
         final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
 
-        // Save tokens
         await TokenStorage.saveAccessToken(tokens.accessToken);
         await TokenStorage.saveRefreshToken(tokens.refreshToken);
 
@@ -173,28 +167,19 @@ class AuthenticationService {
   /// Login with Google OAuth
   static Future<AuthResult<AuthUser>> loginWithGoogle() async {
     try {
-      // Sign out from any previous Google session
-      await _googleSignIn.signOut();
-
-      // Trigger Google Sign-In
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        // User cancelled the sign-in flow
         return Left(AuthenticationFailure('Google sign-in was cancelled'));
       }
 
-      // Get authentication details
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final String? idToken = googleAuth.idToken;
+      final googleAuth = await googleUser.authentication;
+      final String? idToken = await googleAuth?.idToken;
 
       if (idToken == null) {
         return Left(AuthenticationFailure('Failed to get Google ID token'));
       }
 
-      // Send Google ID token to backend for verification
       final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_googleAuthEndpoint'),
         headers: {'Content-Type': 'application/json'},
@@ -206,7 +191,6 @@ class AuthenticationService {
         final tokens = AuthTokens.fromJson(data);
         final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
 
-        // Save tokens
         await TokenStorage.saveAccessToken(tokens.accessToken);
         await TokenStorage.saveRefreshToken(tokens.refreshToken);
 
@@ -223,12 +207,10 @@ class AuthenticationService {
         ));
       }
     } catch (e) {
-      // Handle Google Play Services not available
       if (e.toString().contains('GoogleSignIn')) {
-        return Left(
-          AuthenticationFailure(
-              'Google Play Services not available or outdated'),
-        );
+        return Left(AuthenticationFailure(
+          'Google Play Services not available or outdated',
+        ));
       }
       return Left(NetworkFailure('Network error: ${e.toString()}'));
     }
@@ -252,13 +234,11 @@ class AuthenticationService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final tokens = AuthTokens.fromJson(data);
 
-        // Save new tokens
         await TokenStorage.saveAccessToken(tokens.accessToken);
         await TokenStorage.saveRefreshToken(tokens.refreshToken);
 
         return Right(tokens.accessToken);
       } else if (response.statusCode == 401) {
-        // Refresh token expired, clear tokens
         await TokenStorage.clearTokens();
         return Left(
             AuthenticationFailure('Session expired. Please login again'));
@@ -278,7 +258,6 @@ class AuthenticationService {
     try {
       final accessToken = await TokenStorage.getAccessToken();
       if (accessToken != null) {
-        // Try to call logout endpoint (optional, may fail if token expired)
         try {
           await AuthenticatedHttpClient.post(
             Uri.parse('$_baseUrl$_logoutEndpoint'),
@@ -287,16 +266,12 @@ class AuthenticationService {
               'Authorization': 'Bearer $accessToken',
             },
           );
-        } catch (_) {
-          // Ignore errors - we'll clear tokens anyway
-        }
+        } catch (_) {}
       }
 
-      // Clear tokens locally
       await TokenStorage.clearTokens();
       return const Right(null);
     } catch (e) {
-      // Even if logout fails, clear tokens locally
       await TokenStorage.clearTokens();
       return Left(NetworkFailure('Logout error: ${e.toString()}'));
     }
@@ -321,15 +296,15 @@ class AuthenticationService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final user = AuthUser.fromJson(data);
+
         return Right(user);
       } else if (response.statusCode == 401) {
-        // Token expired, try to refresh
         final refreshResult = await refreshToken();
         if (refreshResult.isLeft()) {
           return Left(
               AuthenticationFailure('Session expired. Please login again'));
         }
-        // Retry with new token
+
         return getProfile();
       } else {
         return Left(NetworkFailure(
@@ -369,15 +344,15 @@ class AuthenticationService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final user = AuthUser.fromJson(data);
+
         return Right(user);
       } else if (response.statusCode == 401) {
-        // Token expired, try to refresh
         final refreshResult = await refreshToken();
         if (refreshResult.isLeft()) {
           return Left(
               AuthenticationFailure('Session expired. Please login again'));
         }
-        // Retry with new token
+
         return updateProfile(email: email, name: name);
       } else {
         return Left(NetworkFailure(
@@ -464,7 +439,6 @@ class AuthenticationService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        // Clear tokens after successful deletion
         await TokenStorage.clearTokens();
         return const Right(null);
       } else if (response.statusCode == 401) {
@@ -477,7 +451,8 @@ class AuthenticationService {
         ));
       }
     } catch (e) {
-      return Left(NetworkFailure('Network error: ${e.toString()}'));
+      await TokenStorage.clearTokens();
+      return Left(NetworkFailure('Account deletion error: ${e.toString()}'));
     }
   }
 
