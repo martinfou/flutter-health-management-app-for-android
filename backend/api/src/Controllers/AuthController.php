@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HealthApp\Controllers;
 
 use HealthApp\Services\DatabaseService;
+use HealthApp\Services\EmailService;
 use HealthApp\Utils\JwtHelper;
 use HealthApp\Utils\ResponseHelper;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,12 +17,18 @@ class AuthController
     private DatabaseService $db;
     private JwtHelper $jwtHelper;
     private array $googleConfig;
+    private EmailService $emailService;
 
-    public function __construct(DatabaseService $db, JwtHelper $jwtHelper, array $googleConfig)
-    {
+    public function __construct(
+        DatabaseService $db,
+        JwtHelper $jwtHelper,
+        array $googleConfig,
+        EmailService $emailService
+    ) {
         $this->db = $db;
         $this->jwtHelper = $jwtHelper;
         $this->googleConfig = $googleConfig;
+        $this->emailService = $emailService;
     }
 
     /**
@@ -479,5 +486,121 @@ class AuthController
             'valid' => empty($errors),
             'errors' => $errors
         ];
+    }
+
+    /**
+     * Request password reset
+     */
+    public function requestPasswordReset(Request $request, Response $response): Response
+    {
+        $data = json_decode((string) $request->getBody(), true);
+
+        if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return ResponseHelper::validationError($response, [
+                'email' => 'Valid email is required'
+            ]);
+        }
+
+        try {
+            $email = $data['email'];
+
+            $users = $this->db->select(
+                "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL",
+                [$email]
+            );
+
+            if (empty($users)) {
+                return ResponseHelper::success($response, [], 'If email exists, password reset link sent');
+            }
+
+            $userId = $users[0]['id'];
+
+            $token = bin2hex(random_bytes(32));
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+            $this->db->execute(
+                "INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE token = VALUES(token), expires_at = VALUES(expires_at)",
+                [$email, $token, $expiresAt]
+            );
+
+            $this->emailService->sendPasswordResetEmail($email, $token);
+
+            return ResponseHelper::success($response, [], 'Password reset link sent');
+
+        } catch (\Exception $e) {
+            error_log('Password reset request error: ' . $e->getMessage());
+            return ResponseHelper::serverError($response, 'Failed to send password reset email');
+        }
+    }
+
+    /**
+     * Verify password reset token and set new password
+     */
+    public function verifyPasswordReset(Request $request, Response $response): Response
+    {
+        $data = json_decode((string) $request->getBody(), true);
+
+        if (empty($data['token']) || empty($data['password'])) {
+            return ResponseHelper::validationError($response, [
+                'token' => 'Token is required',
+                'password' => 'Password is required'
+            ]);
+        }
+
+        try {
+            $token = $data['token'];
+            $newPassword = $data['password'];
+
+            $resets = $this->db->select(
+                "SELECT email, expires_at FROM password_resets WHERE token = ?",
+                [$token]
+            );
+
+            if (empty($resets)) {
+                return ResponseHelper::validationError($response, [
+                    'token' => 'Invalid or expired token'
+                ]);
+            }
+
+            $reset = $resets[0];
+
+            if (strtotime($reset['expires_at']) < time()) {
+                return ResponseHelper::validationError($response, [
+                    'token' => 'Token has expired'
+                ]);
+            }
+
+            $email = $reset['email'];
+
+            $users = $this->db->select(
+                "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL",
+                [$email]
+            );
+
+            if (empty($users)) {
+                return ResponseHelper::notFound($response, 'User not found');
+            }
+
+            $userId = $users[0]['id'];
+
+            $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+
+            $this->db->execute(
+                "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?",
+                [$passwordHash, $userId]
+            );
+
+            $this->db->execute(
+                "DELETE FROM password_resets WHERE token = ?",
+                [$token]
+            );
+
+            return ResponseHelper::success($response, [], 'Password reset successfully');
+
+        } catch (\Exception $e) {
+            error_log('Password reset verification error: ' . $e->getMessage());
+            return ResponseHelper::serverError($response, 'Failed to reset password');
+        }
     }
 }

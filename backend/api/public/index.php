@@ -50,9 +50,10 @@ $container['HealthApp\\Controllers\\HealthController'] = function($container) {
 
 $container['HealthApp\\Controllers\\AuthController'] = function($container) use ($config) {
     return new \HealthApp\Controllers\AuthController(
-        $container['db'],
-        $container['jwt'],
-        $config['google_oauth'] ?? []
+        $container['db'](),
+        $container['jwt'](),
+        $config['google_oauth'] ?? [],
+        $config['email'] ?? []
     );
 };
 
@@ -61,7 +62,7 @@ $container['HealthApp\\Controllers\\HealthMetricsController'] = function($contai
 };
 
 // Create middleware instances (will be used when we add protected routes)
-$authMiddleware = function($container) {
+$authMiddlewareFactory = function($container) {
     return new AuthMiddleware($container['jwt'], $container['db']);
 };
 
@@ -78,11 +79,16 @@ $app->add(new ValidationMiddleware(
 
 // Instantiate controllers with dependencies
 $healthController = new \HealthApp\Controllers\HealthController($container['db']());
-$authController = new \HealthApp\Controllers\AuthController($container['db'](), $container['jwt'](), $config['google_oauth'] ?? []);
+$authController = new \HealthApp\Controllers\AuthController(
+    $container['db'](),
+    $container['jwt'](),
+    $config['google_oauth'] ?? [],
+    $config['email'] ?? []
+);
 $healthMetricsController = new \HealthApp\Controllers\HealthMetricsController($container['db']());
 
 // Add routes
-$app->group('/api/v1', function (RouteCollectorProxy $group) use ($healthController, $authController, $healthMetricsController) {
+$app->group('/api/v1', function (RouteCollectorProxy $group) use ($healthController, $authController, $healthMetricsController, $container) {
     // API information
     $group->get('/', function ($request, $response) {
         return \HealthApp\Utils\ResponseHelper::success($response, [
@@ -114,9 +120,26 @@ $app->group('/api/v1', function (RouteCollectorProxy $group) use ($healthControl
     $group->post('/auth/refresh', [$authController, 'refresh']);
     $group->post('/auth/verify-google', [$authController, 'verifyGoogle']);
 
+    // Password reset routes (no auth required)
+    $group->post('/auth/password-reset/request', [$authController, 'requestPasswordReset']);
+    $group->post('/auth/password-reset/verify', [$authController, 'verifyPasswordReset']);
+
     // Health metrics (temporarily without auth for testing)
     $group->get('/health-metrics', [$healthMetricsController, 'getAll']);
     $group->post('/health-metrics', [$healthMetricsController, 'create']);
+
+    // Protected routes (require authentication)
+    $authMiddleware = new AuthMiddleware($container['jwt'], $container['db']());
+    $group->group('', function (RouteCollectorProxy $group) use ($authController, $authMiddleware) {
+        $group->get('/user/profile', [$authController, 'getProfile'])
+               ->add($authMiddleware);
+        $group->put('/user/profile', [$authController, 'updateProfile'])
+               ->add($authMiddleware);
+        $group->delete('/user/account', [$authController, 'deleteAccount'])
+               ->add($authMiddleware);
+        $group->post('/auth/logout', [$authController, 'logout'])
+               ->add($authMiddleware);
+    });
 });
 
 // Run app

@@ -40,6 +40,16 @@ return [
         'redirect_uri' => $_ENV['GOOGLE_REDIRECT_URI'] ?? '',
     ],
 
+    'email' => [
+        'host' => $_ENV['SMTP_HOST'] ?? 'smtp.gmail.com',
+        'port' => (int)($_ENV['SMTP_PORT'] ?? 587),
+        'username' => $_ENV['SMTP_USERNAME'] ?? '',
+        'password' => $_ENV['SMTP_PASSWORD'] ?? '',
+        'encryption' => $_ENV['SMTP_ENCRYPTION'] ?? 'tls',
+        'from_email' => $_ENV['EMAIL_FROM'] ?? 'noreply@health.martinfourier.com',
+        'from_name' => $_ENV['EMAIL_FROM_NAME'] ?? 'Health Management App',
+    ],
+
     'sync' => [
         'conflict_resolution' => 'last_write_wins', // Options: last_write_wins, manual, merge
         'max_batch_size' => (int)($_ENV['SYNC_MAX_BATCH_SIZE'] ?? 100),

@@ -197,5 +197,17 @@ CREATE TABLE migrations (
     UNIQUE KEY unique_migration (migration)
 );
 
+-- Password resets table
+CREATE TABLE password_resets (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_token (token),
+    INDEX idx_email (email)
+);
+
 -- Insert initial migration record
 INSERT INTO migrations (migration, batch) VALUES ('001_initial_schema.sql', 1);
+INSERT INTO migrations (migration, batch) VALUES ('002_add_password_resets.sql', 2);
