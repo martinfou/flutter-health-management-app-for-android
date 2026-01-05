@@ -53,7 +53,7 @@ class AuthController
 
             // Insert user
             $result = $this->db->execute(
-                "INSERT INTO users (email, password_hash, name, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))",
+                "INSERT INTO users (email, password_hash, name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())",
                 [$data['email'], $passwordHash, $data['name'] ?? null]
             );
 
@@ -125,7 +125,7 @@ class AuthController
 
             // Update last login
             $this->db->execute(
-                "UPDATE users SET last_login_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+                "UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?",
                 [$user['id']]
             );
 
@@ -250,7 +250,7 @@ class AuthController
 
                 // Create new Google user
                 $this->db->execute(
-                    "INSERT INTO users (email, google_id, name, email_verified_at, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'), datetime('now'))",
+                    "INSERT INTO users (email, google_id, name, email_verified_at, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW(), NOW())",
                     [$email, $googleId, $name]
                 );
 
@@ -266,7 +266,7 @@ class AuthController
 
             // Update last login
             $this->db->execute(
-                "UPDATE users SET last_login_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+                "UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?",
                 [$user['id']]
             );
 
@@ -359,7 +359,7 @@ class AuthController
                 ]);
             }
 
-            $updateFields[] = "updated_at = datetime('now')";
+            $updateFields[] = "updated_at = NOW()";
             $params[] = $user['id'];
 
             $query = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id = ?";
@@ -383,7 +383,7 @@ class AuthController
         try {
             // Soft delete user account
             $this->db->execute(
-                "UPDATE users SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+                "UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = ?",
                 [$user['id']]
             );
 

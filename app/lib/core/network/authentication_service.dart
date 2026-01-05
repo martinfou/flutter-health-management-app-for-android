@@ -2,6 +2,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+// Google Sign-In
+import 'package:google_sign_in/google_sign_in.dart';
+
 // Project
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/network/token_storage.dart';
@@ -66,15 +69,24 @@ class AuthenticationService {
   // For iOS simulator: use 'http://localhost:3000/api'
   // For physical device: use your computer's IP address, e.g., 'http://192.168.1.100:3000/api'
   // TODO: Replace with actual backend URL for production
-  static const String _baseUrl = 'http://192.168.5.17:3000/api'; // Android emulator default
+  static const String _baseUrl =
+      'http://192.168.5.17:3000/api'; // Android emulator default
   static const String _registerEndpoint = '/auth/register';
   static const String _loginEndpoint = '/auth/login';
+  static const String _googleAuthEndpoint = '/auth/verify-google';
   static const String _refreshEndpoint = '/auth/refresh';
   static const String _logoutEndpoint = '/auth/logout';
   static const String _profileEndpoint = '/user/profile';
-  static const String _passwordResetRequestEndpoint = '/auth/password-reset/request';
-  static const String _passwordResetVerifyEndpoint = '/auth/password-reset/verify';
+  static const String _passwordResetRequestEndpoint =
+      '/auth/password-reset/request';
+  static const String _passwordResetVerifyEndpoint =
+      '/auth/password-reset/verify';
   static const String _deleteAccountEndpoint = '/user/account';
+
+  // Google Sign-In instance
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email'],
+  );
 
   /// Register a new user
   static Future<AuthResult<AuthUser>> register({
@@ -157,6 +169,70 @@ class AuthenticationService {
     }
   }
 
+  /// Login with Google OAuth
+  static Future<AuthResult<AuthUser>> loginWithGoogle() async {
+    try {
+      // Sign out from any previous Google session
+      await _googleSignIn.signOut();
+
+      // Trigger Google Sign-In
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // User cancelled the sign-in flow
+        return Left(AuthenticationFailure('Google sign-in was cancelled'));
+      }
+
+      // Get authentication details
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        return Left(AuthenticationFailure('Failed to get Google ID token'));
+      }
+
+      // Send Google ID token to backend for verification
+      final response = await http.post(
+        Uri.parse('$_baseUrl$_googleAuthEndpoint'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id_token': idToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final tokens = AuthTokens.fromJson(data);
+        final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+
+        // Save tokens
+        await TokenStorage.saveAccessToken(tokens.accessToken);
+        await TokenStorage.saveRefreshToken(tokens.refreshToken);
+
+        return Right(user);
+      } else if (response.statusCode == 401) {
+        final error = jsonDecode(response.body) as Map<String, dynamic>;
+        return Left(AuthenticationFailure(
+          error['message'] as String? ?? 'Google authentication failed',
+        ));
+      } else {
+        return Left(NetworkFailure(
+          'Google authentication failed: ${response.statusCode}',
+          response.statusCode,
+        ));
+      }
+    } catch (e) {
+      // Handle Google Play Services not available
+      if (e.toString().contains('GoogleSignIn')) {
+        return Left(
+          AuthenticationFailure(
+              'Google Play Services not available or outdated'),
+        );
+      }
+      return Left(NetworkFailure('Network error: ${e.toString()}'));
+    }
+  }
+
   /// Refresh access token using refresh token
   static Future<AuthResult<String>> refreshToken() async {
     try {
@@ -183,7 +259,8 @@ class AuthenticationService {
       } else if (response.statusCode == 401) {
         // Refresh token expired, clear tokens
         await TokenStorage.clearTokens();
-        return Left(AuthenticationFailure('Session expired. Please login again'));
+        return Left(
+            AuthenticationFailure('Session expired. Please login again'));
       } else {
         return Left(NetworkFailure(
           'Token refresh failed: ${response.statusCode}',
@@ -248,7 +325,8 @@ class AuthenticationService {
         // Token expired, try to refresh
         final refreshResult = await refreshToken();
         if (refreshResult.isLeft()) {
-          return Left(AuthenticationFailure('Session expired. Please login again'));
+          return Left(
+              AuthenticationFailure('Session expired. Please login again'));
         }
         // Retry with new token
         return getProfile();
@@ -295,7 +373,8 @@ class AuthenticationService {
         // Token expired, try to refresh
         final refreshResult = await refreshToken();
         if (refreshResult.isLeft()) {
-          return Left(AuthenticationFailure('Session expired. Please login again'));
+          return Left(
+              AuthenticationFailure('Session expired. Please login again'));
         }
         // Retry with new token
         return updateProfile(email: email, name: name);
@@ -388,7 +467,8 @@ class AuthenticationService {
         await TokenStorage.clearTokens();
         return const Right(null);
       } else if (response.statusCode == 401) {
-        return Left(AuthenticationFailure('Session expired. Please login again'));
+        return Left(
+            AuthenticationFailure('Session expired. Please login again'));
       } else {
         return Left(NetworkFailure(
           'Failed to delete account: ${response.statusCode}',
@@ -405,4 +485,3 @@ class AuthenticationService {
     return await TokenStorage.hasTokens();
   }
 }
-

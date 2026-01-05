@@ -1,5 +1,5 @@
 {
-    "name": "health-app-backend",
+    "name": "healthapp/backend",
     "description": "REST API backend for Flutter Health Management App",
     "type": "project",
     "license": "MIT",

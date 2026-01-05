@@ -43,10 +43,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final authState = ref.read(authStateProvider);
     if (authState.isAuthenticated && mounted) {
-      // Navigate to home page
       Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     } else if (authState.error != null && mounted) {
-      // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authState.error!),
@@ -54,6 +52,51 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
       );
     }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    await ref.read(authStateProvider.notifier).loginWithGoogle();
+
+    final authState = ref.read(authStateProvider);
+    if (authState.isAuthenticated && mounted) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+    } else if (authState.error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authState.error!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildGoogleSignInButton(AuthState authState) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: authState.isLoading ? null : _handleGoogleSignIn,
+        icon: authState.isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.account_circle, size: 24),
+        label: authState.isLoading
+            ? const Text('Signing in...')
+            : const Text(
+                'Sign in with Google',
+                style: TextStyle(fontSize: 16),
+              ),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.grey.shade300),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -90,7 +133,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
+                _buildGoogleSignInButton(authState),
+                const SizedBox(height: 24),
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('or'),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Or sign in with email',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -113,7 +178,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -156,7 +223,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           : () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => const PasswordResetRequestPage(),
+                                  builder: (_) =>
+                                      const PasswordResetRequestPage(),
                                 ),
                               );
                             },
@@ -205,7 +273,3 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 }
-
-
-
-

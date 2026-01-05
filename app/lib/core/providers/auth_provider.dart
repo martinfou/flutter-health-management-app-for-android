@@ -49,8 +49,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       // Try to get user profile
       final profileResult = await AuthenticationService.getProfile();
       profileResult.fold(
-      (failure) {
-        // If profile fetch fails, user is not authenticated
+        (failure) {
+          // If profile fetch fails, user is not authenticated
           state = AuthState(isAuthenticated: false);
         },
         (user) {
@@ -69,7 +69,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     String? name,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    
+
     final result = await AuthenticationService.register(
       email: email,
       password: password,
@@ -100,7 +100,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     required String password,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    
+
     final result = await AuthenticationService.login(
       email: email,
       password: password,
@@ -124,12 +124,36 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     );
   }
 
+  /// Login with Google OAuth
+  Future<void> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await AuthenticationService.loginWithGoogle();
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          isLoading: false,
+          error: failure.message,
+          isAuthenticated: false,
+        );
+      },
+      (user) {
+        state = AuthState(
+          isAuthenticated: true,
+          user: user,
+          isLoading: false,
+        );
+      },
+    );
+  }
+
   /// Logout user
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
-    
+
     await AuthenticationService.logout();
-    
+
     state = AuthState(
       isAuthenticated: false,
       isLoading: false,
@@ -157,7 +181,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     String? name,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    
+
     final result = await AuthenticationService.updateProfile(
       email: email,
       name: name,
@@ -199,4 +223,3 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 final currentUserProvider = Provider<AuthUser?>((ref) {
   return ref.watch(authStateProvider).user;
 });
-
