@@ -8,6 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 // Project
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/network/token_storage.dart';
+import 'package:health_app/core/network/authenticated_http_client.dart';
 import 'package:fpdart/fpdart.dart';
 
 /// Result type for authentication operations
@@ -95,7 +96,7 @@ class AuthenticationService {
     String? name,
   }) async {
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_registerEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -137,7 +138,7 @@ class AuthenticationService {
     required String password,
   }) async {
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_loginEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -194,7 +195,7 @@ class AuthenticationService {
       }
 
       // Send Google ID token to backend for verification
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_googleAuthEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_token': idToken}),
@@ -241,7 +242,7 @@ class AuthenticationService {
         return Left(AuthenticationFailure('No refresh token available'));
       }
 
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_refreshEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh_token': refreshToken}),
@@ -279,7 +280,7 @@ class AuthenticationService {
       if (accessToken != null) {
         // Try to call logout endpoint (optional, may fail if token expired)
         try {
-          await http.post(
+          await AuthenticatedHttpClient.post(
             Uri.parse('$_baseUrl$_logoutEndpoint'),
             headers: {
               'Content-Type': 'application/json',
@@ -309,7 +310,7 @@ class AuthenticationService {
         return Left(AuthenticationFailure('Not authenticated'));
       }
 
-      final response = await http.get(
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse('$_baseUrl$_profileEndpoint'),
         headers: {
           'Content-Type': 'application/json',
@@ -356,7 +357,7 @@ class AuthenticationService {
       if (email != null) body['email'] = email;
       if (name != null) body['name'] = name;
 
-      final response = await http.put(
+      final response = await AuthenticatedHttpClient.put(
         Uri.parse('$_baseUrl$_profileEndpoint'),
         headers: {
           'Content-Type': 'application/json',
@@ -394,7 +395,7 @@ class AuthenticationService {
     required String email,
   }) async {
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_passwordResetRequestEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
@@ -419,7 +420,7 @@ class AuthenticationService {
     required String newPassword,
   }) async {
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_passwordResetVerifyEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -454,7 +455,7 @@ class AuthenticationService {
         return Left(AuthenticationFailure('Not authenticated'));
       }
 
-      final response = await http.delete(
+      final response = await AuthenticatedHttpClient.delete(
         Uri.parse('$_baseUrl$_deleteAccountEndpoint'),
         headers: {
           'Content-Type': 'application/json',
