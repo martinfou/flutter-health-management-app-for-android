@@ -294,7 +294,8 @@ class AuthController
             ], 'Google authentication successful');
 
         } catch (\Exception $e) {
-            return ResponseHelper::serverError($response, 'Google authentication failed');
+            error_log('Google OAuth Error: ' . $e->getMessage());
+            return ResponseHelper::serverError($response, 'Google authentication failed: ' . $e->getMessage());
         }
     }
 

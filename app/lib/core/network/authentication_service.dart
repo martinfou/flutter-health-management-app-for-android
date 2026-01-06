@@ -66,7 +66,7 @@ class AuthenticationService {
   AuthenticationService._();
 
   // Production backend URL (deployed to healthapp.compica.com)
-  static final _baseUrl = Uri.parse('https://healthapp.compica.com/api');
+  static final _baseUrl = Uri.parse('https://healthapp.compica.com/api/v1');
   static const String _registerEndpoint = '/auth/register';
   static const String _loginEndpoint = '/auth/login';
   static const String _googleAuthEndpoint = '/auth/verify-google';
@@ -202,8 +202,14 @@ class AuthenticationService {
           error['message'] as String? ?? 'Google authentication failed',
         ));
       } else {
+        // Parse error message from response body for better debugging
+        String errorMessage = 'Google authentication failed: ${response.statusCode}';
+        try {
+          final error = jsonDecode(response.body) as Map<String, dynamic>;
+          errorMessage = error['message'] as String? ?? errorMessage;
+        } catch (_) {}
         return Left(NetworkFailure(
-          'Google authentication failed: ${response.statusCode}',
+          errorMessage,
           response.statusCode,
         ));
       }
