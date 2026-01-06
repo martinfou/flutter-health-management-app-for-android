@@ -65,10 +65,8 @@ class AuthTokens {
 class AuthenticationService {
   AuthenticationService._();
 
-  // Production backend URL (will be deployed to DreamHost)
-  // Mock server URL for development/testing (until DreamHost is deployed)
-  // TODO: Replace with 'https://health.martinfourier.com/api' after deployment
-  static final _baseUrl = Uri.parse('http://192.168.5.17:3000/api');
+  // Production backend URL (deployed to healthapp.compica.com)
+  static final _baseUrl = Uri.parse('https://healthapp.compica.com/api');
   static const String _registerEndpoint = '/auth/register';
   static const String _loginEndpoint = '/auth/login';
   static const String _googleAuthEndpoint = '/auth/verify-google';
@@ -83,7 +81,9 @@ class AuthenticationService {
 
   // Google Sign-In instance
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
+    clientId: '741266813874-6j2lqr66e3nq68kusvdhhe69b8alsss6.apps.googleusercontent.com',
+    serverClientId: '741266813874-275q1r6aug39onitf95lepsh02msg2s7.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
   );
 
   /// Register a new user

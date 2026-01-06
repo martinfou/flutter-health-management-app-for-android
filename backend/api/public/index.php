@@ -11,6 +11,7 @@ use HealthApp\Middleware\ErrorMiddleware;
 use HealthApp\Middleware\RateLimitMiddleware;
 use HealthApp\Middleware\ValidationMiddleware;
 use HealthApp\Services\DatabaseService;
+use HealthApp\Services\EmailService;
 use HealthApp\Utils\JwtHelper;
 use Slim\Factory\AppFactory;
 use Slim\Routing\RouteCollectorProxy;
@@ -77,13 +78,16 @@ $app->add(new ValidationMiddleware(
     ValidationMiddleware::createRules()
 ));
 
+// Instantiate services
+$emailService = new EmailService($config['email']);
+
 // Instantiate controllers with dependencies
 $healthController = new \HealthApp\Controllers\HealthController($container['db']());
 $authController = new \HealthApp\Controllers\AuthController(
     $container['db'](),
     $container['jwt'](),
     $config['google_oauth'] ?? [],
-    $config['email'] ?? []
+    $emailService
 );
 $healthMetricsController = new \HealthApp\Controllers\HealthMetricsController($container['db']());
 
@@ -129,7 +133,7 @@ $app->group('/api/v1', function (RouteCollectorProxy $group) use ($healthControl
     $group->post('/health-metrics', [$healthMetricsController, 'create']);
 
     // Protected routes (require authentication)
-    $authMiddleware = new AuthMiddleware($container['jwt'], $container['db']());
+    $authMiddleware = new AuthMiddleware($container['jwt'](), $container['db']());
     $group->group('', function (RouteCollectorProxy $group) use ($authController, $authMiddleware) {
         $group->get('/user/profile', [$authController, 'getProfile'])
                ->add($authMiddleware);

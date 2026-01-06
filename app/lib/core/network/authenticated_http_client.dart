@@ -69,10 +69,8 @@ class AuthenticatedHttpClient {
 
     final accessToken = await TokenStorage.getAccessToken();
     if (accessToken != null) {
-      throw Exception('Not authenticated');
+      headers['Authorization'] = 'Bearer $accessToken';
     }
-
-    headers['Authorization'] = 'Bearer $accessToken';
 
     http.Response response =
         await _makeRequest(method, url, headers, body, encoding);

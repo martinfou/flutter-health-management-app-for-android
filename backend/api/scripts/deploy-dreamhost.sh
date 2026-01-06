@@ -13,10 +13,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Configuration
-REMOTE_USER="compica_health"
-REMOTE_HOST="health.martinfournier.com"
-REMOTE_DIR="~/health-app-api"
-LOCAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/backend/api"
+REMOTE_USER="compica_healthapp"
+REMOTE_HOST="healthapp.compica.com"
+REMOTE_DIR="/home/compica_healthapp/healthapp.compica.com/api"
+LOCAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV="${1:-production}"
 
 echo "========================================"
@@ -69,16 +69,40 @@ fi
 
 echo ""
 
-# Install/update composer dependencies
-echo "Installing/updating composer dependencies..."
-ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_DIR && composer install --no-dev --optimize-autoloader"
+# Install/update composer dependencies locally first
+echo "Installing composer dependencies locally..."
 
-if [ $? -ne 0 ]; then
-    echo "✗ Composer install failed"
+if ! command -v composer &> /dev/null; then
+    echo "✗ Composer not installed locally"
+    echo "Please install Composer from https://getcomposer.org/download/"
     exit 1
 fi
 
-echo "✓ Composer dependencies installed"
+cd "$LOCAL_DIR"
+composer install --no-dev --optimize-autoloader
+
+if [ $? -ne 0 ]; then
+    echo "✗ Local composer install failed"
+    exit 1
+fi
+
+echo "✓ Composer dependencies installed locally"
+echo ""
+
+# Sync vendor directory to DreamHost
+echo "Uploading vendor directory..."
+rsync -avz --delete \
+    "$LOCAL_DIR/vendor/" \
+    "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/vendor/" \
+    | grep -E "(sending|sent|100%|total)"
+
+if [ ${PIPESTATUS[0]} -eq 0 ]; then
+    echo "✓ Vendor directory synced successfully"
+else
+    echo "✗ Vendor sync failed"
+    exit 1
+fi
+
 echo ""
 
 # Set file permissions
@@ -131,7 +155,7 @@ echo "   chmod +x scripts/deploy-schema.sh"
 echo "   ./scripts/deploy-schema.sh"
 echo ""
 echo "3. Test deployment:"
-echo "   curl https://health.martinfourier.com/api/v1/health"
+echo "   curl https://healthapp.compica.com/api/v1/health"
 echo ""
 
 if [ "$ENV" = "production" ]; then

@@ -1,11 +1,7 @@
 -- Health App Database Schema
 -- MySQL 8.0+ with utf8mb4 encoding
-
-CREATE DATABASE IF NOT EXISTS health_app
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE health_app;
+-- Note: Database should already be created in DreamHost
+-- The deploy-schema.sh script will specify which database to use
 
 -- Users table (GDPR compliant with soft deletes)
 CREATE TABLE users (
