@@ -16,6 +16,15 @@ const JWT_REFRESH_TOKEN_EXPIRY = '30d'; // 30 days
 app.use(cors());
 app.use(express.json());
 
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('  Body:', JSON.stringify(req.body).substring(0, 100) + '...');
+  }
+  next();
+});
+
 // In-memory user storage (replace with database in production)
 const users = [];
 const refreshTokens = [];
@@ -192,6 +201,93 @@ app.post('/api/auth/login', async (req, res) => {
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Login failed',
+      },
+    });
+  }
+});
+
+// POST /api/auth/verify-google
+app.post('/api/auth/verify-google', async (req, res) => {
+  try {
+    const { id_token } = req.body;
+
+    // Validation
+    if (!id_token) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Google ID token is required',
+        },
+      });
+    }
+
+    // Mock: Decode and verify Google ID token
+    // In production, verify with Google's API using google-auth-library
+    // For testing, we'll extract email from the token (it's a JWT)
+    let googleUser;
+    try {
+      // Decode the token without verification (mock mode)
+      const decoded = jwt.decode(id_token);
+      if (!decoded) {
+        throw new Error('Invalid token');
+      }
+      googleUser = {
+        email: decoded.email || decoded.sub + '@gmail.com',
+        name: decoded.name,
+        google_id: decoded.sub,
+      };
+    } catch (error) {
+      return res.status(401).json({
+        error: {
+          code: 'INVALID_TOKEN',
+          message: 'Invalid Google ID token',
+        },
+      });
+    }
+
+    // Find or create user
+    let user = users.find((u) => u.email === googleUser.email);
+    if (!user) {
+      user = {
+        id: uuidv4(),
+        email: googleUser.email,
+        name: googleUser.name,
+        google_id: googleUser.google_id,
+        passwordHash: null, // No password for OAuth users
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      users.push(user);
+    } else {
+      // Update user with Google info if not already set
+      if (!user.google_id) {
+        user.google_id = googleUser.google_id;
+        user.updated_at = new Date().toISOString();
+      }
+    }
+
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    // Store refresh token
+    refreshTokens.push(refreshToken);
+
+    // Return response
+    res.status(200).json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Google authentication failed',
       },
     });
   }
@@ -522,9 +618,9 @@ app.get('/health', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Mock API server running on http://localhost:${PORT}`);
-  console.log(`📝 API Base URL: http://localhost:${PORT}/api`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Mock API server running on http://0.0.0.0:${PORT}`);
+  console.log(`📝 API Base URL: http://0.0.0.0:${PORT}/api`);
   console.log(`\nAvailable endpoints:`);
   console.log(`  POST   /api/auth/register`);
   console.log(`  POST   /api/auth/login`);

@@ -52,3 +52,4 @@ backend/api/.env
 app/backend/api/vendor/
 app/backend/api/composer.lock
 app/backend/api/.env
+app/android/app/client_secret*.json
