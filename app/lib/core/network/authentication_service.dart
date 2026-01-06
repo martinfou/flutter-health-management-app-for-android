@@ -28,7 +28,7 @@ class AuthUser {
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
-      id: json['id'] as String,
+      id: json['id'].toString(),
       email: json['email'] as String,
       name: json['name'] as String?,
     );
@@ -188,7 +188,8 @@ class AuthenticationService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = responseData['data'] as Map<String, dynamic>;
         final tokens = AuthTokens.fromJson(data);
         final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
 
