@@ -49,8 +49,8 @@ echo ""
 # Run schema
 echo -e "${YELLOW}Running database migrations...${NC}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
-SCHEMA_FILE="$SCRIPT_DIR/backend/api/database/schema.sql"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCHEMA_FILE="$SCRIPT_DIR/database/schema.sql"
 
 if [ ! -f "$SCHEMA_FILE" ]; then
     echo -e "${RED}Schema file not found: $SCHEMA_FILE${NC}"
