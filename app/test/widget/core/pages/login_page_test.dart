@@ -7,7 +7,7 @@ import 'package:health_app/core/pages/login_page.dart';
 import 'package:health_app/core/providers/auth_provider.dart';
 import 'package:health_app/core/utils/validation_utils.dart';
 
-@GenerateNiceMocks([AuthStateNotifier])
+@GenerateNiceMocks([MockSpec<AuthStateNotifier>()])
 void main() {
   late MockAuthStateNotifier mockAuthProvider;
   late NavigatorObserver mockNavigator;

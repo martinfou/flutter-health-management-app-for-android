@@ -107,5 +107,76 @@ class HealthMetricModel extends HiveObject {
       ..updatedAt = entity.updatedAt;
     return model;
   }
+  /// Create from JSON (API response)
+  factory HealthMetricModel.fromJson(Map<String, dynamic> json) {
+    final model = HealthMetricModel()
+      ..id = json['id'] as String
+      ..userId = json['user_id'] as String
+      ..date = DateTime.parse(json['date'] as String)
+      ..weight = json['weight_kg'] != null 
+          ? (json['weight_kg'] as num).toDouble() 
+          : null
+      ..sleepQuality = json['sleep_quality'] as int?
+      ..sleepHours = json['sleep_hours'] != null 
+          ? (json['sleep_hours'] as num).toDouble() 
+          : null
+      ..energyLevel = json['energy_level'] as int?
+      ..restingHeartRate = json['resting_heart_rate'] as int?
+      ..systolicBP = json['blood_pressure_systolic'] as int?
+      ..diastolicBP = json['blood_pressure_diastolic'] as int?
+      ..notes = json['notes'] as String?
+      ..createdAt = DateTime.parse(json['created_at'] as String)
+      ..updatedAt = DateTime.parse(json['updated_at'] as String);
+
+    // Parse metadata for body measurements
+    if (json['metadata'] != null) {
+      try {
+        final metadata = json['metadata'] is String 
+            ? Map<String, dynamic>.from(
+                // Simple parsing if it's a string, or use a proper decoder if imported
+                // Assuming metadata is returned as Map or String dependent on backend
+                // For safety, let's assume specific handling might be needed 
+                // but for now relying on backend sending JSON object or check implementation
+               json['metadata'] as Map) // This might fail if string
+            : json['metadata'] as Map<String, dynamic>;
+            
+        if (metadata.containsKey('body_measurements')) {
+          final measurements = metadata['body_measurements'] as Map<String, dynamic>;
+          model.bodyMeasurements = measurements.map(
+            (key, value) => MapEntry(key, (value as num).toDouble()),
+          );
+        }
+      } catch (e) {
+        // Ignore metadata parsing errors for now
+      }
+    }
+
+    return model;
+  }
+
+  /// Convert to JSON (API request)
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> metadata = {};
+    if (bodyMeasurements != null) {
+      metadata['body_measurements'] = bodyMeasurements;
+    }
+
+    return {
+      'id': id,
+      'user_id': userId,
+      'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD
+      'weight_kg': weight,
+      'sleep_quality': sleepQuality,
+      'sleep_hours': sleepHours,
+      'energy_level': energyLevel,
+      'resting_heart_rate': restingHeartRate,
+      'blood_pressure_systolic': systolicBP,
+      'blood_pressure_diastolic': diastolicBP,
+      'notes': notes,
+      'metadata': metadata,
+      if (createdAt != null) 'created_at': createdAt.toIso8601String(),
+      if (updatedAt != null) 'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 }
 

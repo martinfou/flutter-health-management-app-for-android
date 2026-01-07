@@ -18,7 +18,9 @@ import 'package:health_app/features/user_profile/domain/entities/gender.dart';
 import 'package:health_app/core/providers/user_preferences_provider.dart';
 import 'package:health_app/core/utils/unit_converter.dart';
 import 'package:health_app/core/utils/format_utils.dart';
+import 'package:health_app/core/utils/format_utils.dart';
 import 'package:health_app/features/health_tracking/presentation/pages/weight_history_page.dart';
+import 'package:health_app/features/health_tracking/presentation/providers/health_metrics_sync_provider.dart';
 
 /// Weight entry page for logging daily weight
 /// 
@@ -306,6 +308,9 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Weight' : 'Weight Entry'),
+        actions: [
+          _buildSyncIndicator(ref),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -692,6 +697,47 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+
+  Widget _buildSyncIndicator(WidgetRef ref) {
+    final isSyncingAsync = ref.watch(isSyncingProvider);
+
+    return isSyncingAsync.when(
+      data: (isSyncing) {
+        if (isSyncing) {
+          return const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+          );
+        } else {
+          return IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync now',
+            onPressed: () {
+              ref.read(manualSyncProvider)();
+            },
+          );
+        }
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => IconButton(
+        icon: const Icon(Icons.sync_problem),
+        color: Colors.red,
+        tooltip: 'Sync failed',
+        onPressed: () {
+           ref.read(manualSyncProvider)();
+        },
       ),
     );
   }

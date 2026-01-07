@@ -60,5 +60,11 @@ abstract class HealthTrackingRepository {
 
   /// Delete all health metrics for a user
   Future<Result<void>> deleteHealthMetricsByUserId(String userId);
+
+  /// Sync health metrics with backend
+  /// 
+  /// Pushes local changes and pulls remote changes.
+  /// Returns [SyncFailure] if sync fails, but local operations are not affected.
+  Future<Result<void>> syncHealthMetrics();
 }
 

@@ -3,14 +3,19 @@ import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
 import 'package:health_app/features/health_tracking/domain/repositories/health_tracking_repository.dart';
 import 'package:health_app/features/health_tracking/data/datasources/local/health_tracking_local_datasource.dart';
+import 'package:health_app/features/health_tracking/data/services/health_metrics_sync_service.dart';
 
 /// HealthTracking repository implementation
 /// 
 /// Implements the HealthTrackingRepository interface using local data source.
 class HealthTrackingRepositoryImpl implements HealthTrackingRepository {
   final HealthTrackingLocalDataSource _localDataSource;
+  final HealthMetricsSyncService _syncService;
 
-  HealthTrackingRepositoryImpl(this._localDataSource);
+  HealthTrackingRepositoryImpl(
+    this._localDataSource,
+    this._syncService,
+  );
 
   @override
   Future<HealthMetricResult> getHealthMetric(String id) async {
@@ -94,7 +99,12 @@ class HealthTrackingRepositoryImpl implements HealthTrackingRepository {
       );
     }
 
-    return await _localDataSource.saveHealthMetric(metric);
+    final result = await _localDataSource.saveHealthMetric(metric);
+    // Opportunistic sync
+    if (result.isRight()) {
+       _syncService.syncHealthMetrics();
+    }
+    return result;
   }
 
   @override
@@ -112,17 +122,37 @@ class HealthTrackingRepositoryImpl implements HealthTrackingRepository {
       return Left(ValidationFailure('Date cannot be in the future'));
     }
 
-    return await _localDataSource.updateHealthMetric(metric);
+    final result = await _localDataSource.updateHealthMetric(metric);
+    // Opportunistic sync
+    if (result.isRight()) {
+       _syncService.syncHealthMetrics();
+    }
+    return result;
   }
 
   @override
   Future<Result<void>> deleteHealthMetric(String id) async {
-    return await _localDataSource.deleteHealthMetric(id);
+    final result = await _localDataSource.deleteHealthMetric(id);
+    // Opportunistic sync
+    if (result.isRight()) {
+       _syncService.syncHealthMetrics();
+    }
+    return result;
   }
 
   @override
   Future<Result<void>> deleteHealthMetricsByUserId(String userId) async {
-    return await _localDataSource.deleteHealthMetricsByUserId(userId);
+    final result = await _localDataSource.deleteHealthMetricsByUserId(userId);
+    // Opportunistic sync
+    if (result.isRight()) {
+       _syncService.syncHealthMetrics();
+    }
+    return result;
+  }
+
+  @override
+  Future<Result<void>> syncHealthMetrics() async {
+    return await _syncService.syncHealthMetrics();
   }
 }
 

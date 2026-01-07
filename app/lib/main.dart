@@ -12,6 +12,7 @@ import 'package:health_app/core/providers/database_initializer.dart';
 import 'package:health_app/core/providers/auth_provider.dart';
 import 'package:health_app/core/constants/auth_config.dart';
 import 'package:health_app/core/errors/error_handler.dart';
+import 'package:health_app/core/sync/background_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +60,11 @@ class MyApp extends ConsumerWidget {
 
     // Watch authentication state to determine initial route
     final authState = ref.watch(authStateProvider);
+
+    // Trigger background data sync when authenticated
+    if (authState.isAuthenticated) {
+      ref.watch(backgroundSyncProvider);
+    }
 
     // Show loading screen while checking authentication
     if (authState.isLoading && !authState.isAuthenticated) {

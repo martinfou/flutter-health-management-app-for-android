@@ -181,6 +181,11 @@ class AuthenticationService {
         return Left(AuthenticationFailure('Failed to get Google ID token'));
       }
 
+      // TEMP: Log token for Postman testing - REMOVE IN PRODUCTION
+      print('=== GOOGLE ID TOKEN FOR POSTMAN ===');
+      print(idToken);
+      print('=== END TOKEN ===');
+
       final response = await AuthenticatedHttpClient.post(
         Uri.parse('$_baseUrl$_googleAuthEndpoint'),
         headers: {'Content-Type': 'application/json'},
