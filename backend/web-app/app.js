@@ -189,6 +189,12 @@ async function loadProfile() {
     const profileDiv = document.getElementById('profileInfo');
     profileDiv.innerHTML = '<div class="loading">Loading profile...</div>';
 
+    // Validate token exists
+    if (!accessToken) {
+        logout();
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/user/profile`, {
             headers: {
@@ -203,12 +209,14 @@ async function loadProfile() {
             displayProfile(data.data);
             document.getElementById('userEmail').textContent = data.data.email;
         } else if (response.status === 401) {
-            // Token expired, try refresh or logout
+            // Token expired or invalid - clear and show login
+            console.log('Token invalid or expired, logging out');
             logout();
         } else {
             profileDiv.innerHTML = '<div class="error-message show">Failed to load profile</div>';
         }
     } catch (error) {
+        console.error('Profile load error:', error);
         profileDiv.innerHTML = '<div class="error-message show">Network error</div>';
     }
 }
