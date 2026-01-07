@@ -32,15 +32,6 @@ class AnalyticsPage extends ConsumerWidget {
       ),
       body: metricsAsync.when(
         data: (metrics) {
-          if (metrics.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.trending_up,
-              title: 'No Data Yet',
-              description:
-                  'Start tracking your health metrics to see progress and analytics.',
-            );
-          }
-
           return SingleChildScrollView(
             padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
             child: Column(
@@ -48,8 +39,31 @@ class AnalyticsPage extends ConsumerWidget {
               children: [
                 const WeeklyReviewInsightsWidget(),
                 const SizedBox(height: UIConstants.spacingLg),
-                Card(
-                  child: Padding(
+                if (metrics.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(UIConstants.cardPadding),
+                      child: Column(
+                        children: [
+                          Icon(Icons.trending_up, size: 48, color: theme.colorScheme.primary.withOpacity(0.5)),
+                          const SizedBox(height: UIConstants.spacingMd),
+                          Text(
+                            'No Data Yet',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: UIConstants.spacingSm),
+                          Text(
+                            'Start tracking your health metrics to see progress and analytics.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else ...[
+                  Card(
+                    child: Padding(
                     padding: const EdgeInsets.all(UIConstants.cardPadding),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

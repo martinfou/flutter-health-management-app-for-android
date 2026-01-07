@@ -33,6 +33,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-022](../backlog/features/FR-022-on-device-slm-integration.md) | On-Device Small Language Model Integration | 🟠 High | 13 | ✅ | [Sprint 22](../sprints/sprint-22-on-device-slm-integration.md) | 2026-01-03 | 2026-01-03 |
 | [FR-024](../backlog/features/FR-024-garmin-watch-sync.md) | Garmin Watch Sync via Health Connect | 🟠 High | 13 | ⭕ | Backlog | 2026-01-04 | 2026-01-04 |
 | [FR-025](../backlog/features/FR-025-weight-history-display.md) | Weight History Display on Weight Entry Screen | 🟡 Medium | 5 | ✅ | Backlog | 2026-01-06 | 2026-01-06 |
+| [FR-027](../backlog/features/FR-027-weekly-review-data-requirement-info.md) | Weekly Review Data Requirement Info | 🟡 Medium | 2 | ✅ | Backlog | 2026-01-06 | 2026-01-06 |
 
 ## Bug Fixes
 

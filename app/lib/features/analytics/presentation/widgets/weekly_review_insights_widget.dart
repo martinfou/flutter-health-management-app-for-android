@@ -95,6 +95,14 @@ class _WeeklyReviewInsightsWidgetState extends ConsumerState<WeeklyReviewInsight
                     'Get a personalized analysis of your health trends, sleep, and weight progress for the past week.',
                     textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: UIConstants.spacingSm),
+                  Text(
+                    'Note: Requires at least 1 day of data. 4-7 days of tracking provides the best quality insights.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    ),
+                  ),
                   const SizedBox(height: UIConstants.spacingMd),
                   ElevatedButton.icon(
                     onPressed: _generateReview,
