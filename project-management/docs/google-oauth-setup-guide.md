@@ -44,14 +44,37 @@ This guide explains how to set up Google OAuth for the Health Management App aut
 
 ### 3.2 Create OAuth 2.0 Client ID
 
+You'll need to create **two** OAuth client IDs:
+- One for **Android** (mobile app)
+- One for **Web** (web dashboard)
+
+#### Android OAuth Client
+
 1. Navigate to **APIs & Services > Credentials**
 2. Click "+ Create Credentials"
 3. Select "OAuth client ID"
 4. Choose application type: **Android**
 5. Fill in the required fields:
+   - **Name**: Health App Android
    - **Package name**: `com.example.health_app` (replace with your app's package name)
      - Found in `app/android/app/build.gradle` as `applicationId`
    - **SHA-1 certificate fingerprint**: Get from keystore (see below)
+
+#### Web OAuth Client
+
+1. Navigate to **APIs & Services > Credentials**
+2. Click "+ Create Credentials"
+3. Select "OAuth client ID"
+4. Choose application type: **Web application**
+5. Fill in the required fields:
+   - **Name**: Health App Web Dashboard
+   - **Authorized JavaScript origins**:
+     - `https://healthapp.compica.com`
+     - `http://localhost:3000` (for local development, optional)
+   - **Authorized redirect URIs**:
+     - `https://healthapp.compica.com`
+6. Click "Create"
+7. Copy the **Web Client ID** - you'll need it for the web dashboard
 
 ### 3.3 Get SHA-1 Fingerprint from Keystore
 
@@ -103,14 +126,27 @@ Check `app/android/key.properties` (if exists) or look in your project documenta
 
 ### 4.1 Update Backend `.env` File
 
-In `backend/api/.env`, set:
+In `backend/api/.env`, set the **Android Client ID**:
 
 ```bash
-GOOGLE_CLIENT_ID=<your-client-id-here>
+GOOGLE_CLIENT_ID=<your-android-client-id-here>
 GOOGLE_CLIENT_SECRET=<your-client-secret-here>
 ```
 
-Note: For mobile app sign-in, the Client Secret is optional but required if you later add web sign-in support.
+Note: The backend uses the Android client ID for mobile app authentication.
+
+### 4.2 Update Web Dashboard Configuration
+
+In `backend/web-app/app.js`, update the **Web Client ID**:
+
+```javascript
+google.accounts.id.initialize({
+    client_id: 'YOUR-WEB-CLIENT-ID.apps.googleusercontent.com',
+    callback: handleGoogleSignIn
+});
+```
+
+Replace `YOUR-WEB-CLIENT-ID` with the Web OAuth client ID you created in Step 3.2.
 
 ### 4.2 Restart Backend
 
