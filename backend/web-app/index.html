@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Management Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="container">
+            <div class="card">
+                <h1>🏥 Health Management</h1>
+                <p class="subtitle">Track your health, manage your wellness</p>
+
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('email')">Email Login</button>
+                    <button class="tab-btn" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <!-- Email Login Form -->
+                <form id="loginForm" class="form-container">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                    <div id="loginError" class="error-message"></div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="form-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="registerName">Full Name</label>
+                        <input type="text" id="registerName" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" placeholder="Min. 8 characters" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                    <div id="registerError" class="error-message"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="screen" style="display: none;">
+        <nav class="navbar">
+            <div class="nav-content">
+                <h1>🏥 Health Dashboard</h1>
+                <div class="nav-actions">
+                    <span id="userEmail" class="user-email"></span>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- User Profile Card -->
+            <div class="card">
+                <h2>👤 Profile</h2>
+                <div id="profileInfo" class="profile-info">
+                    <div class="loading">Loading profile...</div>
+                </div>
+            </div>
+
+            <!-- Health Metrics -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📊 Health Metrics</h2>
+                    <button onclick="showAddMetricForm()" class="btn btn-primary btn-sm">+ Add Metric</button>
+                </div>
+
+                <!-- Add Metric Form (Hidden by default) -->
+                <div id="addMetricForm" class="form-container" style="display: none;">
+                    <h3>Add New Health Metric</h3>
+                    <form id="metricForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="metricDate">Date</label>
+                                <input type="date" id="metricDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="metricWeight">Weight (kg)</label>
+                                <input type="number" step="0.1" id="metricWeight" placeholder="75.5">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="metricSleep">Sleep Hours</label>
+                                <input type="number" step="0.5" id="metricSleep" placeholder="7.5">
+                            </div>
+                            <div class="form-group">
+                                <label for="metricSteps">Steps</label>
+                                <input type="number" id="metricSteps" placeholder="10000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="metricSleepQuality">Sleep Quality (1-10)</label>
+                                <input type="number" min="1" max="10" id="metricSleepQuality" placeholder="8">
+                            </div>
+                            <div class="form-group">
+                                <label for="metricEnergy">Energy Level (1-10)</label>
+                                <input type="number" min="1" max="10" id="metricEnergy" placeholder="7">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="metricNotes">Notes</label>
+                            <textarea id="metricNotes" rows="2" placeholder="How are you feeling today?"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Metric</button>
+                            <button type="button" onclick="hideAddMetricForm()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                        <div id="metricError" class="error-message"></div>
+                    </form>
+                </div>
+
+                <div id="metricsTable">
+                    <div class="loading">Loading metrics...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
