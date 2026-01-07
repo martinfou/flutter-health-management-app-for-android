@@ -18,6 +18,7 @@ import 'package:health_app/features/user_profile/domain/entities/gender.dart';
 import 'package:health_app/core/providers/user_preferences_provider.dart';
 import 'package:health_app/core/utils/unit_converter.dart';
 import 'package:health_app/core/utils/format_utils.dart';
+import 'package:health_app/features/health_tracking/presentation/pages/weight_history_page.dart';
 
 /// Weight entry page for logging daily weight
 /// 
@@ -486,8 +487,210 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
               isLoading: _isSaving,
               width: double.infinity,
             ),
+
+            const SizedBox(height: UIConstants.spacingLg),
+
+            // Weight history section
+            _buildWeightHistorySection(theme, useImperial),
           ],
         ),
+        ),
+      ),
+    );
+  }
+
+  /// Build weight history section showing last 10 entries
+  Widget _buildWeightHistorySection(ThemeData theme, bool useImperial) {
+    final metricsAsync = ref.watch(healthMetricsProvider);
+
+    return metricsAsync.when(
+      data: (metrics) {
+        // Filter to only weight metrics and sort by date descending
+        final weightMetrics = metrics
+            .where((m) => m.weight != null)
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
+
+        // Take only the last 10 entries
+        final recentWeights = weightMetrics.take(10).toList();
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(UIConstants.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.history,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: UIConstants.spacingXs),
+                    Text(
+                      'Recent Weight History',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: UIConstants.spacingMd),
+                if (recentWeights.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: UIConstants.spacingMd,
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.scale_outlined,
+                            size: 48,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(height: UIConstants.spacingSm),
+                          Text(
+                            'No weight history yet',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ...recentWeights.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final metric = entry.value;
+                    final dateFormat = DateFormat('MMM d, yyyy');
+                    final timeFormat = DateFormat('h:mm a');
+                    final isToday = DateTime(
+                      metric.date.year,
+                      metric.date.month,
+                      metric.date.day,
+                    ) ==
+                        DateTime(
+                          DateTime.now().year,
+                          DateTime.now().month,
+                          DateTime.now().day,
+                        );
+
+                    return Column(
+                      children: [
+                        if (index > 0)
+                          Divider(
+                            height: 1,
+                            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                          ),
+                        InkWell(
+                          onTap: () {
+                            // Navigate to full weight history page
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const WeightHistoryPage(),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: UIConstants.spacingSm,
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: theme.colorScheme.primaryContainer,
+                                  child: Icon(
+                                    Icons.scale,
+                                    size: 16,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                const SizedBox(width: UIConstants.spacingMd),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        FormatUtils.formatWeightValue(
+                                          metric.weight!,
+                                          useImperial,
+                                        ),
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        isToday
+                                            ? 'Today at ${timeFormat.format(metric.createdAt)}'
+                                            : dateFormat.format(metric.date),
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(UIConstants.cardPadding),
+          child: Column(
+            children: [
+              Text(
+                'Recent Weight History',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: UIConstants.spacingMd),
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      error: (error, stack) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(UIConstants.cardPadding),
+          child: Column(
+            children: [
+              Text(
+                'Recent Weight History',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: UIConstants.spacingMd),
+              Text(
+                'Unable to load history',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
