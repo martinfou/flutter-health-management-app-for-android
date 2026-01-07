@@ -107,7 +107,15 @@ echo ""
 
 # Set file permissions
 echo "Setting file permissions..."
-ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_DIR && find . -type d -exec chmod 755 {} \; && find . -type f -exec chmod 644 {} \;"
+ssh "$REMOTE_USER@$REMOTE_HOST" << 'EOF'
+    # Ensure web root directory is readable
+    chmod 755 /home/compica_healthapp/healthapp.compica.com
+
+    # Set API directory permissions
+    cd /home/compica_healthapp/healthapp.compica.com/api
+    find . -type d -exec chmod 755 {} \;
+    find . -type f -exec chmod 644 {} \;
+EOF
 
 if [ $? -ne 0 ]; then
     echo "✗ Permission setting failed"
