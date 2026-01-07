@@ -125,6 +125,11 @@ class AuthController
 
             $user = $users[0];
 
+            // Check if user has a password (not OAuth-only account)
+            if (empty($user['password_hash'])) {
+                return ResponseHelper::error($response, 'This account was created with Google Sign-In. Please use Google to login.', 401);
+            }
+
             // Verify password
             if (!password_verify($data['password'], $user['password_hash'])) {
                 return ResponseHelper::error($response, 'Invalid credentials', 401);
@@ -219,11 +224,39 @@ class AuthController
         try {
             // Verify Google OAuth token
             $client = new \Google\Client();
-            $client->setClientId($this->googleConfig['client_id']);
 
-            $payload = $client->verifyIdToken($data['id_token']);
+            // Accept tokens from both Android app and server/web client
+            // Android Client ID: 741266813874-6j2lqr66e3nq68kusvdhhe69b8alsss6.apps.googleusercontent.com
+            // Server Client ID: 741266813874-275q1r6aug39onitf95lepsh02msg2s7.apps.googleusercontent.com
+            $androidClientId = '741266813874-6j2lqr66e3nq68kusvdhhe69b8alsss6.apps.googleusercontent.com';
+            $serverClientId = $this->googleConfig['client_id'];
+
+            error_log('Attempting Google token verification...');
+            error_log('Server Client ID: ' . $serverClientId);
+            error_log('Android Client ID: ' . $androidClientId);
+
+            // Try to verify with server client ID first
+            try {
+                $payload = $client->verifyIdToken($data['id_token'], $serverClientId);
+                error_log('Verified with server client ID');
+            } catch (\Exception $e) {
+                error_log('Server client ID verification failed: ' . $e->getMessage());
+                $payload = false;
+            }
+
+            // If that fails, try with Android client ID
+            if (!$payload) {
+                try {
+                    $payload = $client->verifyIdToken($data['id_token'], $androidClientId);
+                    error_log('Verified with Android client ID');
+                } catch (\Exception $e) {
+                    error_log('Android client ID verification failed: ' . $e->getMessage());
+                    $payload = false;
+                }
+            }
 
             if (!$payload) {
+                error_log('Both verification attempts failed');
                 return ResponseHelper::unauthorized($response, 'Invalid Google token');
             }
 

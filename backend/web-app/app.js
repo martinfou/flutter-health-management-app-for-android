@@ -21,7 +21,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set today's date as default
     document.getElementById('metricDate').valueAsDate = new Date();
+
+    // Initialize Google Sign-In
+    initializeGoogleSignIn();
 });
+
+// Initialize Google Sign-In
+function initializeGoogleSignIn() {
+    if (typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+            client_id: '741266813874-275q1r6aug39onitf95lepsh02msg2s7.apps.googleusercontent.com',
+            callback: handleGoogleSignIn
+        });
+        google.accounts.id.renderButton(
+            document.getElementById('googleSignInButton'),
+            {
+                theme: 'outline',
+                size: 'large',
+                width: '100%',
+                text: 'signin_with'
+            }
+        );
+    } else {
+        setTimeout(initializeGoogleSignIn, 100);
+    }
+}
+
+// Handle Google Sign-In
+async function handleGoogleSignIn(response) {
+    try {
+        const apiResponse = await fetch(`${API_BASE_URL}/auth/verify-google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_token: response.credential })
+        });
+
+        const data = await apiResponse.json();
+
+        if (apiResponse.ok && data.success) {
+            accessToken = data.data.access_token;
+            refreshToken = data.data.refresh_token;
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
+            loadDashboard();
+        } else {
+            const errorDiv = document.getElementById('loginError');
+            showError(errorDiv, data.message || 'Google sign-in failed');
+        }
+    } catch (error) {
+        const errorDiv = document.getElementById('loginError');
+        showError(errorDiv, 'Network error. Please try again.');
+    }
+}
 
 // Tab Switching
 function switchTab(tab) {
