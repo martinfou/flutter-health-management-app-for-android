@@ -117,6 +117,11 @@ class AuthenticationService {
         return Left(ValidationFailure(
           error['message'] as String? ?? 'Registration failed',
         ));
+      } else if (response.statusCode == 409) {
+        final error = jsonDecode(response.body) as Map<String, dynamic>;
+        return Left(ValidationFailure(
+          error['message'] as String? ?? 'This email is already registered. Please login or use a different email.',
+        ));
       } else {
         return Left(NetworkFailure(
           'Registration failed: ${response.statusCode}',
