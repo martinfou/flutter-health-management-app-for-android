@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', function () {
-    return redirect('/login');
+    return response(file_get_contents(resource_path('views/welcome-simple.blade.php')))->header('Content-Type', 'text/html');
 });
 
 // Authentication routes
