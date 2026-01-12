@@ -32,8 +32,9 @@ class CorsMiddleware
         $response = $next($request);
 
         // Add CORS headers to response
-        if ($originAllowed) {
-            $response->header('Access-Control-Allow-Origin', $origin ?: '*');
+        if ($originAllowed && $origin) {
+            // Note: Cannot use '*' with credentials=true, must be explicit origin
+            $response->header('Access-Control-Allow-Origin', $origin);
             $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
             $response->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
             $response->header('Access-Control-Allow-Credentials', 'true');
