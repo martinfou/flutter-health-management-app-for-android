@@ -45,7 +45,10 @@ class AnalyticsPage extends ConsumerWidget {
                       padding: const EdgeInsets.all(UIConstants.cardPadding),
                       child: Column(
                         children: [
-                          Icon(Icons.trending_up, size: 48, color: theme.colorScheme.primary.withOpacity(0.5)),
+                          Icon(Icons.trending_up,
+                              size: 48,
+                              color:
+                                  theme.colorScheme.primary.withOpacity(0.5)),
                           const SizedBox(height: UIConstants.spacingMd),
                           Text(
                             'No Data Yet',
@@ -64,51 +67,52 @@ class AnalyticsPage extends ConsumerWidget {
                 else ...[
                   Card(
                     child: Padding(
-                    padding: const EdgeInsets.all(UIConstants.cardPadding),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Progress Overview',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      padding: const EdgeInsets.all(UIConstants.cardPadding),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Progress Overview',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: UIConstants.spacingMd),
-                        Text(
-                          'Analytics features are coming soon. In the meantime, '
-                          'you can view detailed trends in each feature module.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
+                          const SizedBox(height: UIConstants.spacingMd),
+                          Text(
+                            'Analytics features are coming soon. In the meantime, '
+                            'you can view detailed trends in each feature module.',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: UIConstants.spacingLg),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(UIConstants.cardPadding),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Metrics Recorded',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
+                  const SizedBox(height: UIConstants.spacingLg),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(UIConstants.cardPadding),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Metrics Recorded',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: UIConstants.spacingSm),
-                        Text(
-                          '${metrics.length}',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
+                          const SizedBox(height: UIConstants.spacingSm),
+                          Text(
+                            '${metrics.length}',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           );

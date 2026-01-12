@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\HealthMetric;
 use Illuminate\Http\Request;
@@ -15,39 +16,31 @@ class HealthMetricsController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->attributes->get('user');
+        try {
+            $user = $request->attributes->get('user');
 
-        $query = HealthMetric::where('user_id', $user->id);
+            $query = HealthMetric::where('user_id', $user->id);
 
-        // Apply filters
-        if ($request->has('start_date')) {
-            $query->where('date', '>=', $request->start_date);
+            // Apply filters
+            if ($request->has('start_date')) {
+                $query->where('date', '>=', $request->start_date);
+            }
+            if ($request->has('end_date')) {
+                $query->where('date', '<=', $request->end_date);
+            }
+
+            $limit = (int) $request->input('limit', 20);
+            $limit = min($limit, 100);
+
+            $metrics = $query->orderBy('date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->paginate($limit);
+
+            return ResponseHelper::paginated($metrics, 'Health metrics retrieved successfully');
+
+        } catch (\Exception $e) {
+            return ResponseHelper::serverError('Failed to retrieve health metrics: ' . $e->getMessage());
         }
-        if ($request->has('end_date')) {
-            $query->where('date', '<=', $request->end_date);
-        }
-
-        $limit = $request->input('limit', 100);
-        $offset = $request->input('offset', 0);
-
-        $total = $query->count();
-        $metrics = $query->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->limit($limit)
-            ->offset($offset)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Health metrics retrieved successfully',
-            'data' => $metrics,
-            'pagination' => [
-                'total' => $total,
-                'page' => (int)($offset / $limit) + 1,
-                'limit' => $limit,
-            ],
-            'timestamp' => now()->toIso8601String(),
-        ]);
     }
 
     /**
@@ -77,12 +70,7 @@ class HealthMetricsController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         // Check for duplicate date
@@ -91,11 +79,10 @@ class HealthMetricsController extends Controller
             ->first();
 
         if ($existing) {
-            return response()->json([
-                'success' => false,
-                'message' => 'A health metric entry already exists for this date',
-                'timestamp' => now()->toIso8601String(),
-            ], 409);
+            return ResponseHelper::error(
+                'A health metric entry already exists for this date',
+                409
+            );
         }
 
         try {
@@ -118,19 +105,14 @@ class HealthMetricsController extends Controller
                 'metadata' => $request->metadata ?? [],
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Health metric created successfully',
-                'data' => ['health_metric' => $metric],
-                'timestamp' => now()->toIso8601String(),
-            ], 201);
+            return ResponseHelper::success(
+                ['health_metric' => $metric],
+                'Health metric created successfully',
+                201
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create health metric',
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Failed to create health metric: ' . $e->getMessage());
         }
     }
 
@@ -140,26 +122,25 @@ class HealthMetricsController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $user = $request->attributes->get('user');
+        try {
+            $user = $request->attributes->get('user');
 
-        $metric = HealthMetric::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+            $metric = HealthMetric::where('id', $id)
+                ->where('user_id', $user->id)
+                ->first();
 
-        if (!$metric) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Health metric not found',
-                'timestamp' => now()->toIso8601String(),
-            ], 404);
+            if (!$metric) {
+                return ResponseHelper::notFound('Health metric not found');
+            }
+
+            return ResponseHelper::success(
+                ['health_metric' => $metric],
+                'Health metric retrieved successfully'
+            );
+
+        } catch (\Exception $e) {
+            return ResponseHelper::serverError('Failed to retrieve health metric: ' . $e->getMessage());
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Health metric retrieved successfully',
-            'data' => ['health_metric' => $metric],
-            'timestamp' => now()->toIso8601String(),
-        ]);
     }
 
     /**
@@ -175,11 +156,7 @@ class HealthMetricsController extends Controller
             ->first();
 
         if (!$metric) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Health metric not found',
-                'timestamp' => now()->toIso8601String(),
-            ], 404);
+            return ResponseHelper::notFound('Health metric not found');
         }
 
         $validator = Validator::make($request->all(), [
@@ -201,31 +178,25 @@ class HealthMetricsController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         try {
-            $metric->fill($request->all());
+            $metric->fill($request->only([
+                'date', 'weight_kg', 'sleep_hours', 'sleep_quality', 'energy_level',
+                'resting_heart_rate', 'blood_pressure_systolic', 'blood_pressure_diastolic',
+                'steps', 'calories_burned', 'water_intake_ml', 'mood', 'stress_level',
+                'notes', 'metadata'
+            ]));
             $metric->save();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Health metric updated successfully',
-                'data' => ['health_metric' => $metric],
-                'timestamp' => now()->toIso8601String(),
-            ]);
+            return ResponseHelper::success(
+                ['health_metric' => $metric],
+                'Health metric updated successfully'
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update health metric',
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Failed to update health metric: ' . $e->getMessage());
         }
     }
 
@@ -242,28 +213,16 @@ class HealthMetricsController extends Controller
             ->first();
 
         if (!$metric) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Health metric not found',
-                'timestamp' => now()->toIso8601String(),
-            ], 404);
+            return ResponseHelper::notFound('Health metric not found');
         }
 
         try {
             $metric->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Health metric deleted successfully',
-                'timestamp' => now()->toIso8601String(),
-            ]);
+            return ResponseHelper::success([], 'Health metric deleted successfully');
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete health metric',
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Failed to delete health metric: ' . $e->getMessage());
         }
     }
 
@@ -285,16 +244,12 @@ class HealthMetricsController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         try {
-            $synced = [];
+            $synced = 0;
+            $updated = 0;
             $errors = [];
 
             foreach ($request->metrics as $metricData) {
@@ -308,13 +263,13 @@ class HealthMetricsController extends Controller
                         // Update existing
                         $metric->fill($metricData);
                         $metric->save();
+                        $updated++;
                     } else {
                         // Create new
                         $metricData['user_id'] = $user->id;
-                        $metric = HealthMetric::create($metricData);
+                        HealthMetric::create($metricData);
+                        $synced++;
                     }
-
-                    $synced[] = $metric;
 
                 } catch (\Exception $e) {
                     $errors[] = [
@@ -324,24 +279,17 @@ class HealthMetricsController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Health metrics synced successfully',
-                'data' => [
-                    'synced' => count($synced),
-                    'failed' => count($errors),
-                    'metrics' => $synced,
+            return ResponseHelper::success(
+                [
+                    'synced_count' => $synced,
+                    'updated_count' => $updated,
                     'errors' => $errors,
                 ],
-                'timestamp' => now()->toIso8601String(),
-            ]);
+                'Health metrics sync completed'
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to sync health metrics',
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Failed to sync health metrics: ' . $e->getMessage());
         }
     }
 }

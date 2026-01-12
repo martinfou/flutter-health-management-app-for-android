@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\JwtService;
@@ -31,12 +32,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         try {
@@ -50,10 +46,8 @@ class AuthController extends Controller
             $accessToken = $this->jwtService->generateAccessToken($tokenPayload);
             $refreshToken = $this->jwtService->generateRefreshToken($tokenPayload);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'User registered successfully',
-                'data' => [
+            return ResponseHelper::success(
+                [
                     'user' => [
                         'id' => $user->id,
                         'email' => $user->email,
@@ -63,15 +57,12 @@ class AuthController extends Controller
                     'refresh_token' => $refreshToken,
                     'token_type' => 'Bearer',
                 ],
-                'timestamp' => now()->toIso8601String(),
-            ], 201);
+                'User registered successfully',
+                201
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Registration failed: ' . $e->getMessage(),
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Registration failed: ' . $e->getMessage());
         }
     }
 
@@ -87,30 +78,17 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         $user = User::where('email', $request->email)->whereNull('deleted_at')->first();
 
         if (!$user || !Hash::check($request->password, $user->password_hash ?? '')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials',
-                'timestamp' => now()->toIso8601String(),
-            ], 401);
+            return ResponseHelper::unauthorized('Invalid credentials');
         }
 
         if (!$user->password_hash) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This account was created with Google Sign-In. Please use Google to login.',
-                'timestamp' => now()->toIso8601String(),
-            ], 401);
+            return ResponseHelper::unauthorized('This account was created with Google Sign-In. Please use Google to login.');
         }
 
         $user->last_login_at = now();
@@ -120,10 +98,8 @@ class AuthController extends Controller
         $accessToken = $this->jwtService->generateAccessToken($tokenPayload);
         $refreshToken = $this->jwtService->generateRefreshToken($tokenPayload);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
-            'data' => [
+        return ResponseHelper::success(
+            [
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
@@ -133,8 +109,8 @@ class AuthController extends Controller
                 'refresh_token' => $refreshToken,
                 'token_type' => 'Bearer',
             ],
-            'timestamp' => now()->toIso8601String(),
-        ]);
+            'Login successful'
+        );
     }
 
     /**
@@ -148,12 +124,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         try {
@@ -171,11 +142,7 @@ class AuthController extends Controller
             }
 
             if (!$payload) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid Google token',
-                    'timestamp' => now()->toIso8601String(),
-                ], 401);
+                return ResponseHelper::unauthorized('Invalid Google token');
             }
 
             $googleId = $payload['sub'];
@@ -193,11 +160,10 @@ class AuthController extends Controller
                     ->first();
 
                 if ($emailUser) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Email already registered with different authentication method',
-                        'timestamp' => now()->toIso8601String(),
-                    ], 409);
+                    return ResponseHelper::error(
+                        'Email already registered with different authentication method',
+                        409
+                    );
                 }
 
                 // Create new user
@@ -216,10 +182,8 @@ class AuthController extends Controller
             $accessToken = $this->jwtService->generateAccessToken($tokenPayload);
             $refreshToken = $this->jwtService->generateRefreshToken($tokenPayload);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Google authentication successful',
-                'data' => [
+            return ResponseHelper::success(
+                [
                     'user' => [
                         'id' => $user->id,
                         'email' => $user->email,
@@ -229,15 +193,11 @@ class AuthController extends Controller
                     'refresh_token' => $refreshToken,
                     'token_type' => 'Bearer',
                 ],
-                'timestamp' => now()->toIso8601String(),
-            ]);
+                'Google authentication successful'
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Google authentication failed: ' . $e->getMessage(),
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Google authentication failed: ' . $e->getMessage());
         }
     }
 
@@ -252,12 +212,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         try {
@@ -267,34 +222,24 @@ class AuthController extends Controller
             $user = User::where('id', $userId)->whereNull('deleted_at')->first();
 
             if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found',
-                    'timestamp' => now()->toIso8601String(),
-                ], 401);
+                return ResponseHelper::unauthorized('User not found');
             }
 
             $tokenPayload = ['user_id' => $user->id, 'email' => $user->email];
             $accessToken = $this->jwtService->generateAccessToken($tokenPayload);
             $refreshToken = $this->jwtService->generateRefreshToken($tokenPayload);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Token refreshed successfully',
-                'data' => [
+            return ResponseHelper::success(
+                [
                     'access_token' => $accessToken,
                     'refresh_token' => $refreshToken,
                     'token_type' => 'Bearer',
                 ],
-                'timestamp' => now()->toIso8601String(),
-            ]);
+                'Token refreshed successfully'
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid refresh token',
-                'timestamp' => now()->toIso8601String(),
-            ], 401);
+            return ResponseHelper::unauthorized('Invalid refresh token');
         }
     }
 
@@ -304,11 +249,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Logged out successfully',
-            'timestamp' => now()->toIso8601String(),
-        ]);
+        return ResponseHelper::success([], 'Logged out successfully');
     }
 
     /**
@@ -319,10 +260,8 @@ class AuthController extends Controller
     {
         $user = $request->attributes->get('user');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile retrieved successfully',
-            'data' => [
+        return ResponseHelper::success(
+            [
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
@@ -341,8 +280,8 @@ class AuthController extends Controller
                     'created_at' => $user->created_at->toIso8601String(),
                 ],
             ],
-            'timestamp' => now()->toIso8601String(),
-        ]);
+            'Profile retrieved successfully'
+        );
     }
 
     /**
@@ -369,12 +308,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-                'timestamp' => now()->toIso8601String(),
-            ], 422);
+            return ResponseHelper::validationError($validator->errors());
         }
 
         try {
@@ -385,10 +319,8 @@ class AuthController extends Controller
             ]));
             $user->save();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile updated successfully',
-                'data' => [
+            return ResponseHelper::success(
+                [
                     'user' => [
                         'id' => $user->id,
                         'email' => $user->email,
@@ -400,15 +332,11 @@ class AuthController extends Controller
                         'activity_level' => $user->activity_level,
                     ],
                 ],
-                'timestamp' => now()->toIso8601String(),
-            ]);
+                'Profile updated successfully'
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update profile',
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Failed to update profile');
         }
     }
 
@@ -423,18 +351,10 @@ class AuthController extends Controller
         try {
             $user->delete(); // Soft delete
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Account deleted successfully',
-                'timestamp' => now()->toIso8601String(),
-            ]);
+            return ResponseHelper::success([], 'Account deleted successfully');
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete account',
-                'timestamp' => now()->toIso8601String(),
-            ], 500);
+            return ResponseHelper::serverError('Failed to delete account');
         }
     }
 }

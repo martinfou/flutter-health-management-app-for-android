@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Project
 import 'package:health_app/core/providers/auth_provider.dart';
 import 'package:health_app/core/utils/validation_utils.dart';
+import 'package:health_app/core/utils/google_sign_in_button_util.dart';
 import 'package:health_app/core/navigation/app_router.dart';
 
 /// Registration page for new user signup
@@ -89,6 +90,118 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
     return PasswordValidator.getStrength(password).toUpperCase();
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    await ref.read(authStateProvider.notifier).loginWithGoogle();
+
+    final authState = ref.read(authStateProvider);
+    if (authState.isAuthenticated && mounted) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+    } else if (authState.error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authState.error!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showGoogleToggleDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Registration Options'),
+        content: Consumer(
+          builder: (context, ref, child) {
+            final isEnabled = ref.watch(googleLoginEnabledProvider);
+            return SwitchListTile(
+              title: const Text('Enable Google Sign-In'),
+              value: isEnabled,
+              onChanged: (value) async {
+                ref.read(googleLoginEnabledProvider.notifier).state = value;
+                await setGoogleLoginEnabled(value);
+                if (mounted) Navigator.of(context).pop();
+              },
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoogleToggleInline() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final isEnabled = ref.watch(googleLoginEnabledProvider);
+        return SwitchListTile(
+          title: const Text('Enable Google Sign-In'),
+          value: isEnabled,
+          onChanged: (value) async {
+            ref.read(googleLoginEnabledProvider.notifier).state = value;
+            await setGoogleLoginEnabled(value);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildGoogleSignInButton(AuthState authState) {
+    final isEnabled = ref.watch(googleLoginEnabledProvider);
+    return buildGoogleSignInButton(
+      isEnabled: isEnabled,
+      isLoading: authState.isLoading,
+      onPressed: _handleGoogleSignIn,
+    );
+  }
+
+  Widget _buildOrDivider() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final isEnabled = ref.watch(googleLoginEnabledProvider);
+        if (!isEnabled) return const SizedBox.shrink();
+        return Column(
+          children: [
+            const SizedBox(height: 24),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('or'),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildOrSignUpWithEmailText() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final isEnabled = ref.watch(googleLoginEnabledProvider);
+        if (!isEnabled) return const SizedBox.shrink();
+        return const Text(
+          'Or sign up with email',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
@@ -96,6 +209,13 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sign Up'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Registration options',
+            onPressed: _showGoogleToggleDialog,
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -123,7 +243,13 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
+                _buildGoogleToggleInline(),
+                const SizedBox(height: 16),
+                _buildGoogleSignInButton(authState),
+                _buildOrDivider(),
+                _buildOrSignUpWithEmailText(),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -157,7 +283,9 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -179,9 +307,13 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
                     children: [
                       Expanded(
                         child: LinearProgressIndicator(
-                          value: PasswordValidator.getStrength(_passwordController.text) == 'weak'
+                          value: PasswordValidator.getStrength(
+                                      _passwordController.text) ==
+                                  'weak'
                               ? 0.33
-                              : PasswordValidator.getStrength(_passwordController.text) == 'medium'
+                              : PasswordValidator.getStrength(
+                                          _passwordController.text) ==
+                                      'medium'
                                   ? 0.66
                                   : 1.0,
                           backgroundColor: Colors.grey[300],
@@ -194,7 +326,8 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
                       Text(
                         _getPasswordStrengthText(_passwordController.text),
                         style: TextStyle(
-                          color: _getPasswordStrengthColor(_passwordController.text),
+                          color: _getPasswordStrengthColor(
+                              _passwordController.text),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -211,7 +344,9 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -261,7 +396,3 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
     );
   }
 }
-
-
-
-

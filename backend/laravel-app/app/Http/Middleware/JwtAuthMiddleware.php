@@ -58,10 +58,15 @@ class JwtAuthMiddleware
                 ], 401);
             }
 
-            // Add user to request attributes for controllers
-            $request->merge(['authenticated_user' => $user]);
-            $request->attributes->add(['user' => $user]);
-            $request->attributes->add(['user_id' => $userId]);
+            // Add user to request for controllers to access via $request->user
+            // Using setUserResolver allows both $request->user() and auth()->user() to work
+            $request->setUserResolver(function () use ($user) {
+                return $user;
+            });
+
+            // Also add to attributes for direct access
+            $request->attributes->set('user', $user);
+            $request->attributes->set('user_id', $userId);
 
         } catch (\Exception $e) {
             return response()->json([

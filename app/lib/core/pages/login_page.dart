@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Project
 import 'package:health_app/core/providers/auth_provider.dart';
 import 'package:health_app/core/utils/validation_utils.dart';
+import 'package:health_app/core/utils/google_sign_in_button_util.dart';
 import 'package:health_app/core/pages/registration_page.dart';
 import 'package:health_app/core/pages/password_reset_request_page.dart';
 import 'package:health_app/core/navigation/app_router.dart';
@@ -70,32 +71,99 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
-  Widget _buildGoogleSignInButton(AuthState authState) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: OutlinedButton.icon(
-        onPressed: authState.isLoading ? null : _handleGoogleSignIn,
-        icon: authState.isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.account_circle, size: 24),
-        label: authState.isLoading
-            ? const Text('Signing in...')
-            : const Text(
-                'Sign in with Google',
-                style: TextStyle(fontSize: 16),
-              ),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.grey.shade300),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+  void _showGoogleToggleDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Options'),
+        content: Consumer(
+          builder: (context, ref, child) {
+            final isEnabled = ref.watch(googleLoginEnabledProvider);
+            return SwitchListTile(
+              title: const Text('Enable Google Sign-In'),
+              value: isEnabled,
+              onChanged: (value) async {
+                ref.read(googleLoginEnabledProvider.notifier).state = value;
+                await setGoogleLoginEnabled(value);
+                if (mounted) Navigator.of(context).pop();
+              },
+            );
+          },
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildGoogleToggleInline() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final isEnabled = ref.watch(googleLoginEnabledProvider);
+        return SwitchListTile(
+          title: const Text('Enable Google Sign-In'),
+          value: isEnabled,
+          onChanged: (value) async {
+            ref.read(googleLoginEnabledProvider.notifier).state = value;
+            await setGoogleLoginEnabled(value);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildGoogleSignInButton(AuthState authState) {
+    final isEnabled = ref.watch(googleLoginEnabledProvider);
+    return buildGoogleSignInButton(
+      isEnabled: isEnabled,
+      isLoading: authState.isLoading,
+      onPressed: _handleGoogleSignIn,
+    );
+  }
+
+  Widget _buildOrDivider() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final isEnabled = ref.watch(googleLoginEnabledProvider);
+        if (!isEnabled) return const SizedBox.shrink();
+        return Column(
+          children: [
+            const SizedBox(height: 24),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('or'),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildOrSignInWithEmailText() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final isEnabled = ref.watch(googleLoginEnabledProvider);
+        if (!isEnabled) return const SizedBox.shrink();
+        return const Text(
+          'Or sign in with email',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        );
+      },
     );
   }
 
@@ -106,6 +174,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Login options',
+            onPressed: _showGoogleToggleDialog,
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -133,28 +208,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                _buildGoogleToggleInline(),
+                const SizedBox(height: 16),
                 _buildGoogleSignInButton(authState),
-                const SizedBox(height: 24),
-                const Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('or'),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Or sign in with email',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                _buildOrDivider(),
+                _buildOrSignInWithEmailText(),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _emailController,

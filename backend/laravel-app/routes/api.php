@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthMetricsController;
+use App\Http\Controllers\Api\MealsController;
+use App\Http\Controllers\Api\ExercisesController;
+use App\Http\Controllers\Api\MedicationsController;
+use App\Http\Controllers\Api\MealPlansController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,7 +59,36 @@ Route::prefix('v1')->group(function () {
         Route::delete('/health-metrics/{id}', [HealthMetricsController::class, 'destroy']);
         Route::post('/health-metrics/sync', [HealthMetricsController::class, 'sync']);
 
-        // TODO: Add additional endpoints for meals, exercises, medications, meal plans
-        // These will be implemented as the Flutter app needs them
+        // Meals
+        Route::get('/meals', [MealsController::class, 'index']);
+        Route::post('/meals', [MealsController::class, 'store']);
+        Route::get('/meals/{id}', [MealsController::class, 'show']);
+        Route::put('/meals/{id}', [MealsController::class, 'update']);
+        Route::delete('/meals/{id}', [MealsController::class, 'destroy']);
+        Route::post('/meals/sync', [MealsController::class, 'sync']);
+
+        // Exercises
+        Route::get('/exercises', [ExercisesController::class, 'index']);
+        Route::post('/exercises', [ExercisesController::class, 'store']);
+        Route::get('/exercises/{id}', [ExercisesController::class, 'show']);
+        Route::put('/exercises/{id}', [ExercisesController::class, 'update']);
+        Route::delete('/exercises/{id}', [ExercisesController::class, 'destroy']);
+        Route::post('/exercises/sync', [ExercisesController::class, 'sync']);
+
+        // Medications
+        Route::get('/medications', [MedicationsController::class, 'index']);
+        Route::post('/medications', [MedicationsController::class, 'store']);
+        Route::get('/medications/{id}', [MedicationsController::class, 'show']);
+        Route::put('/medications/{id}', [MedicationsController::class, 'update']);
+        Route::delete('/medications/{id}', [MedicationsController::class, 'destroy']);
+        Route::post('/medications/sync', [MedicationsController::class, 'sync']);
+
+        // Meal Plans
+        Route::get('/meal-plans', [MealPlansController::class, 'index']);
+        Route::post('/meal-plans', [MealPlansController::class, 'store']);
+        Route::get('/meal-plans/{id}', [MealPlansController::class, 'show']);
+        Route::put('/meal-plans/{id}', [MealPlansController::class, 'update']);
+        Route::delete('/meal-plans/{id}', [MealPlansController::class, 'destroy']);
+        Route::post('/meal-plans/sync', [MealPlansController::class, 'sync']);
     });
 });
