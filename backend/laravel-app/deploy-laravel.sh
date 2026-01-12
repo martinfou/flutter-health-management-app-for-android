@@ -131,7 +131,7 @@ log_section "Step 5: Running Remote Deployment Tasks"
 ssh "$REMOTE_USER@$REMOTE_HOST" << 'REMOTE_SCRIPT'
     set -e
 
-    REMOTE_DIR="/home/compica_healthapp/laravel-app"
+    REMOTE_DIR="/home/compica_healthapp/healthapp.compica.com"
 
     # Function for remote logging
     log_info() { echo "→ $1"; }
