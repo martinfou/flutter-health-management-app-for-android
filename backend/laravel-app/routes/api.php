@@ -34,6 +34,19 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
+    // Health Check (public endpoint - no auth required)
+    Route::get('/health', function () {
+        return response()->json([
+            'success' => true,
+            'message' => 'API is healthy',
+            'data' => [
+                'status' => 'ok',
+                'timestamp' => now()->toIso8601String(),
+            ],
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
+
     // Public Authentication Routes (no auth required)
     Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
