@@ -266,7 +266,7 @@ class HealthTrackingLocalDataSource {
   }
 
   /// Batch save health metrics
-  /// 
+  ///
   /// Saves multiple health metrics in a single operation for better performance.
   Future<Result<List<HealthMetric>>> saveHealthMetricsBatch(
     List<HealthMetric> metrics,
@@ -274,17 +274,71 @@ class HealthTrackingLocalDataSource {
     try {
       final box = _box;
       final modelsMap = <String, HealthMetricModel>{};
-      
+
       for (final metric in metrics) {
         modelsMap[metric.id] = HealthMetricModel.fromEntity(metric);
       }
-      
+
       // Use batch put operation
       await box.putAll(modelsMap);
-      
+
       return Right(metrics);
     } catch (e) {
       return Left(DatabaseFailure('Failed to batch save health metrics: $e'));
+    }
+  }
+
+  /// Migrate health metrics from old userId to new userId
+  ///
+  /// Used during login to associate previously created metrics with the authenticated user.
+  /// This ensures that metrics created before authentication (with random/default userIds)
+  /// are reassigned to the authenticated user so they can be synced to the backend.
+  Future<Result<int>> migrateMetricsToUserId({
+    required String fromUserId,
+    required String toUserId,
+  }) async {
+    try {
+      final box = _box;
+      int migratedCount = 0;
+
+      // Find all metrics with the old userId
+      final metricsToMigrate = box.values
+          .where((model) => model.userId == fromUserId)
+          .toList();
+
+      if (metricsToMigrate.isEmpty) {
+        return const Right(0);
+      }
+
+      print('HealthTrackingLocalDataSource: Migrating ${metricsToMigrate.length} metrics from $fromUserId to $toUserId');
+
+      // Update each metric's userId and save back to box
+      for (final model in metricsToMigrate) {
+        model.userId = toUserId;
+        await box.put(model.id, model);
+        migratedCount++;
+      }
+
+      print('HealthTrackingLocalDataSource: Successfully migrated $migratedCount metrics');
+      return Right(migratedCount);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to migrate health metrics: $e'));
+    }
+  }
+
+  /// Get all health metrics regardless of userId
+  ///
+  /// Useful for finding metrics that need migration or debugging.
+  Future<Result<List<HealthMetric>>> getAllHealthMetrics() async {
+    try {
+      final box = _box;
+      final metrics = box.values
+          .map((model) => model.toEntity())
+          .toList();
+
+      return Right(metrics);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to get all health metrics: $e'));
     }
   }
 }

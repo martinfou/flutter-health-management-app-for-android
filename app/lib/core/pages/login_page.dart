@@ -13,6 +13,7 @@ import 'package:health_app/core/network/authentication_service.dart';
 import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
 import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
 import 'package:health_app/features/user_profile/domain/entities/gender.dart';
+import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 
 /// Login page for user authentication
 class LoginPage extends ConsumerStatefulWidget {
@@ -62,15 +63,79 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   /// Save user profile to local database after authentication
+  /// Also migrates any existing health metrics from old/default userIds to the authenticated user
   Future<void> _saveUserProfileAfterLogin(AuthUser user) async {
     try {
       final userProfile = _createProfileFromAuthUser(user);
-      final repository = ref.read(userProfileRepositoryProvider);
-      await repository.saveUserProfile(userProfile);
+      final userRepo = ref.read(userProfileRepositoryProvider);
+      await userRepo.saveUserProfile(userProfile);
       print('LoginPage: User profile saved for user ${user.id}');
+
+      // Migrate any existing health metrics to this user
+      await _migrateExistingMetrics(user.id);
     } catch (e) {
       print('LoginPage: Error saving user profile: $e');
       // Don't fail login if profile save fails
+    }
+  }
+
+  /// Migrate existing health metrics to the authenticated user
+  ///
+  /// This finds any health metrics that were created before authentication
+  /// (with default/random userIds) and reassigns them to the authenticated user.
+  Future<void> _migrateExistingMetrics(String newUserId) async {
+    try {
+      final healthRepo = ref.read(healthTrackingRepositoryProvider);
+
+      // Get all metrics to find old userIds
+      final allMetricsResult = await healthRepo.getAllHealthMetrics();
+
+      await allMetricsResult.fold(
+        (failure) {
+          print('LoginPage: Could not get all metrics for migration: ${failure.message}');
+        },
+        (allMetrics) async {
+          if (allMetrics.isEmpty) {
+            print('LoginPage: No metrics to migrate');
+            return;
+          }
+
+          // Find non-authenticated userIds (these are from before login)
+          // These typically start with 'user-' (from millisecond timestamp)
+          final oldUserIds = allMetrics
+              .map((m) => m.userId)
+              .toSet()
+              .where((userId) => userId != newUserId && userId.startsWith('user-'))
+              .toList();
+
+          if (oldUserIds.isEmpty) {
+            print('LoginPage: No metrics to migrate (all already have correct userId or were mock)');
+            return;
+          }
+
+          print('LoginPage: Found ${oldUserIds.length} old userIds to migrate');
+
+          // Migrate metrics from each old userId
+          for (final oldUserId in oldUserIds) {
+            final migrateResult = await healthRepo.migrateMetricsToUserId(
+              fromUserId: oldUserId,
+              toUserId: newUserId,
+            );
+
+            migrateResult.fold(
+              (failure) {
+                print('LoginPage: Migration failed for $oldUserId: ${failure.message}');
+              },
+              (count) {
+                print('LoginPage: Migrated $count metrics from $oldUserId to $newUserId');
+              },
+            );
+          }
+        },
+      );
+    } catch (e) {
+      print('LoginPage: Error during metrics migration: $e');
+      // Don't fail login if migration fails
     }
   }
 

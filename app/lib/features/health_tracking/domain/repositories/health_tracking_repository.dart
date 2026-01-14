@@ -62,9 +62,24 @@ abstract class HealthTrackingRepository {
   Future<Result<void>> deleteHealthMetricsByUserId(String userId);
 
   /// Sync health metrics with backend
-  /// 
+  ///
   /// Pushes local changes and pulls remote changes.
   /// Returns [SyncFailure] if sync fails, but local operations are not affected.
   Future<Result<void>> syncHealthMetrics();
+
+  /// Get all health metrics regardless of userId
+  ///
+  /// Useful for finding metrics that need migration or debugging.
+  Future<HealthMetricListResult> getAllHealthMetrics();
+
+  /// Migrate health metrics from old userId to new userId
+  ///
+  /// Used during login to associate previously created metrics with the authenticated user.
+  /// This ensures that metrics created before authentication (with random/default userIds)
+  /// are reassigned to the authenticated user so they can be synced to the backend.
+  Future<Result<int>> migrateMetricsToUserId({
+    required String fromUserId,
+    required String toUserId,
+  });
 }
 

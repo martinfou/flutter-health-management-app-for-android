@@ -154,5 +154,21 @@ class HealthTrackingRepositoryImpl implements HealthTrackingRepository {
   Future<Result<void>> syncHealthMetrics() async {
     return await _syncService.syncHealthMetrics();
   }
+
+  @override
+  Future<HealthMetricListResult> getAllHealthMetrics() async {
+    return await _localDataSource.getAllHealthMetrics();
+  }
+
+  @override
+  Future<Result<int>> migrateMetricsToUserId({
+    required String fromUserId,
+    required String toUserId,
+  }) async {
+    return await _localDataSource.migrateMetricsToUserId(
+      fromUserId: fromUserId,
+      toUserId: toUserId,
+    );
+  }
 }
 
