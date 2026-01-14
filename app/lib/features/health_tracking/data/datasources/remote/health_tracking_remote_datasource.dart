@@ -152,17 +152,23 @@ class HealthTrackingRemoteDataSource {
   Future<Result<Map<String, dynamic>>> bulkSync(List<HealthMetricModel> metrics) async {
     try {
       final uri = Uri.parse('$_baseUrl$_metricsEndpoint/sync');
-      
+
       final payload = {
         'metrics': metrics.map((m) => m.toJson()).toList(),
       };
-      
+
+      print('BulkSync: Sending ${metrics.length} metrics to $uri');
+      print('BulkSync: Payload: ${jsonEncode(payload)}');
+
       final response = await AuthenticatedHttpClient.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
-      
+
+      print('BulkSync: Response status: ${response.statusCode}');
+      print('BulkSync: Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return Right(data['data'] as Map<String, dynamic>);
@@ -173,6 +179,7 @@ class HealthTrackingRemoteDataSource {
         ));
       }
     } catch (e) {
+      print('BulkSync: Error: $e');
       return Left(NetworkFailure('Network error: ${e.toString()}'));
     }
   }

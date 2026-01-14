@@ -93,11 +93,17 @@ class HealthMetricsSyncService {
       return localMetricsResult.fold(
         (failure) => Left(failure),
         (metrics) async {
-          final metricsToSync = lastSync == null 
-              ? metrics 
+          print('SyncService: Total local metrics: ${metrics.length}');
+          print('SyncService: Last sync time: $lastSync');
+
+          final metricsToSync = lastSync == null
+              ? metrics
               : metrics.where((m) => m.updatedAt.isAfter(lastSync)).toList();
-          
+
+          print('SyncService: Metrics to sync: ${metricsToSync.length}');
+
           if (metricsToSync.isEmpty) {
+            print('SyncService: No metrics to sync - all are already synced');
             return const Right(null);
           }
 
@@ -107,11 +113,18 @@ class HealthMetricsSyncService {
 
           // Use bulk sync endpoint
           print('SyncService: Pushing ${models.length} metrics to backend');
+          print('SyncService: Metrics to sync: ${models.map((m) => m.id).toList()}');
           final syncResult = await _remoteDataSource.bulkSync(models);
-          
+
           return syncResult.fold(
-            (failure) => Left(failure),
-            (_) => const Right(null),
+            (failure) {
+              print('SyncService: Push failed with error: ${failure.message}');
+              return Left(failure);
+            },
+            (result) {
+              print('SyncService: Push succeeded. Result: $result');
+              return const Right(null);
+            },
           );
         },
       );

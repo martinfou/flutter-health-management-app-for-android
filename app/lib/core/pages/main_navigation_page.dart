@@ -8,7 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/pages/home_page.dart';
 import 'package:health_app/core/pages/analytics_page.dart';
 import 'package:health_app/core/pages/settings_page.dart';
+import 'package:health_app/core/sync/background_sync_service.dart';
 import 'package:health_app/core/widgets/protected_route.dart';
+import 'package:health_app/core/widgets/sync_button_widget.dart';
 import 'package:health_app/features/health_tracking/presentation/pages/health_tracking_page.dart';
 import 'package:health_app/features/nutrition_management/presentation/pages/nutrition_page.dart';
 import 'package:health_app/features/exercise_management/presentation/pages/exercise_page.dart';
@@ -83,8 +85,17 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(navigationIndexProvider);
 
+    // Initialize background sync service
+    ref.watch(backgroundSyncProvider);
+
     return ProtectedRoute(
       child: Scaffold(
+        appBar: AppBar(
+          title: Text(NavigationItem.values[currentIndex].label),
+          actions: const [
+            SyncButtonWidget(),
+          ],
+        ),
         body: IndexedStack(
           index: currentIndex,
           children: _pages,

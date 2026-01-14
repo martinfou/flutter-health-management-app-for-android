@@ -10,6 +10,7 @@ import 'package:health_app/core/constants/auth_config.dart';
 import 'package:health_app/core/navigation/app_router.dart';
 import 'package:health_app/core/providers/user_preferences_provider.dart';
 import 'package:health_app/core/pages/user_profile_page.dart';
+import 'package:health_app/core/sync/providers/sync_state_provider.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/habit_tracking_page.dart';
 import 'package:health_app/features/behavioral_support/presentation/pages/behavioral_support_page.dart';
 import 'package:health_app/features/llm_integration/presentation/pages/llm_settings_page.dart';
@@ -111,6 +112,11 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.info,
             onTap: null,
           ),
+          const Divider(),
+
+          // Sync Status Section
+          _buildSectionHeader(context, 'Sync Status'),
+          _buildSyncStatusWidget(context, ref),
           const Divider(),
 
           // AI Assistant Section
@@ -265,6 +271,95 @@ class SettingsPage extends ConsumerWidget {
       },
       secondary: Icon(
         isAuthEnabled ? Icons.lock : Icons.lock_open,
+      ),
+    );
+  }
+
+  Widget _buildSyncStatusWidget(BuildContext context, WidgetRef ref) {
+    final syncStateAsync = ref.watch(syncStateProvider);
+    final manualSyncTrigger = ref.watch(manualSyncTriggerProvider);
+
+    return syncStateAsync.when(
+      data: (syncState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Last Sync Time
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('Last Synced'),
+              subtitle: Text(syncState.lastSyncDisplay ?? 'Never'),
+            ),
+            // Sync Status
+            ListTile(
+              leading: syncState.isSyncing
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_done),
+              title: const Text('Sync Status'),
+              subtitle: Text(
+                syncState.isSyncing
+                    ? 'Syncing...'
+                    : syncState.errorMessage ?? 'Up to date',
+              ),
+            ),
+            // Manual Sync Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ElevatedButton.icon(
+                onPressed: syncState.isSyncing ? null : () async {
+                  await manualSyncTrigger();
+                },
+                icon: const Icon(Icons.sync),
+                label: const Text('Sync Now'),
+              ),
+            ),
+            // Error Message (if any)
+            if (syncState.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade700),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          syncState.errorMessage!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(UIConstants.spacingMd),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stackTrace) => Padding(
+        padding: const EdgeInsets.all(UIConstants.spacingMd),
+        child: Text(
+          'Error loading sync status: $error',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+        ),
       ),
     );
   }

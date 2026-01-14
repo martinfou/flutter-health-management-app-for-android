@@ -9,6 +9,10 @@ import 'package:health_app/core/utils/google_sign_in_button_util.dart';
 import 'package:health_app/core/pages/registration_page.dart';
 import 'package:health_app/core/pages/password_reset_request_page.dart';
 import 'package:health_app/core/navigation/app_router.dart';
+import 'package:health_app/core/network/authentication_service.dart';
+import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
+import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
+import 'package:health_app/features/user_profile/domain/entities/gender.dart';
 
 /// Login page for user authentication
 class LoginPage extends ConsumerStatefulWidget {
@@ -32,6 +36,44 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
+  /// Create a minimal UserProfile from AuthUser with default values
+  UserProfile _createProfileFromAuthUser(AuthUser user) {
+    final now = DateTime.now();
+    final dateOfBirth = DateTime(now.year - 30, now.month, now.day);
+
+    return UserProfile(
+      id: user.id,
+      name: user.name ?? 'User',
+      email: user.email,
+      dateOfBirth: dateOfBirth,
+      gender: Gender.other,
+      height: 170.0, // Default height in cm
+      weight: 75.0, // Default weight in kg
+      targetWeight: 70.0, // Default target weight in kg
+      fitnessGoals: [],
+      dietaryApproach: 'Standard',
+      dislikes: [],
+      allergies: [],
+      healthConditions: [],
+      syncEnabled: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// Save user profile to local database after authentication
+  Future<void> _saveUserProfileAfterLogin(AuthUser user) async {
+    try {
+      final userProfile = _createProfileFromAuthUser(user);
+      final repository = ref.read(userProfileRepositoryProvider);
+      await repository.saveUserProfile(userProfile);
+      print('LoginPage: User profile saved for user ${user.id}');
+    } catch (e) {
+      print('LoginPage: Error saving user profile: $e');
+      // Don't fail login if profile save fails
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -43,7 +85,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
 
     final authState = ref.read(authStateProvider);
-    if (authState.isAuthenticated && mounted) {
+    if (authState.isAuthenticated && authState.user != null && mounted) {
+      // Save the authenticated user profile to local database
+      await _saveUserProfileAfterLogin(authState.user!);
       Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     } else if (authState.error != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +103,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     await ref.read(authStateProvider.notifier).loginWithGoogle();
 
     final authState = ref.read(authStateProvider);
-    if (authState.isAuthenticated && mounted) {
+    if (authState.isAuthenticated && authState.user != null && mounted) {
+      // Save the authenticated user profile to local database
+      await _saveUserProfileAfterLogin(authState.user!);
       Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     } else if (authState.error != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

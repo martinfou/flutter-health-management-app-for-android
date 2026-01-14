@@ -29,7 +29,7 @@ class AuthUser {
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
       id: json['id'].toString(),
-      email: json['email'] as String,
+      email: json['email'] != null ? json['email'].toString() : '',
       name: json['name'] as String?,
     );
   }
@@ -54,9 +54,19 @@ class AuthTokens {
   });
 
   factory AuthTokens.fromJson(Map<String, dynamic> json) {
+    // Handle both old format (access_token/refresh_token) and new format (token)
+    final accessToken = json['access_token'] ?? json['token'];
+    final refreshToken = json['refresh_token'] ?? json['token'];
+
+    print('TOKEN DEBUG: accessToken=$accessToken (${accessToken.runtimeType}), refreshToken=$refreshToken (${refreshToken.runtimeType})');
+
+    if (accessToken is! String || refreshToken is! String) {
+      throw ArgumentError('Missing or invalid tokens: accessToken is ${accessToken.runtimeType}, refreshToken is ${refreshToken.runtimeType}');
+    }
+
     return AuthTokens(
-      accessToken: json['access_token'] as String,
-      refreshToken: json['refresh_token'] as String,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     );
   }
 }
@@ -104,7 +114,9 @@ class AuthenticationService {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
+        // Server wraps response in {success, data, message, timestamp}
+        final data = responseBody['data'] as Map<String, dynamic>;
         final tokens = AuthTokens.fromJson(data);
         final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
 
@@ -114,13 +126,15 @@ class AuthenticationService {
         return Right(user);
       } else if (response.statusCode == 400) {
         final error = jsonDecode(response.body) as Map<String, dynamic>;
+        final message = error['message'];
         return Left(ValidationFailure(
-          error['message'] as String? ?? 'Registration failed',
+          message is String ? message : 'Registration failed',
         ));
       } else if (response.statusCode == 409) {
         final error = jsonDecode(response.body) as Map<String, dynamic>;
+        final message = error['message'];
         return Left(ValidationFailure(
-          error['message'] as String? ?? 'This email is already registered. Please login or use a different email.',
+          message is String ? message : 'This email is already registered. Please login or use a different email.',
         ));
       } else {
         return Left(NetworkFailure(
@@ -149,7 +163,10 @@ class AuthenticationService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
+        print('LOGIN RESPONSE: $responseBody');
+        // Server wraps response in {success, data, message, timestamp}
+        final data = responseBody['data'] as Map<String, dynamic>;
         final tokens = AuthTokens.fromJson(data);
         final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
 
@@ -166,6 +183,8 @@ class AuthenticationService {
         ));
       }
     } catch (e) {
+      print('LOGIN ERROR: $e');
+      print('ERROR TYPE: ${e.runtimeType}');
       return Left(NetworkFailure('Network error: ${e.toString()}'));
     }
   }
@@ -180,7 +199,7 @@ class AuthenticationService {
       }
 
       final googleAuth = await googleUser.authentication;
-      final String? idToken = await googleAuth?.idToken;
+      final String? idToken = googleAuth.idToken;
 
       if (idToken == null) {
         return Left(AuthenticationFailure('Failed to get Google ID token'));
@@ -209,15 +228,19 @@ class AuthenticationService {
         return Right(user);
       } else if (response.statusCode == 401) {
         final error = jsonDecode(response.body) as Map<String, dynamic>;
+        final message = error['message'];
         return Left(AuthenticationFailure(
-          error['message'] as String? ?? 'Google authentication failed',
+          message is String ? message : 'Google authentication failed',
         ));
       } else {
         // Parse error message from response body for better debugging
         String errorMessage = 'Google authentication failed: ${response.statusCode}';
         try {
           final error = jsonDecode(response.body) as Map<String, dynamic>;
-          errorMessage = error['message'] as String? ?? errorMessage;
+          final message = error['message'];
+          if (message is String) {
+            errorMessage = message;
+          }
         } catch (_) {}
         return Left(NetworkFailure(
           errorMessage,
@@ -426,8 +449,9 @@ class AuthenticationService {
         return const Right(null);
       } else if (response.statusCode == 400) {
         final error = jsonDecode(response.body) as Map<String, dynamic>;
+        final message = error['message'];
         return Left(ValidationFailure(
-          error['message'] as String? ?? 'Invalid or expired token',
+          message is String ? message : 'Invalid or expired token',
         ));
       } else {
         return Left(NetworkFailure(
