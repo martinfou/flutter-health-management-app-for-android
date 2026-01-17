@@ -25,11 +25,11 @@ abstract class BaseOpenAiAdapter implements LlmProvider {
 
     // Log LLM request
     debugPrint('🤖 LLM Request [$name]: ${config.model} via $baseUrl');
-    debugPrint(
-        '   Prompt: ${request.prompt.substring(0, min(200, request.prompt.length))}${request.prompt.length > 200 ? '...' : ''}');
+    debugPrint('   Prompt (${request.prompt.length} chars):');
+    debugPrint(request.prompt);
     if (request.systemPrompt != null) {
-      debugPrint(
-          '   System: ${request.systemPrompt!.substring(0, min(100, request.systemPrompt!.length))}${request.systemPrompt!.length > 100 ? '...' : ''}');
+      debugPrint('   System Prompt (${request.systemPrompt!.length} chars):');
+      debugPrint(request.systemPrompt!);
     }
 
     try {
@@ -62,8 +62,8 @@ abstract class BaseOpenAiAdapter implements LlmProvider {
       if (response.statusCode != 200) {
         // Log API error
         debugPrint('❌ LLM Error [$name]: HTTP ${response.statusCode}');
-        debugPrint(
-            '   Error: ${response.body.substring(0, min(300, response.body.length))}${response.body.length > 300 ? '...' : ''}');
+        debugPrint('   Error Response:');
+        debugPrint(response.body);
 
         return Left(LlmFailure(
           'API request failed with status ${response.statusCode}: ${response.body}',
@@ -78,8 +78,8 @@ abstract class BaseOpenAiAdapter implements LlmProvider {
       // Log successful response
       debugPrint(
           '✅ LLM Response [$name]: ${content.length} chars, ${usage['total_tokens'] ?? 0} tokens');
-      debugPrint(
-          '   Response: ${content.substring(0, min(200, content.length))}${content.length > 200 ? '...' : ''}');
+      debugPrint('   Response:');
+      debugPrint(content);
 
       return Right(LlmResponse(
         content: content,
