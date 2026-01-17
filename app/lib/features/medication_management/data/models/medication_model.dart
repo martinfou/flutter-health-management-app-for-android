@@ -6,7 +6,7 @@ import 'package:health_app/features/medication_management/domain/entities/time_o
 part 'medication_model.g.dart';
 
 /// Medication Hive data model
-/// 
+///
 /// Hive adapter for Medication entity.
 /// Uses typeId 2 as specified in database schema.
 @HiveType(typeId: 2)
@@ -94,5 +94,26 @@ class MedicationModel extends HiveObject {
       ..updatedAt = entity.updatedAt;
     return model;
   }
-}
 
+  /// Convert to JSON (API request)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'name': name,
+      'dosage': dosage,
+      'unit': '', // Add unit field if needed
+      'frequency': frequency,
+      'start_date':
+          startDate.toIso8601String().split('T')[0], // YYYY-MM-DD format
+      'end_date': endDate?.toIso8601String().split('T')[0], // Nullable
+      'active': endDate == null ||
+          endDate!.isAfter(
+              DateTime.now()), // Active if no end date or future end date
+      'reminder_times': times, // API expects reminder_times array
+      'notes': '', // Add notes field if needed
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
+}

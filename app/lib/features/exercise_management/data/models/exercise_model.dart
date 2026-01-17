@@ -5,7 +5,7 @@ import 'package:health_app/features/exercise_management/domain/entities/exercise
 part 'exercise_model.g.dart';
 
 /// Exercise Hive data model
-/// 
+///
 /// Hive adapter for Exercise entity.
 /// Uses typeId 5 as specified in database schema.
 @HiveType(typeId: 5)
@@ -117,5 +117,27 @@ class ExerciseModel extends HiveObject {
       ..updatedAt = entity.updatedAt;
     return model;
   }
-}
 
+  /// Convert to JSON (API request)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'name': name,
+      'type': type,
+      'muscle_groups': muscleGroups,
+      'equipment': equipment,
+      'duration_minutes': duration,
+      'sets': sets,
+      'reps': reps,
+      'weight_kg': weight,
+      'distance_km': distance,
+      'date': date
+          ?.toIso8601String()
+          .split('T')[0], // YYYY-MM-DD format for API, nullable for templates
+      'notes': notes,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
+}

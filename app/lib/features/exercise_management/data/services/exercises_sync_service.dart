@@ -1,0 +1,139 @@
+import 'dart:async';
+import 'package:fpdart/fpdart.dart';
+import 'package:health_app/core/errors/failures.dart';
+import 'package:health_app/core/network/auth_helper.dart';
+import 'package:health_app/features/exercise_management/data/datasources/local/exercise_local_datasource.dart';
+import 'package:health_app/features/exercise_management/data/datasources/remote/exercise_remote_datasource.dart';
+import 'package:health_app/features/exercise_management/data/models/exercise_model.dart';
+import 'package:health_app/features/user_profile/domain/repositories/user_profile_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Sync failure for exercises synchronization
+class ExercisesSyncFailure extends Failure {
+  ExercisesSyncFailure(super.message);
+}
+
+/// Service to handle synchronization of exercises
+class ExercisesSyncService {
+  final ExerciseLocalDataSource _localDataSource;
+  final ExerciseRemoteDataSource _remoteDataSource;
+  final AuthHelper _authHelper;
+  final UserProfileRepository? _userProfileRepository;
+  static const String _lastSyncKey = 'last_exercises_sync_timestamp';
+
+  final _syncStatusController = StreamController<bool>.broadcast();
+  Stream<bool> get isSyncing => _syncStatusController.stream;
+
+  ExercisesSyncService(this._localDataSource, this._remoteDataSource,
+      {AuthHelper? authHelper, UserProfileRepository? userProfileRepository})
+      : _authHelper = authHelper ?? AuthHelper(),
+        _userProfileRepository = userProfileRepository;
+
+  /// Synchronize exercises (push changes, pull changes, resolve conflicts)
+  Future<Result<void>> syncExercises({bool forceCount = false}) async {
+    _syncStatusController.add(true);
+    try {
+      // 1. Check if authenticated
+      final isAuthenticated = await _authHelper.isAuthenticated();
+      print(
+          'ExercisesSyncService: Starting sync. Authenticated: $isAuthenticated');
+      if (!isAuthenticated) {
+        return const Right(null); // Silent skip if not authenticated
+      }
+
+      // 2. Get user ID from auth helper
+      final userResult = await _authHelper.getProfile();
+      final userId = userResult.fold(
+        (failure) {
+          print(
+              'ExercisesSyncService: Failed to get user profile: ${failure.message}');
+          return null;
+        },
+        (user) => user.id,
+      );
+
+      if (userId == null) {
+        print('ExercisesSyncService: No user ID available');
+        return Left(ExercisesSyncFailure('No user ID available for sync'));
+      }
+
+      // 3. Push local changes to backend
+      final pushResult = await _pushLocalChanges(userId);
+      print(
+          'ExercisesSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
+      if (pushResult.isLeft()) {
+        return pushResult;
+      }
+
+      // 4. Update last sync timestamp
+      await _updateLastSyncTimestamp();
+
+      return const Right(null);
+    } catch (e) {
+      print('ExercisesSyncService: Error during sync: $e');
+      return Left(ExercisesSyncFailure('Sync error: ${e.toString()}'));
+    } finally {
+      _syncStatusController.add(false);
+    }
+  }
+
+  /// Push local changes to backend
+  Future<Result<void>> _pushLocalChanges(String userId) async {
+    try {
+      print(
+          'ExercisesSyncService: Querying local exercises for userId=$userId');
+
+      final localExercisesResult =
+          await _localDataSource.getExercisesByUserId(userId);
+
+      return localExercisesResult.fold(
+        (failure) {
+          print(
+              'ExercisesSyncService: Failed to get local exercises: ${failure.message}');
+          return Left(failure);
+        },
+        (exercises) async {
+          print(
+              'ExercisesSyncService: Total local exercises: ${exercises.length}');
+
+          if (exercises.isEmpty) {
+            print('ExercisesSyncService: No exercises to sync');
+            return const Right(null);
+          }
+
+          final models =
+              exercises.map((e) => ExerciseModel.fromEntity(e)).toList();
+
+          print(
+              'ExercisesSyncService: Pushing ${models.length} exercises to backend');
+
+          final syncResult = await _remoteDataSource.bulkSync(models);
+
+          return syncResult.fold(
+            (failure) {
+              print(
+                  'ExercisesSyncService: Push failed with error: ${failure.message}');
+              return Left(failure);
+            },
+            (result) {
+              print(
+                  'ExercisesSyncService: Push succeeded. Synced: ${result['synced_count']}, Updated: ${result['updated_count']}');
+              return const Right(null);
+            },
+          );
+        },
+      );
+    } catch (e) {
+      return Left(ExercisesSyncFailure('Push error: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _updateLastSyncTimestamp() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+    } catch (e) {
+      print('ExercisesSyncService: Error updating sync timestamp: $e');
+    }
+  }
+}

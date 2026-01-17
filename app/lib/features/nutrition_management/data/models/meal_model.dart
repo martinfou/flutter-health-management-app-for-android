@@ -6,7 +6,7 @@ import 'package:health_app/features/nutrition_management/domain/entities/eating_
 part 'meal_model.g.dart';
 
 /// Meal Hive data model
-/// 
+///
 /// Hive adapter for Meal entity.
 /// Uses typeId 4 as specified in database schema.
 @HiveType(typeId: 4)
@@ -149,5 +149,27 @@ class MealModel extends HiveObject {
       ..eatingReasons = eatingReasonsList;
     return model;
   }
-}
 
+  /// Convert to JSON (API request)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD format for API
+      'meal_type': mealType,
+      'name': name,
+      'protein_g': protein,
+      'fats_g': fats,
+      'carbs_g': netCarbs, // Map netCarbs to carbs_g for API
+      'calories': calories,
+      'ingredients': ingredients,
+      'hunger_before': hungerLevelBefore,
+      'hunger_after': hungerLevelAfter,
+      'eating_reasons': eatingReasons,
+      'notes': null, // Add notes field if needed
+      'created_at': createdAt.toIso8601String(),
+      'updated_at':
+          DateTime.now().toIso8601String(), // Current time as updated_at
+    };
+  }
+}
