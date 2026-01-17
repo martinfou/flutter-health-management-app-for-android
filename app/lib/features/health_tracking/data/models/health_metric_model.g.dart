@@ -27,6 +27,11 @@ class HealthMetricModelAdapter extends TypeAdapter<HealthMetricModel> {
       ..restingHeartRate = fields[6] as int?
       ..systolicBP = fields[11] as int?
       ..diastolicBP = fields[12] as int?
+      ..steps = fields[14] as int?
+      ..caloriesBurned = fields[15] as int?
+      ..waterIntakeMl = fields[16] as int?
+      ..mood = fields[17] as String?
+      ..stressLevel = fields[18] as int?
       ..bodyMeasurements = (fields[7] as Map?)?.cast<String, double>()
       ..notes = fields[8] as String?
       ..createdAt = fields[9] as DateTime
@@ -36,7 +41,7 @@ class HealthMetricModelAdapter extends TypeAdapter<HealthMetricModel> {
   @override
   void write(BinaryWriter writer, HealthMetricModel obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -57,6 +62,16 @@ class HealthMetricModelAdapter extends TypeAdapter<HealthMetricModel> {
       ..write(obj.systolicBP)
       ..writeByte(12)
       ..write(obj.diastolicBP)
+      ..writeByte(14)
+      ..write(obj.steps)
+      ..writeByte(15)
+      ..write(obj.caloriesBurned)
+      ..writeByte(16)
+      ..write(obj.waterIntakeMl)
+      ..writeByte(17)
+      ..write(obj.mood)
+      ..writeByte(18)
+      ..write(obj.stressLevel)
       ..writeByte(7)
       ..write(obj.bodyMeasurements)
       ..writeByte(8)

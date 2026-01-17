@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:fpdart/fpdart.dart';
+import 'package:health_app/core/device/device_service.dart';
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/network/auth_helper.dart';
 import 'package:health_app/features/nutrition_management/data/datasources/local/nutrition_local_datasource.dart';
@@ -19,15 +20,19 @@ class MealsSyncService {
   final NutritionRemoteDataSource _remoteDataSource;
   final AuthHelper _authHelper;
   final UserProfileRepository? _userProfileRepository;
+  final DeviceService _deviceService;
   static const String _lastSyncKey = 'last_meals_sync_timestamp';
 
   final _syncStatusController = StreamController<bool>.broadcast();
   Stream<bool> get isSyncing => _syncStatusController.stream;
 
   MealsSyncService(this._localDataSource, this._remoteDataSource,
-      {AuthHelper? authHelper, UserProfileRepository? userProfileRepository})
+      {AuthHelper? authHelper,
+      UserProfileRepository? userProfileRepository,
+      DeviceService? deviceService})
       : _authHelper = authHelper ?? AuthHelper(),
-        _userProfileRepository = userProfileRepository;
+        _userProfileRepository = userProfileRepository,
+        _deviceService = deviceService ?? DeviceService();
 
   /// Synchronize meals (push changes, pull changes, resolve conflicts)
   Future<Result<void>> syncMeals({bool forceCount = false}) async {

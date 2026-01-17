@@ -4,6 +4,10 @@ import 'package:health_app/core/sync/strategies/health_metrics_sync_strategy.dar
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 import 'package:health_app/features/nutrition_management/data/services/meals_sync_strategy.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
+import 'package:health_app/features/exercise_management/data/services/exercises_sync_strategy.dart';
+import 'package:health_app/features/exercise_management/presentation/providers/exercise_providers.dart';
+import 'package:health_app/features/medication_management/data/services/medications_sync_strategy.dart';
+import 'package:health_app/features/medication_management/presentation/providers/medication_providers.dart';
 
 /// Provider for the UnifiedSyncOrchestrator
 ///
@@ -13,14 +17,15 @@ final syncOrchestratorProvider = Provider<UnifiedSyncOrchestrator>((ref) {
   // Get the sync services
   final healthMetricsSyncService = ref.watch(healthMetricsSyncServiceProvider);
   final mealsSyncService = ref.watch(mealsSyncServiceProvider);
+  final exercisesSyncService = ref.watch(exercisesSyncServiceProvider);
+  final medicationsSyncService = ref.watch(medicationsSyncServiceProvider);
 
   // Create strategies
   final strategies = [
     HealthMetricsSyncStrategy(healthMetricsSyncService),
     MealsSyncStrategy(mealsSyncService),
-    // TODO: Add exercise and medication strategies when ready
-    // ExerciseSyncStrategy(...),
-    // MedicationSyncStrategy(...),
+    ExercisesSyncStrategy(exercisesSyncService),
+    MedicationsSyncStrategy(medicationsSyncService),
   ];
 
   // Create and return orchestrator
