@@ -146,21 +146,38 @@ class HealthMetricModel extends HiveObject {
           json['user_id'].toString() // Handle both int and string from API
       ..date = DateTime.parse(json['date'] as String)
       ..weight = json['weight_kg'] != null
-          ? (json['weight_kg'] as num).toDouble()
+          ? double.tryParse(json['weight_kg'].toString()) ?? 0.0
           : null
-      ..sleepQuality = json['sleep_quality'] as int?
+      ..sleepQuality = json['sleep_quality'] != null
+          ? int.tryParse(json['sleep_quality'].toString())
+          : null
       ..sleepHours = json['sleep_hours'] != null
-          ? (json['sleep_hours'] as num).toDouble()
+          ? double.tryParse(json['sleep_hours'].toString()) ?? 0.0
           : null
-      ..energyLevel = json['energy_level'] as int?
-      ..restingHeartRate = json['resting_heart_rate'] as int?
-      ..systolicBP = json['blood_pressure_systolic'] as int?
-      ..diastolicBP = json['blood_pressure_diastolic'] as int?
-      ..steps = json['steps'] as int?
-      ..caloriesBurned = json['calories_burned'] as int?
-      ..waterIntakeMl = json['water_intake_ml'] as int?
+      ..energyLevel = json['energy_level'] != null
+          ? int.tryParse(json['energy_level'].toString())
+          : null
+      ..restingHeartRate = json['resting_heart_rate'] != null
+          ? int.tryParse(json['resting_heart_rate'].toString())
+          : null
+      ..systolicBP = json['blood_pressure_systolic'] != null
+          ? int.tryParse(json['blood_pressure_systolic'].toString())
+          : null
+      ..diastolicBP = json['blood_pressure_diastolic'] != null
+          ? int.tryParse(json['blood_pressure_diastolic'].toString())
+          : null
+      ..steps =
+          json['steps'] != null ? int.tryParse(json['steps'].toString()) : null
+      ..caloriesBurned = json['calories_burned'] != null
+          ? int.tryParse(json['calories_burned'].toString())
+          : null
+      ..waterIntakeMl = json['water_intake_ml'] != null
+          ? int.tryParse(json['water_intake_ml'].toString())
+          : null
       ..mood = json['mood'] as String?
-      ..stressLevel = json['stress_level'] as int?
+      ..stressLevel = json['stress_level'] != null
+          ? int.tryParse(json['stress_level'].toString())
+          : null
       ..notes = json['notes'] as String?
       ..createdAt = DateTime.parse(json['created_at'] as String)
       ..updatedAt = DateTime.parse(json['updated_at'] as String);
