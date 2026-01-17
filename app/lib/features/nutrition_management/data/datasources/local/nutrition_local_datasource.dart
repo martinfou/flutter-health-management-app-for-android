@@ -8,7 +8,7 @@ import 'package:health_app/features/nutrition_management/domain/entities/meal.da
 import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
 
 /// Local data source for Meal and Recipe
-/// 
+///
 /// Handles direct Hive database operations for meals and recipes.
 class NutritionLocalDataSource {
   /// Get Hive box for meals
@@ -32,7 +32,7 @@ class NutritionLocalDataSource {
     try {
       final box = _mealsBox;
       final model = box.get(id);
-      
+
       if (model == null) {
         return Left(NotFoundFailure('Meal'));
       }
@@ -51,10 +51,33 @@ class NutritionLocalDataSource {
           .where((model) => model.userId == userId)
           .map((model) => model.toEntity())
           .toList();
-      
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to get meals: $e'));
+    }
+  }
+
+  /// Migrate meals to correct user ID (for meals created before authentication)
+  Future<Result<void>> migrateMealsToUserId(String newUserId) async {
+    try {
+      final box = _mealsBox;
+      final mealsToMigrate =
+          box.values.where((model) => model.userId != newUserId).toList();
+
+      if (mealsToMigrate.isEmpty) {
+        return const Right(null);
+      }
+
+      for (final meal in mealsToMigrate) {
+        meal.userId = newUserId;
+        await meal.save();
+      }
+
+      print('Migrated ${mealsToMigrate.length} meals to userId: $newUserId');
+      return const Right(null);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to migrate meals: $e'));
     }
   }
 
@@ -67,8 +90,9 @@ class NutritionLocalDataSource {
     try {
       final box = _mealsBox;
       final start = DateTime(startDate.year, startDate.month, startDate.day);
-      final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
-      
+      final end =
+          DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
       final models = box.values
           .where((model) {
             if (model.userId != userId) return false;
@@ -82,7 +106,7 @@ class NutritionLocalDataSource {
           })
           .map((model) => model.toEntity())
           .toList();
-      
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to get meals by date range: $e'));
@@ -97,7 +121,7 @@ class NutritionLocalDataSource {
     try {
       final box = _mealsBox;
       final targetDate = DateTime(date.year, date.month, date.day);
-      
+
       final models = box.values
           .where((model) {
             if (model.userId != userId) return false;
@@ -110,7 +134,7 @@ class NutritionLocalDataSource {
           })
           .map((model) => model.toEntity())
           .toList();
-      
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to get meals by date: $e'));
@@ -126,7 +150,7 @@ class NutritionLocalDataSource {
     try {
       final box = _mealsBox;
       final targetDate = DateTime(date.year, date.month, date.day);
-      
+
       final models = box.values
           .where((model) {
             if (model.userId != userId) return false;
@@ -140,7 +164,7 @@ class NutritionLocalDataSource {
           })
           .map((model) => model.toEntity())
           .toList();
-      
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to get meals by meal type: $e'));
@@ -164,7 +188,7 @@ class NutritionLocalDataSource {
     try {
       final box = _mealsBox;
       final existing = box.get(meal.id);
-      
+
       if (existing == null) {
         return Left(NotFoundFailure('Meal'));
       }
@@ -182,7 +206,7 @@ class NutritionLocalDataSource {
     try {
       final box = _mealsBox;
       final model = box.get(id);
-      
+
       if (model == null) {
         return Left(NotFoundFailure('Meal'));
       }
@@ -199,7 +223,7 @@ class NutritionLocalDataSource {
     try {
       final box = _recipesBox;
       final model = box.get(id);
-      
+
       if (model == null) {
         return Left(NotFoundFailure('Recipe'));
       }
@@ -214,10 +238,8 @@ class NutritionLocalDataSource {
   Future<Result<List<Recipe>>> getAllRecipes() async {
     try {
       final box = _recipesBox;
-      final models = box.values
-          .map((model) => model.toEntity())
-          .toList();
-      
+      final models = box.values.map((model) => model.toEntity()).toList();
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to get recipes: $e'));
@@ -232,12 +254,13 @@ class NutritionLocalDataSource {
       final models = box.values
           .where((model) {
             final nameMatch = model.name.toLowerCase().contains(lowerQuery);
-            final descMatch = model.description?.toLowerCase().contains(lowerQuery) ?? false;
+            final descMatch =
+                model.description?.toLowerCase().contains(lowerQuery) ?? false;
             return nameMatch || descMatch;
           })
           .map((model) => model.toEntity())
           .toList();
-      
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to search recipes: $e'));
@@ -256,7 +279,7 @@ class NutritionLocalDataSource {
           })
           .map((model) => model.toEntity())
           .toList();
-      
+
       return Right(models);
     } catch (e) {
       return Left(DatabaseFailure('Failed to get recipes by tags: $e'));
@@ -280,7 +303,7 @@ class NutritionLocalDataSource {
     try {
       final box = _recipesBox;
       final existing = box.get(recipe.id);
-      
+
       if (existing == null) {
         return Left(NotFoundFailure('Recipe'));
       }
@@ -298,7 +321,7 @@ class NutritionLocalDataSource {
     try {
       final box = _recipesBox;
       final model = box.get(id);
-      
+
       if (model == null) {
         return Left(NotFoundFailure('Recipe'));
       }
@@ -310,4 +333,3 @@ class NutritionLocalDataSource {
     }
   }
 }
-

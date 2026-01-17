@@ -56,7 +56,16 @@ class MealsSyncService {
         return Left(MealsSyncFailure('No user ID available for sync'));
       }
 
-      // 3. Push local changes (created/updated since last sync)
+      // 3. Migrate any existing meals to correct userId
+      final migrationResult =
+          await _localDataSource.migrateMealsToUserId(userId);
+      if (migrationResult.isLeft()) {
+        print(
+            'MealsSyncService: Migration failed: ${migrationResult.fold((f) => f.message, (_) => "")}');
+        // Continue with sync even if migration fails
+      }
+
+      // 4. Push local changes (created/updated since last sync)
       final pushResult = await _pushLocalChanges(userId);
       print(
           'MealsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
@@ -64,7 +73,7 @@ class MealsSyncService {
         return pushResult;
       }
 
-      // 4. Update last sync timestamp
+      // 5. Update last sync timestamp
       await _updateLastSyncTimestamp();
 
       return const Right(null);
