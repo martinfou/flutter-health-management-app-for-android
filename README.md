@@ -114,8 +114,8 @@ flutter-health-management-app-for-android/
 - Comprehensive automated testing
 
 ### Post-MVP Features (Designed but Not Implemented)
-- Cloud sync (DreamHost PHP/MySQL backend)
-- User authentication
+- Cloud sync (Laravel backend with MySQL - implemented)
+- User authentication (Laravel JWT - implemented)
 - LLM-powered features (weekly reviews, meal suggestions, workout adaptations)
 - Grocery store API integration
 - Advanced analytics
