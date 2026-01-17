@@ -42,6 +42,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [BF-001](../backlog/bug-fixes/BF-001-export-import-not-working.md) | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-12-30 | 2025-01-27 |
 | [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ✅ | [Sprint 24](../sprints/sprint-24-user-authentication.md) | 2025-01-03 | 2026-01-17 |
 | [BF-003](../backlog/bugs/BF-003-backend-only-one-health-metric-per-day.md) | Backend Only Stores One Health Metric Per Day | 🟠 High | 8 | ✅ | Backlog | 2026-01-17 | 2026-01-17 |
+| [BF-004](../backlog/bugs/BF-004-llm-selection-always-defaults-to-on-device.md) | LLM Selection Always Defaults to On-Device Instead of Selected Provider | 🟠 High | 5 | ✅ | Current | 2026-01-17 | 2026-01-17 |
 
 ---
 

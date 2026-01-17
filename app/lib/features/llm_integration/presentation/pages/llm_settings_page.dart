@@ -246,9 +246,26 @@ class _LlmSettingsPageState extends ConsumerState<LlmSettingsPage> {
               if (newType != null) {
                 final newModel = _getDefaultModel(newType);
                 _modelController.text = newModel;
+
+                // If selecting a cloud provider, automatically set preference to preferCloud
+                // to respect the user's explicit provider choice
+                final isCloudProvider = newType != LlmProviderType.onDevice;
+                final newAiPreference = isCloudProvider &&
+                        _aiPreference == AiPreference.preferOnDevice
+                    ? AiPreference.preferCloud
+                    : _aiPreference;
+
+                if (isCloudProvider &&
+                    _aiPreference == AiPreference.preferOnDevice) {
+                  setState(() {
+                    _aiPreference = AiPreference.preferCloud;
+                  });
+                }
+
                 ref.read(llmConfigProvider.notifier).state = config.copyWith(
                   providerType: newType,
                   model: newModel,
+                  aiPreference: newAiPreference,
                 );
               }
             },
