@@ -7,12 +7,21 @@ import 'package:health_app/core/sync/utils/sync_failure.dart';
 import 'package:health_app/features/health_tracking/data/services/health_metrics_sync_service.dart' hide SyncFailure;
 import 'package:shared_preferences/shared_preferences.dart';
 
+// ignore: avoid_private_typedef_functions
+typedef _GetFailure = Failure Function();
+typedef _FoldFunction = Either<Failure, dynamic> Function();
+
+
 /// Strategy for syncing health metrics
 ///
 /// Wraps the existing HealthMetricsSyncService to implement the SyncStrategy interface.
+/// Includes automatic retry with exponential backoff for transient failures.
 class HealthMetricsSyncStrategy implements SyncStrategy {
   final HealthMetricsSyncService _syncService;
   static const String _lastSyncKey = 'last_health_metrics_sync_timestamp';
+  static const String _lastSyncErrorKey = 'last_health_metrics_sync_error';
+  static const int _maxRetries = 3;
+  static const Duration _retryDelay = Duration(seconds: 2);
 
   HealthMetricsSyncStrategy(this._syncService);
 
@@ -21,18 +30,52 @@ class HealthMetricsSyncStrategy implements SyncStrategy {
 
   @override
   Future<Either<Failure, DataTypeSyncStatus>> sync() async {
+    return _syncWithRetry(0);
+  }
+
+  /// Sync with automatic retry on transient failures
+  Future<Either<Failure, DataTypeSyncStatus>> _syncWithRetry(int attemptCount) async {
     try {
       // Perform the sync using the existing service
       final result = await _syncService.syncHealthMetrics();
 
       // Handle the result
       if (result.isLeft()) {
-        // Extract the failure from Left
+        // Extract the failure
+        Failure? failure;
+        result.fold(
+          (f) => failure = f,
+          (_) {},
+        );
+
+        if (failure != null) {
+          // Check if failure is transient (network error) vs permanent
+          final errorMsg = failure!.message.toLowerCase();
+          final isTransient = failure is NetworkFailure ||
+              errorMsg.contains('network') ||
+              errorMsg.contains('timeout') ||
+              errorMsg.contains('connection');
+
+          // Retry on transient failures
+          if (isTransient && attemptCount < _maxRetries) {
+            final delayMs = _retryDelay.inMilliseconds * (1 << attemptCount); // exponential backoff
+            print('HealthMetricsSyncStrategy: Retry ${attemptCount + 1}/$_maxRetries after ${delayMs}ms due to: ${failure!.message}');
+            await Future.delayed(Duration(milliseconds: delayMs));
+            return _syncWithRetry(attemptCount + 1);
+          }
+
+          // Save error for UI display
+          await _saveLastSyncError(failure!.message);
+        }
+
+        // Return the failure
         return result as Either<Failure, DataTypeSyncStatus>;
       }
 
-      // Sync succeeded - get last sync time and return status
+      // Sync succeeded - clear error and get last sync time
+      await _clearLastSyncError();
       final lastSync = await getLastSyncTime();
+
       return Right(DataTypeSyncStatus(
         type: dataType,
         isSyncing: false,
@@ -41,7 +84,48 @@ class HealthMetricsSyncStrategy implements SyncStrategy {
         error: null,
       ));
     } catch (e) {
-      return Left(SyncFailure('Health metrics sync error: ${e.toString()}'));
+      // Retry on unexpected errors
+      if (attemptCount < _maxRetries) {
+        final delayMs = _retryDelay.inMilliseconds * (1 << attemptCount);
+        print('HealthMetricsSyncStrategy: Retry ${attemptCount + 1}/$_maxRetries after ${delayMs}ms due to: $e');
+        await Future.delayed(Duration(milliseconds: delayMs));
+        return _syncWithRetry(attemptCount + 1);
+      }
+
+      final errorMsg = 'Health metrics sync error: ${e.toString()}';
+      await _saveLastSyncError(errorMsg);
+
+      return Left(SyncFailure(errorMsg));
+    }
+  }
+
+  /// Save last sync error for UI display
+  Future<void> _saveLastSyncError(String error) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_lastSyncErrorKey, error);
+    } catch (e) {
+      print('HealthMetricsSyncStrategy: Failed to save sync error: $e');
+    }
+  }
+
+  /// Clear last sync error
+  Future<void> _clearLastSyncError() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_lastSyncErrorKey);
+    } catch (e) {
+      print('HealthMetricsSyncStrategy: Failed to clear sync error: $e');
+    }
+  }
+
+  /// Get last sync error for UI display
+  Future<String?> getLastSyncError() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_lastSyncErrorKey);
+    } catch (e) {
+      return null;
     }
   }
 

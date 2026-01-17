@@ -33,6 +33,21 @@ class HealthMetric {
   /// Diastolic blood pressure in mmHg (nullable)
   final int? diastolicBP;
 
+  /// Steps count (nullable)
+  final int? steps;
+
+  /// Calories burned (nullable)
+  final int? caloriesBurned;
+
+  /// Water intake in milliliters (nullable)
+  final int? waterIntakeMl;
+
+  /// Mood (nullable - excellent, good, neutral, poor, terrible)
+  final String? mood;
+
+  /// Stress level (1-10, nullable)
+  final int? stressLevel;
+
   /// Body measurements map (waist, hips, neck, chest, thigh) in cm
   final Map<String, double>? bodyMeasurements;
 
@@ -57,6 +72,11 @@ class HealthMetric {
     this.restingHeartRate,
     this.systolicBP,
     this.diastolicBP,
+    this.steps,
+    this.caloriesBurned,
+    this.waterIntakeMl,
+    this.mood,
+    this.stressLevel,
     this.bodyMeasurements,
     this.notes,
     required this.createdAt,
@@ -72,6 +92,11 @@ class HealthMetric {
         restingHeartRate != null ||
         systolicBP != null ||
         diastolicBP != null ||
+        steps != null ||
+        caloriesBurned != null ||
+        waterIntakeMl != null ||
+        mood != null ||
+        stressLevel != null ||
         (bodyMeasurements != null && bodyMeasurements!.isNotEmpty);
   }
 
@@ -87,6 +112,11 @@ class HealthMetric {
     int? restingHeartRate,
     int? systolicBP,
     int? diastolicBP,
+    int? steps,
+    int? caloriesBurned,
+    int? waterIntakeMl,
+    String? mood,
+    int? stressLevel,
     Map<String, double>? bodyMeasurements,
     String? notes,
     DateTime? createdAt,
@@ -103,6 +133,11 @@ class HealthMetric {
       restingHeartRate: restingHeartRate ?? this.restingHeartRate,
       systolicBP: systolicBP ?? this.systolicBP,
       diastolicBP: diastolicBP ?? this.diastolicBP,
+      steps: steps ?? this.steps,
+      caloriesBurned: caloriesBurned ?? this.caloriesBurned,
+      waterIntakeMl: waterIntakeMl ?? this.waterIntakeMl,
+      mood: mood ?? this.mood,
+      stressLevel: stressLevel ?? this.stressLevel,
       bodyMeasurements: bodyMeasurements ?? this.bodyMeasurements,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
@@ -125,6 +160,11 @@ class HealthMetric {
           restingHeartRate == other.restingHeartRate &&
           systolicBP == other.systolicBP &&
           diastolicBP == other.diastolicBP &&
+          steps == other.steps &&
+          caloriesBurned == other.caloriesBurned &&
+          waterIntakeMl == other.waterIntakeMl &&
+          mood == other.mood &&
+          stressLevel == other.stressLevel &&
           bodyMeasurements == other.bodyMeasurements &&
           notes == other.notes;
 
@@ -140,6 +180,11 @@ class HealthMetric {
       restingHeartRate.hashCode ^
       systolicBP.hashCode ^
       diastolicBP.hashCode ^
+      steps.hashCode ^
+      caloriesBurned.hashCode ^
+      waterIntakeMl.hashCode ^
+      mood.hashCode ^
+      stressLevel.hashCode ^
       bodyMeasurements.hashCode ^
       notes.hashCode;
 

@@ -265,22 +265,44 @@ class HealthTrackingLocalDataSource {
     }
   }
 
-  /// Batch save health metrics
+  /// Batch save health metrics with conflict resolution
   ///
   /// Saves multiple health metrics in a single operation for better performance.
+  /// Uses timestamp-based conflict resolution: only overwrites local data if
+  /// incoming metric is newer (has later updatedAt).
+  ///
+  /// This ensures that in case of concurrent edits, the latest version wins.
   Future<Result<List<HealthMetric>>> saveHealthMetricsBatch(
     List<HealthMetric> metrics,
   ) async {
     try {
       final box = _box;
       final modelsMap = <String, HealthMetricModel>{};
+      int skippedCount = 0;
 
       for (final metric in metrics) {
+        final existing = box.get(metric.id);
+
+        // Conflict resolution: Compare timestamps
+        if (existing != null) {
+          // Only overwrite if incoming metric is newer
+          if (metric.updatedAt.isBefore(existing.updatedAt)) {
+            // Skip this metric - local version is newer
+            skippedCount++;
+            continue;
+          }
+        }
+
+        // Either no existing record or incoming is newer - save it
         modelsMap[metric.id] = HealthMetricModel.fromEntity(metric);
       }
 
       // Use batch put operation
       await box.putAll(modelsMap);
+
+      if (skippedCount > 0) {
+        print('saveHealthMetricsBatch: Skipped $skippedCount metrics (local versions are newer)');
+      }
 
       return Right(metrics);
     } catch (e) {

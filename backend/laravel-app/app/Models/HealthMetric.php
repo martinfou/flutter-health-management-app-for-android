@@ -41,7 +41,7 @@ class HealthMetric extends Model
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => 'datetime', // BF-003: Changed from 'date' to 'datetime' to support timestamps
             'weight_kg' => 'decimal:2',
             'sleep_hours' => 'decimal:2',
             'sleep_quality' => 'integer',

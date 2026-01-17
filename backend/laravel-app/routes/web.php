@@ -19,8 +19,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', function () {
-    return response(file_get_contents(resource_path('views/welcome-simple.blade.php')))->header('Content-Type', 'text/html');
-});
+    return view('welcome');
+})->name('welcome');
 
 // Authentication routes
 Route::get('/login', function () {

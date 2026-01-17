@@ -2,7 +2,7 @@
 
 This is the main product backlog tracking all feature requests and bug fixes.
 
-**Last Updated**: 2026-01-04
+**Last Updated**: 2026-01-17
 **Implementation Order**: See [Implementation Order Recommendation](./implementation-order-recommendation.md)
 
 ## Feature Requests
@@ -18,7 +18,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-007](../backlog/feature-requests/FR-007-metric-imperial-units.md) | Metric/Imperial Units Support | 🟠 High | 13 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-01-02 | 2025-01-27 |
 | [FR-008](../backlog/features/FR-008-cloud-sync-multi-device-support.md) | Cloud Sync & Multi-Device Support | 🟠 High | 21 | ⭕ | [Sprint 25-26](../sprints/sprint-25-26-cloud-sync-multi-device-support.md) | 2025-01-03 | 2026-01-17 |
 | [FR-020](../backlog/features/FR-020-backend-infrastructure.md) | Backend Infrastructure | 🟠 High | 21 | ⏳ | [Sprint 23](../sprints/sprint-23-backend-infrastructure-completion.md) | 2025-01-27 | 2026-01-03 |
-| [FR-009](../backlog/features/FR-009-user-authentication.md) | User Authentication | 🟠 High | 13 | ⏳ | [Sprint 24](../sprints/sprint-24-user-authentication.md) | 2025-01-03 | 2026-01-17 |
+| [FR-009](../backlog/features/FR-009-user-authentication.md) | User Authentication | 🟠 High | 13 | ✅ | [Sprint 24](../sprints/sprint-24-user-authentication.md) | 2025-01-03 | 2026-01-17 |
 | [FR-010](../backlog/features/FR-010-llm-integration.md) | LLM Integration | 🟠 High | 21 | ✅ | [Sprint 15](../sprints/sprint-15-llm-integration.md) | 2025-01-03 | 2026-01-03 |
 | [FR-011](../backlog/features/FR-011-advanced-analytics-module.md) | Advanced Analytics Module | 🟠 High | 21 | ⭕ | [Sprint 27](../sprints/sprint-27-advanced-analytics-module.md) | 2025-01-03 | 2026-01-17 |
 | [FR-012](../backlog/feature-requests/FR-012-grocery-store-api-integration.md) | Grocery Store API Integration | 🟡 Medium | 13 | ⭕ | Sprint 21+ (Post-MVP Phase 2) | 2025-01-03 | 2025-01-03 |
@@ -40,7 +40,8 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | ID | Title | Priority | Points | Status | Sprint | Created | Updated |
 |----|-------|----------|--------|--------|--------|---------|---------|
 | [BF-001](../backlog/bug-fixes/BF-001-export-import-not-working.md) | Export/Import Functionality Not Working Properly | 🔴 Critical | 5 | ✅ | [Sprint 12](../sprints/sprint-12-metric-imperial-units.md) | 2025-12-30 | 2025-01-27 |
-| [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ⭕ | [Sprint 24](../sprints/sprint-24-user-authentication.md) | 2025-01-03 | 2026-01-17 |
+| [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ✅ | [Sprint 24](../sprints/sprint-24-user-authentication.md) | 2025-01-03 | 2026-01-17 |
+| [BF-003](../backlog/bugs/BF-003-backend-only-one-health-metric-per-day.md) | Backend Only Stores One Health Metric Per Day | 🟠 High | 8 | ✅ | Backlog | 2026-01-17 | 2026-01-17 |
 
 ---
 
@@ -70,12 +71,14 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - FR-004: Food Suggestion Based on Remaining Macros complete
 - FR-022: On-Device SLM Integration complete (Gemini Nano on Pixel devices)
 
-**In Progress:**
+**Completed:**
 - FR-020: Backend Infrastructure ✅ **COMPLETE** - API deployed to DreamHost, all endpoints working, sync functional
-- FR-009: User Authentication - **Sprint 24 (Next)** - Backend ready, now implementing auth system
+- FR-009: User Authentication ✅ **COMPLETE** - Full Google OAuth implementation with JWT tokens, secure storage, protected routes
+- BF-002: Food Save Bug Fix ✅ **COMPLETE** - Carb limit validation removed, users can save meals with any carb amount
+- **BF-003: Health Metrics Multiple Entries ✅ COMPLETE** - Timestamp migration deployed, users can now log multiple health metrics per day with full precision
 
 **Next Sprints (Priority Order):**
-- **Sprint 24**: FR-009 (User Authentication) + BF-002 (Food Save Blocked) - 13 + 3 = 16 points
+- **Sprint 25-26**: FR-008 (Cloud Sync & Multi-Device Support) - 21 points
 - **Sprint 25-26**: FR-008 (Cloud Sync & Multi-Device) - 21 points (depends on FR-009 complete)
 - **Sprint 26**: FR-019 (Open Food Facts Integration) - 13 points (parallel with Sprint 26)
 - **Sprint 27**: FR-011 (Advanced Analytics Module) - 21 points
@@ -88,8 +91,8 @@ This is the main product backlog tracking all feature requests and bug fixes.
 
 ### Dependency Notes
 - **Sprint 23**: FR-020 (Backend Infrastructure) ✅ **COMPLETE** - Backend deployed and operational
-- **Sprint 24**: FR-009 (User Authentication) - **UNBLOCKED** - Backend ready, auth can now be implemented
-- **Sprint 25-26**: FR-008 (Cloud Sync & Multi-Device) requires both FR-020 ✅ and FR-009 to be complete
+- **Sprint 24**: FR-009 (User Authentication) ✅ **COMPLETE** - Full OAuth implementation complete
+- **Sprint 25-26**: FR-008 (Cloud Sync & Multi-Device) - **UNBLOCKED** - All dependencies met, ready to start
 - **Sprint 26**: FR-019 (Open Food Facts) - Can run in parallel with Sprint 25-26 if resources available
 - **Sprint 27**: FR-011 (Advanced Analytics) - Can start after Core Cloud Sync features complete
 - **Post-MVP**: FR-012, FR-013, FR-014, FR-015, FR-018, FR-024 - Defer until Phase 2 planning

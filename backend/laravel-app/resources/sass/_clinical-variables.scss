@@ -1,0 +1,169 @@
+// Clinical Pro Design System Variables
+
+// ==================== COLORS ====================
+
+// Primary Navy
+$navy-900: #1e293b;
+$navy-800: #334155;
+$navy-700: #475569;
+
+// Electric Blue (Accent)
+$blue-500: #3b82f6;
+$blue-400: #60a5fa;
+$blue-600: #2563eb;
+
+// Neutral / Grayscale
+$white: #ffffff;
+$gray-50: #f8fafc;
+$gray-100: #f1f5f9;
+$gray-200: #e2e8f0;
+$gray-300: #cbd5e1;
+$gray-400: #94a3b8;
+$gray-600: #64748b;
+$gray-900: #0f172a;
+
+// Dark Mode
+$dark-bg: #0f172a;
+$dark-card: #1e293b;
+$dark-border: #334155;
+
+// Semantic Colors
+$success: #10b981;
+$success-dark: #059669;
+$warning: #f59e0b;
+$warning-dark: #d97706;
+$danger: #ef4444;
+$danger-dark: #dc2626;
+$info: #3b82f6;
+
+// ==================== TYPOGRAPHY ====================
+
+// Font Families (imported via @import in main file)
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-family-headings: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-family-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+// Font Sizes (8pt base unit)
+$font-size-xs: 0.75rem;   // 12px
+$font-size-sm: 0.875rem;  // 14px
+$font-size-base: 0.9375rem; // 15px (was 14px, now 15px for better readability)
+$font-size-md: 1rem;      // 16px
+$font-size-lg: 1.125rem;  // 18px
+$font-size-xl: 1.25rem;   // 20px
+$font-size-2xl: 1.5rem;   // 24px
+$font-size-3xl: 1.875rem; // 30px
+$font-size-4xl: 2.25rem;  // 36px
+
+// Font Weights
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+
+// Line Heights
+$line-height-tight: 1.25;
+$line-height-snug: 1.375;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.625;
+$line-height-loose: 2;
+
+// Letter Spacing
+$letter-spacing-tighter: -0.05em;
+$letter-spacing-tight: -0.025em;
+$letter-spacing-normal: 0;
+$letter-spacing-wide: 0.025em;
+$letter-spacing-wider: 0.05em;
+
+// ==================== SPACING ====================
+
+// Base unit: 4px (consistent with Tailwind)
+$spacing-0: 0;
+$spacing-xs: 0.25rem;   // 4px
+$spacing-sm: 0.5rem;    // 8px
+$spacing-md: 1rem;      // 16px
+$spacing-lg: 1.5rem;    // 24px
+$spacing-xl: 2rem;      // 32px
+$spacing-2xl: 2.5rem;   // 40px
+$spacing-3xl: 3rem;     // 48px
+$spacing-4xl: 4rem;     // 64px
+
+// ==================== BORDER RADIUS ====================
+
+$border-radius-sm: 0.25rem;  // 4px
+$border-radius-md: 0.5rem;   // 8px
+$border-radius-lg: 0.75rem;  // 12px
+$border-radius-full: 9999px;
+
+// ==================== SHADOWS ====================
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+// Dark mode shadows
+$shadow-sm-dark: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+$shadow-md-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+$shadow-lg-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+
+// ==================== BORDERS ====================
+
+$border-width: 1px;
+$border-color: $gray-200;
+$border-color-dark: $dark-border;
+
+// ==================== TRANSITIONS ====================
+
+$transition-duration-fast: 150ms;
+$transition-duration-base: 250ms;
+$transition-duration-slow: 500ms;
+
+$transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+
+$transition-fast: $transition-duration-fast $transition-timing;
+$transition-base: $transition-duration-base $transition-timing;
+$transition-slow: $transition-duration-slow $transition-timing;
+
+// ==================== BREAKPOINTS ====================
+
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+// ==================== Z-INDEX ====================
+
+$z-sticky: 10;
+$z-fixed: 20;
+$z-modal-backdrop: 30;
+$z-modal: 40;
+$z-popover: 50;
+$z-tooltip: 60;
+$z-sidebar: 100;
+$z-sidebar-overlay: 99;
+
+// ==================== OTHER UTILITIES ====================
+
+$border-radius-card: $border-radius-md;
+$border-radius-button: $border-radius-sm;
+
+$opacity-disabled: 0.5;
+
+// Bootstrap variable overrides
+$primary: $navy-900;
+$secondary: $gray-600;
+$success: $success;
+$warning: $warning;
+$danger: $danger;
+$info: $info;
+$light: $gray-100;
+$dark: $gray-900;
+
+$body-bg: $gray-50;
+$body-color: $gray-900;
+
+$link-color: $blue-500;
+$link-hover-color: $blue-600;

@@ -1,21 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:health_app/core/network/authentication_service.dart';
 import 'package:health_app/core/network/token_storage.dart';
+import 'package:health_app/core/errors/failures.dart';
+import 'authentication_service_test.mocks.dart';
 
 @GenerateMocks([TokenStorage])
 void main() {
   group('AuthenticationService - Registration', () {
     test('register successful saves tokens', () async {
-      final mockStorage = MockTokenStorage();
-
-      when(mockStorage.saveAccessToken(any)).thenAnswer((_) async {});
-      when(mockStorage.saveRefreshToken(any)).thenAnswer((_) async {});
-      when(mockStorage.hasTokens()).thenAnswer((_) async => true);
-
-      when(mockStorage.getAccessToken()).thenAnswer((_) async => 'test-token');
-
       final result = await AuthenticationService.register(
         email: 'test@example.com',
         password: 'SecurePass123!',
@@ -23,21 +18,30 @@ void main() {
       );
 
       expect(result.isRight(), true);
+      result.fold(
+        (failure) =>
+            fail('Expected success but got failure: ${failure.message}'),
+        (user) {
+          expect(user.email, equals('test@example.com'));
+          expect(user.name, equals('Test User'));
+        },
+      );
     });
 
     test('register with existing email returns validation failure', () async {
-      final mockStorage = MockTokenStorage();
-
-      when(mockStorage.hasTokens()).thenAnswer((_) async => false);
-
       final result = await AuthenticationService.register(
         email: 'test@example.com',
         password: 'SecurePass123!',
       );
 
       expect(result.isLeft(), true);
-      expect(result.getLeft(), isA<ValidationFailure>());
-      expect(result.getLeft().message, contains('already registered'));
+      result.fold(
+        (failure) {
+          expect(failure, isA<ValidationFailure>());
+          expect(failure.message, contains('already registered'));
+        },
+        (user) => fail('Expected failure but got success'),
+      );
     });
   });
 

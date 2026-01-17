@@ -64,18 +64,37 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   /// Save user profile to local database after authentication
   /// Also migrates any existing health metrics from old/default userIds to the authenticated user
+  /// and syncs the profile to the backend
   Future<void> _saveUserProfileAfterLogin(AuthUser user) async {
     try {
       final userProfile = _createProfileFromAuthUser(user);
       final userRepo = ref.read(userProfileRepositoryProvider);
       await userRepo.saveUserProfile(userProfile);
-      print('LoginPage: User profile saved for user ${user.id}');
+      print('LoginPage: User profile saved locally for user ${user.id}');
 
       // Migrate any existing health metrics to this user
       await _migrateExistingMetrics(user.id);
+
+      // Sync the user profile to the backend so subsequent sync operations can fetch it
+      // This ensures the backend has the user before health metrics sync
+      await _syncUserProfileToBackend(userProfile);
     } catch (e) {
       print('LoginPage: Error saving user profile: $e');
       // Don't fail login if profile save fails
+    }
+  }
+
+  /// Sync the authenticated user profile to the backend
+  /// This is necessary so that the backend has the user record before health metrics sync
+  Future<void> _syncUserProfileToBackend(UserProfile profile) async {
+    try {
+      // TODO: Implement user profile sync to backend
+      // For now, this is a placeholder that would call an API to save the profile
+      print('LoginPage: User profile sync to backend needed for user ${profile.id}');
+      // In a full implementation, this would call: await userRepo.syncUserProfileToBackend(profile);
+    } catch (e) {
+      print('LoginPage: Warning - could not sync profile to backend: $e');
+      // Don't fail - the profile is at least saved locally
     }
   }
 

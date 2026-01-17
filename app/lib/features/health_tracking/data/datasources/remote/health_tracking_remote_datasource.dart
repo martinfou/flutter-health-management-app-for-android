@@ -17,9 +17,17 @@ class HealthTrackingRemoteDataSource {
   static const String _metricsEndpoint = '/health-metrics';
   
   /// Fetch health metrics from backend
+  ///
+  /// Parameters:
+  /// - [startDate]: Filter metrics on or after this date
+  /// - [endDate]: Filter metrics on or before this date
+  /// - [updatedSince]: Filter metrics updated since this datetime (for delta sync)
+  /// - [limit]: Maximum number of metrics to return (default 100, max 100)
+  /// - [offset]: Number of metrics to skip for pagination (default 0)
   Future<Result<List<HealthMetricModel>>> getHealthMetrics({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? updatedSince,
     int limit = 100,
     int offset = 0,
   }) async {
@@ -28,29 +36,38 @@ class HealthTrackingRemoteDataSource {
         'limit': limit.toString(),
         'offset': offset.toString(),
       };
-      
+
       if (startDate != null) {
         queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
       }
-      
+
       if (endDate != null) {
         queryParams['end_date'] = endDate.toIso8601String().split('T')[0];
       }
-      
+
+      // For efficient delta sync: only fetch metrics updated since last sync
+      if (updatedSince != null) {
+        queryParams['updated_since'] = updatedSince.toIso8601String();
+      }
+
       final uri = Uri.parse('$_baseUrl$_metricsEndpoint').replace(
         queryParameters: queryParams,
       );
-      
+
+      print('GetHealthMetrics: Fetching from $uri');
+
       final response = await AuthenticatedHttpClient.get(uri);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final List<dynamic> results = data['data'] as List<dynamic>;
-        
+
         final metrics = results
             .map((json) => HealthMetricModel.fromJson(json as Map<String, dynamic>))
             .toList();
-            
+
+        print('GetHealthMetrics: Retrieved ${metrics.length} metrics');
+
         return Right(metrics);
       } else {
         return Left(NetworkFailure(

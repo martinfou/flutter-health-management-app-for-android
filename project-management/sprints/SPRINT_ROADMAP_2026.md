@@ -21,7 +21,7 @@ This roadmap shows the next sprints organized by dependency order and priority t
 ### 🔴 CRITICAL PATH - Unblocks All Cloud Features
 
 #### **Sprint 24: User Authentication & Bug Fixes** (13 + 3 = 16 points)
-**Status**: ⭕ Ready to Start
+**Status**: ✅ COMPLETED
 **Duration**: 2 weeks
 **Dependencies**: ✅ All complete (backend deployed)
 
@@ -37,6 +37,16 @@ This roadmap shows the next sprints organized by dependency order and priority t
   - Fix carb limit validation blocking saves
 
 **Unblocks**: Sprint 25-26 (Cloud Sync), FR-008
+
+---
+
+#### **BF-003: Health Metrics Multiple Entries** (8 points) - Production Fix
+**Status**: ✅ COMPLETED
+**Duration**: 1 day (production deployment)
+**Issue**: Backend only stored one health metric per day
+**Solution**: Changed database schema from DATE to TIMESTAMP
+**Testing**: Verified in production - multiple daily entries now work
+**Impact**: Users can track health metrics throughout the day with full precision
 **Blockers**: None - Ready to go!
 
 **Link**: [Sprint 24: User Authentication](./sprint-24-user-authentication.md)

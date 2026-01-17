@@ -1,8 +1,21 @@
-// Fonts
-@import url('https://fonts.bunny.net/css?family=Nunito');
+// ========== CLINICAL PRO DESIGN SYSTEM ==========
+// Foundation: Colors, Typography, Spacing
 
-// Variables
-@import 'variables';
+// Clinical Pro Variables (overrides Bootstrap defaults)
+@import 'clinical-variables';
 
-// Bootstrap
+// Clinical Pro Typography (font imports via Google Fonts)
+@import 'clinical-typography';
+
+// ========== BOOTSTRAP ==========
+// Import Bootstrap with Clinical Pro color overrides
 @import 'bootstrap/scss/bootstrap';
+
+// ========== CLINICAL PRO COMPONENTS & LAYOUTS ==========
+// Additional Clinical Pro styling will be added here as needed
+
+// ========== RESPONSIVE UTILITIES ==========
+// Clinical Pro responsive utilities
+@media (max-width: 768px) {
+    // Mobile-specific styles for Clinical Pro design
+}

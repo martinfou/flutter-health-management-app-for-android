@@ -13,6 +13,7 @@ class HealthMetricsController extends Controller
     /**
      * Get all health metrics
      * GET /api/v1/health-metrics
+     * Query params: start_date, end_date, updated_since, limit, page
      */
     public function index(Request $request)
     {
@@ -21,7 +22,7 @@ class HealthMetricsController extends Controller
 
             $query = HealthMetric::where('user_id', $user->id);
 
-            // Apply filters
+            // Apply date filters
             if ($request->has('start_date')) {
                 $query->where('date', '>=', $request->start_date);
             }
@@ -29,10 +30,21 @@ class HealthMetricsController extends Controller
                 $query->where('date', '<=', $request->end_date);
             }
 
+            // Apply updated_since filter for efficient bidirectional sync
+            if ($request->has('updated_since')) {
+                try {
+                    $updatedSince = new \DateTime($request->updated_since);
+                    $query->where('updated_at', '>=', $updatedSince);
+                } catch (\Exception $e) {
+                    return ResponseHelper::error('Invalid updated_since format. Use ISO 8601 format.', 400);
+                }
+            }
+
             $limit = (int) $request->input('limit', 20);
             $limit = min($limit, 100);
 
-            $metrics = $query->orderBy('date', 'desc')
+            $metrics = $query->orderBy('updated_at', 'desc')
+                ->orderBy('date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->paginate($limit);
 
@@ -52,7 +64,7 @@ class HealthMetricsController extends Controller
         $user = $request->attributes->get('user');
 
         $validator = Validator::make($request->all(), [
-            'date' => 'required|date',
+            'date' => 'required|date', // BF-003: Keep as date for backward compatibility, but will accept full datetime
             'weight_kg' => 'nullable|numeric|min:0|max:500',
             'sleep_hours' => 'nullable|numeric|min:0|max:24',
             'sleep_quality' => 'nullable|integer|min:1|max:10',
@@ -73,17 +85,8 @@ class HealthMetricsController extends Controller
             return ResponseHelper::validationError($validator->errors());
         }
 
-        // Check for duplicate date
-        $existing = HealthMetric::where('user_id', $user->id)
-            ->where('date', $request->date)
-            ->first();
-
-        if ($existing) {
-            return ResponseHelper::error(
-                'A health metric entry already exists for this date',
-                409
-            );
-        }
+        // BF-003: Removed duplicate date check - now allow multiple entries per day with timestamps
+        // Users can now log morning and evening measurements, etc.
 
         try {
             $metric = HealthMetric::create([
@@ -236,11 +239,21 @@ class HealthMetricsController extends Controller
 
         $validator = Validator::make($request->all(), [
             'metrics' => 'required|array',
-            'metrics.*.date' => 'required|date',
-            'metrics.*.weight_kg' => 'nullable|numeric',
-            'metrics.*.sleep_hours' => 'nullable|numeric',
-            'metrics.*.sleep_quality' => 'nullable|integer',
-            'metrics.*.energy_level' => 'nullable|integer',
+            'metrics.*.date' => 'required|date', // BF-003: Accepts full datetime strings for multiple daily entries
+            'metrics.*.weight_kg' => 'nullable|numeric|min:0|max:500',
+            'metrics.*.sleep_hours' => 'nullable|numeric|min:0|max:24',
+            'metrics.*.sleep_quality' => 'nullable|integer|min:1|max:10',
+            'metrics.*.energy_level' => 'nullable|integer|min:1|max:10',
+            'metrics.*.resting_heart_rate' => 'nullable|integer|min:0|max:300',
+            'metrics.*.blood_pressure_systolic' => 'nullable|integer|min:0|max:300',
+            'metrics.*.blood_pressure_diastolic' => 'nullable|integer|min:0|max:200',
+            'metrics.*.steps' => 'nullable|integer|min:0|max:100000',
+            'metrics.*.calories_burned' => 'nullable|integer|min:0|max:10000',
+            'metrics.*.water_intake_ml' => 'nullable|integer|min:0|max:10000',
+            'metrics.*.mood' => 'nullable|in:excellent,good,neutral,poor,terrible',
+            'metrics.*.stress_level' => 'nullable|integer|min:1|max:10',
+            'metrics.*.notes' => 'nullable|string|max:1000',
+            'metrics.*.metadata' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -251,25 +264,22 @@ class HealthMetricsController extends Controller
             $synced = 0;
             $updated = 0;
             $errors = [];
+            $syncedRecords = [];
+            $updatedRecords = [];
 
             foreach ($request->metrics as $metricData) {
                 try {
-                    // Check if metric exists
-                    $metric = HealthMetric::where('user_id', $user->id)
-                        ->where('date', $metricData['date'])
-                        ->first();
-
-                    if ($metric) {
-                        // Update existing
-                        $metric->fill($metricData);
-                        $metric->save();
-                        $updated++;
-                    } else {
-                        // Create new
-                        $metricData['user_id'] = $user->id;
-                        HealthMetric::create($metricData);
-                        $synced++;
-                    }
+                    // BF-003: Changed sync logic to allow multiple entries per day
+                    // Instead of checking by (user_id, date), we now allow multiple entries
+                    // The frontend manages deduplication using IDs and timestamps
+                    $metricData['user_id'] = $user->id;
+                    $newMetric = HealthMetric::create($metricData);
+                    $synced++;
+                    $syncedRecords[] = [
+                        'id' => $newMetric->id,
+                        'date' => $newMetric->date->toDateString(),
+                        'status' => 'created',
+                    ];
 
                 } catch (\Exception $e) {
                     $errors[] = [
@@ -283,6 +293,8 @@ class HealthMetricsController extends Controller
                 [
                     'synced_count' => $synced,
                     'updated_count' => $updated,
+                    'synced_records' => $syncedRecords,
+                    'updated_records' => $updatedRecords,
                     'errors' => $errors,
                 ],
                 'Health metrics sync completed'

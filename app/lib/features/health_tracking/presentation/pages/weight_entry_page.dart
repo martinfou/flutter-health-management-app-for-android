@@ -273,16 +273,22 @@ class _WeightEntryPageState extends ConsumerState<WeightEntryPage> {
         updatedAt: DateTime.now(),
       );
 
+      print('WeightEntryPage: Saving metric with userId=$finalUserId, weight=$weightInMetric, date=$_selectedDate');
+
       final result = await useCase(metric);
+
+      print('WeightEntryPage: Save result=${result.isRight() ? "Success" : "Failure"}');
 
       result.fold(
         (failure) {
+          print('WeightEntryPage: Save failed with error: ${failure.message}');
           setState(() {
             _isSaving = false;
             _errorMessage = failure.message;
           });
         },
         (savedMetric) {
+          print('WeightEntryPage: Save succeeded. Saved metric: id=${savedMetric.id}, userId=${savedMetric.userId}');
           setState(() {
             _isSaving = false;
             _successMessage = 'Weight saved successfully!';

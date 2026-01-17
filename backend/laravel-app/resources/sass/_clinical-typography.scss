@@ -1,0 +1,331 @@
+// Clinical Pro Typography System
+
+// Import Google Fonts
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+// Typography Base
+body {
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    line-height: $line-height-normal;
+    color: $gray-900;
+    font-weight: $font-weight-normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+// Headings
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: $font-family-headings;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-tight;
+    color: $gray-900;
+    margin-bottom: $spacing-md;
+}
+
+h1, .h1 {
+    font-size: $font-size-4xl;
+    font-weight: $font-weight-extrabold;
+}
+
+h2, .h2 {
+    font-size: $font-size-3xl;
+    font-weight: $font-weight-extrabold;
+}
+
+h3, .h3 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+}
+
+h4, .h4 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+}
+
+h5, .h5 {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+}
+
+h6, .h6 {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+}
+
+// Paragraphs and Text
+p {
+    margin-bottom: $spacing-md;
+    line-height: $line-height-relaxed;
+}
+
+p:last-child {
+    margin-bottom: 0;
+}
+
+.text-xs {
+    font-size: $font-size-xs;
+}
+
+.text-sm {
+    font-size: $font-size-sm;
+}
+
+.text-base {
+    font-size: $font-size-base;
+}
+
+.text-lg {
+    font-size: $font-size-lg;
+}
+
+.text-xl {
+    font-size: $font-size-xl;
+}
+
+// Text Colors
+.text-muted {
+    color: $gray-600;
+}
+
+.text-dark {
+    color: $gray-900;
+}
+
+.text-light {
+    color: $gray-600;
+}
+
+.text-primary {
+    color: $navy-900;
+}
+
+.text-secondary {
+    color: $blue-500;
+}
+
+.text-success {
+    color: $success;
+}
+
+.text-warning {
+    color: $warning;
+}
+
+.text-danger {
+    color: $danger;
+}
+
+.text-info {
+    color: $info;
+}
+
+// Font Weights
+.font-light {
+    font-weight: $font-weight-light;
+}
+
+.font-normal {
+    font-weight: $font-weight-normal;
+}
+
+.font-medium {
+    font-weight: $font-weight-medium;
+}
+
+.font-semibold {
+    font-weight: $font-weight-semibold;
+}
+
+.font-bold {
+    font-weight: $font-weight-bold;
+}
+
+.font-extrabold {
+    font-weight: $font-weight-extrabold;
+}
+
+// Monospace (for data/metrics)
+.font-mono,
+code,
+kbd,
+samp {
+    font-family: $font-family-mono;
+    font-weight: $font-weight-medium;
+}
+
+// Links
+a {
+    color: $blue-500;
+    text-decoration: none;
+    transition: color $transition-base;
+
+    &:hover {
+        color: $blue-600;
+        text-decoration: underline;
+    }
+
+    &:active {
+        color: $blue-600;
+    }
+
+    &:visited {
+        color: $blue-500;
+    }
+}
+
+// Code blocks
+code {
+    padding: $spacing-xs $spacing-sm;
+    background-color: $gray-100;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    color: $danger;
+}
+
+pre {
+    background-color: $gray-900;
+    color: $white;
+    padding: $spacing-lg;
+    border-radius: $border-radius-lg;
+    overflow-x: auto;
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+    line-height: $line-height-snug;
+
+    code {
+        background-color: transparent;
+        color: $white;
+        padding: 0;
+        font-size: inherit;
+    }
+}
+
+// Abbreviation
+abbr[title] {
+    text-decoration: underline dotted;
+    cursor: help;
+}
+
+// Lists
+ul,
+ol {
+    margin-bottom: $spacing-md;
+    padding-left: $spacing-lg;
+}
+
+li {
+    margin-bottom: $spacing-sm;
+    line-height: $line-height-relaxed;
+}
+
+// Definition lists
+dt {
+    font-weight: $font-weight-semibold;
+    margin-top: $spacing-md;
+}
+
+dd {
+    margin-left: 0;
+    margin-bottom: $spacing-md;
+    color: $gray-600;
+}
+
+// Blockquote
+blockquote {
+    margin: $spacing-lg 0;
+    padding-left: $spacing-lg;
+    border-left: 4px solid $blue-500;
+    color: $gray-600;
+    font-style: italic;
+}
+
+// Mark
+mark {
+    background-color: #fff3cd;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-sm;
+}
+
+// Small text
+small,
+.small {
+    font-size: 85%;
+    color: $gray-600;
+}
+
+// Strong
+strong,
+.font-bold {
+    font-weight: $font-weight-bold;
+}
+
+// Horizontal rule
+hr {
+    margin: $spacing-lg 0;
+    border: 0;
+    border-top: 1px solid $gray-200;
+}
+
+// Metric display (for health data)
+.metric-value {
+    font-family: $font-family-mono;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+    color: $navy-900;
+}
+
+// Label/Badge text
+.badge-text {
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-sm;
+}
+
+// Dark mode typography adjustments
+@media (prefers-color-scheme: dark) {
+    body {
+        color: $gray-100;
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    .h1, .h2, .h3, .h4, .h5, .h6 {
+        color: $white;
+    }
+
+    .text-muted {
+        color: $gray-400;
+    }
+}
+
+[data-theme="dark"] {
+    body {
+        color: $gray-100;
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    .h1, .h2, .h3, .h4, .h5, .h6 {
+        color: $white;
+    }
+
+    .text-muted {
+        color: $gray-400;
+    }
+
+    .text-dark {
+        color: $white;
+    }
+
+    code {
+        background-color: $dark-card;
+        color: $warning;
+    }
+
+    blockquote {
+        color: $gray-400;
+    }
+
+    hr {
+        border-top-color: $dark-border;
+    }
+}

@@ -1,71 +1,421 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="color-scheme" content="light dark">
 
-@section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow mt-5">
-                <div class="card-body p-5">
-                    <h1 class="text-center mb-4">
-                        <i class="fas fa-heartbeat text-primary"></i>
-                        Health Management
-                    </h1>
-                    <p class="text-center text-muted mb-4">
-                        Track your health, manage your wellness
-                    </p>
+    <title>Sign In - HealthPro</title>
 
-                    @if (session('error'))
-                        <div class="alert alert-danger">
-                            {{ session('error') }}
-                        </div>
-                    @endif
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-                    <!-- Email/Password Login Form -->
-                    <form method="POST" action="{{ route('login') }}" class="mb-4">
-                        @csrf
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror"
-                                   id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email">
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror"
-                                   id="password" name="password" required autocomplete="current-password">
-                            @error('password')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+        html {
+            font-size: 16px;
+        }
 
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
-                            Sign In
-                        </button>
-                    </form>
+        html[data-theme="dark"] {
+            color-scheme: dark;
+        }
 
-                    <div class="text-center mb-3">
-                        <small class="text-muted">or continue with</small>
-                    </div>
+        html[data-theme="light"] {
+            color-scheme: light;
+        }
 
-                    <!-- Google Sign-In Button -->
-                    <div class="d-grid gap-2 mb-3">
-                        <a href="{{ route('google.login') }}" class="btn btn-outline-danger btn-lg">
-                            <i class="fab fa-google me-2"></i>
-                            Sign in with Google
-                        </a>
-                    </div>
+        @media (prefers-color-scheme: dark) {
+            html:not([data-theme="light"]) {
+                color-scheme: dark;
+            }
+        }
 
-                    <!-- Register Link -->
-                    <p class="text-center mt-4">
-                        Don't have an account? <a href="{{ route('register') }}">Register here</a>
-                    </p>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #cbd5e1;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+        }
+
+        [data-theme="dark"] .login-card {
+            background: #1e293b;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            text-decoration: none;
+        }
+
+        [data-theme="dark"] .logo {
+            color: #ffffff;
+        }
+
+        .logo i {
+            color: #3b82f6;
+        }
+
+        .login-header h1 {
+            font-family: 'Manrope', sans-serif;
+            font-size: 1.875rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        [data-theme="dark"] .login-header h1 {
+            color: #ffffff;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 0.9375rem;
+        }
+
+        [data-theme="dark"] .login-header p {
+            color: #cbd5e1;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+
+        [data-theme="dark"] label {
+            color: #ffffff;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            background: #ffffff;
+            color: #1e293b;
+            transition: all 0.15s;
+        }
+
+        [data-theme="dark"] input[type="email"],
+        [data-theme="dark"] input[type="password"] {
+            background: #334155;
+            border-color: #475569;
+            color: #ffffff;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        [data-theme="dark"] input[type="email"]:focus,
+        [data-theme="dark"] input[type="password"]:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        input[type="email"]:invalid,
+        input[type="password"]:invalid {
+            border-color: #ef4444;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.8125rem;
+            margin-top: 0.375rem;
+            display: block;
+        }
+
+        .alert {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #991b1b;
+            font-size: 0.9375rem;
+        }
+
+        [data-theme="dark"] .alert {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .btn-sign-in {
+            width: 100%;
+            padding: 0.875rem;
+            background: #3b82f6;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-sign-in:hover {
+            background: #2563eb;
+        }
+
+        .btn-sign-in:active {
+            background: #1d4ed8;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        [data-theme="dark"] .divider::before,
+        [data-theme="dark"] .divider::after {
+            background: #334155;
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 0.875rem;
+            background: #ffffff;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        [data-theme="dark"] .btn-google {
+            background: #334155;
+            border-color: #475569;
+            color: #ffffff;
+        }
+
+        .btn-google:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .btn-google:hover {
+            background: #475569;
+        }
+
+        .btn-google i {
+            font-size: 1.125rem;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 0.9375rem;
+        }
+
+        [data-theme="dark"] .login-footer {
+            border-top-color: #334155;
+            color: #cbd5e1;
+        }
+
+        .login-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.9375rem;
+            margin-bottom: 1.5rem;
+        }
+
+        [data-theme="dark"] .back-link {
+            color: #cbd5e1;
+        }
+
+        .back-link:hover {
+            color: #3b82f6;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1.5rem;
+            }
+
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <a href="/" class="logo">
+                    <i class="fas fa-heartbeat"></i>
+                </a>
+                <h1>Welcome Back</h1>
+                <p>Sign in to your health dashboard</p>
+            </div>
+
+            @if (session('error'))
+                <div class="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {{ session('error') }}
                 </div>
+            @endif
+
+            <!-- Email/Password Login Form -->
+            <form method="POST" action="{{ route('login') }}">
+                @csrf
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="{{ old('email') }}"
+                        required
+                        autofocus
+                        autocomplete="email"
+                        placeholder="name@example.com"
+                    >
+                    @error('email')
+                        <span class="error-message">
+                            <i class="fas fa-times-circle"></i> {{ $message }}
+                        </span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        autocomplete="current-password"
+                        placeholder="Enter your password"
+                    >
+                    @error('password')
+                        <span class="error-message">
+                            <i class="fas fa-times-circle"></i> {{ $message }}
+                        </span>
+                    @enderror
+                </div>
+
+                <button type="submit" class="btn-sign-in">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+
+            <div class="divider">or continue with</div>
+
+            <!-- Google Sign-In Button -->
+            <a href="{{ route('google.login') }}" class="btn-google">
+                <i class="fab fa-google"></i>
+                Sign in with Google
+            </a>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                Don't have an account? <a href="{{ route('register') }}">Create one</a>
             </div>
         </div>
     </div>
-</div>
-@endsection
+
+    <script>
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+            document.documentElement.setAttribute('data-theme', theme);
+        });
+    </script>
+</body>
+</html>
