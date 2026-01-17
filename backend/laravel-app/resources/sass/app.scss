@@ -1,21 +1,26 @@
-// ========== CLINICAL PRO DESIGN SYSTEM ==========
-// Foundation: Colors, Typography, Spacing
+// ========== OBSIDIAN DESIGN SYSTEM ==========
+// Dark-First Executive Dashboard
 
-// Clinical Pro Variables (overrides Bootstrap defaults)
+// Clinical Pro Variables (base overrides)
 @import 'clinical-variables';
+
+// Obsidian Theme (dark, neon accents, glow effects)
+@import 'obsidian-theme';
 
 // Clinical Pro Typography (font imports via Google Fonts)
 @import 'clinical-typography';
 
 // ========== BOOTSTRAP ==========
-// Import Bootstrap with Clinical Pro color overrides
+// Import Bootstrap with Obsidian color overrides
 @import 'bootstrap/scss/bootstrap';
 
-// ========== CLINICAL PRO COMPONENTS & LAYOUTS ==========
-// Additional Clinical Pro styling will be added here as needed
+// ========== OBSIDIAN GLOBAL STYLES ==========
+// Apply Obsidian body by default
+body {
+    @extend .obsidian-body;
+}
 
 // ========== RESPONSIVE UTILITIES ==========
-// Clinical Pro responsive utilities
 @media (max-width: 768px) {
-    // Mobile-specific styles for Clinical Pro design
+    // Mobile-specific styles
 }

@@ -1,47 +1,35 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="color-scheme" content="light dark">
+    <meta name="color-scheme" content="dark">
     <title>{{ config('app.name', 'Health Management') }}</title>
 
-    <!-- Font Awesome Icons (via CDN for quick access) -->
+    <!-- Google Fonts: Outfit + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Vite - Compiles SCSS and JavaScript -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
-
-    <style>
-        /* Critical inline styles to prevent flash of unstyled content (FOUC) */
-        html[data-theme="dark"] {
-            color-scheme: dark;
-        }
-
-        html[data-theme="light"] {
-            color-scheme: light;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            html:not([data-theme="light"]) {
-                color-scheme: dark;
-            }
-        }
-    </style>
 </head>
 <body>
     @auth
-        <!-- Clinical Pro Navbar -->
-        @component('components.clinical-navbar', ['title' => $page_title ?? 'Dashboard'])
-        @endcomponent
-
-        <!-- Clinical Pro Sidebar -->
+        <!-- Obsidian Sidebar (Collapsible) -->
         @component('components.clinical-sidebar')
         @endcomponent
 
+        <!-- Obsidian Navbar -->
+        @component('components.clinical-navbar', ['title' => $page_title ?? 'Dashboard'])
+        @endcomponent
+
         <!-- Main Content Area -->
-        <main class="clinical-main-content">
+        <main class="obsidian-main">
             <div class="container-fluid">
                 <!-- Breadcrumbs (if provided) -->
                 @if(isset($breadcrumbs))
@@ -64,33 +52,18 @@
     @stack('scripts')
 
     <script>
-        // Ensure Clinical Pro modules are available
-        console.log('Clinical Pro loaded:', window.ClinicalPro);
+        // Obsidian sidebar hover expand
+        const sidebar = document.querySelector('.obsidian-sidebar');
+        if (sidebar) {
+            // Mobile toggle
+            document.querySelectorAll('[data-sidebar-toggle]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sidebar.classList.toggle('open');
+                    document.querySelector('.obsidian-overlay')?.classList.toggle('visible');
+                });
+            });
+        }
     </script>
 </body>
 </html>
 
-<style>
-/* Main Content Area Adjustments for sidebar + navbar layout */
-.clinical-main-content {
-    margin-left: 250px;
-    margin-top: 64px;
-    min-height: calc(100vh - 64px);
-    padding: 2rem 0;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .clinical-main-content {
-        margin-left: 0;
-        padding: 1rem 0;
-    }
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    :root {
-        color-scheme: dark;
-    }
-}
-</style>

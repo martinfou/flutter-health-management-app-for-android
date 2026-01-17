@@ -1,421 +1,211 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="dashboard-container">
-    <!-- Page Header -->
-    <div class="page-header mb-4">
-        <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtitle">Welcome back, <strong>{{ Auth::user()->name ?? Auth::user()->email }}</strong></p>
-    </div>
-
-    <!-- KPI Bar -->
-    @component('components.clinical-kpi-bar', [
-        'metrics' => [
-            [
-                'icon' => 'heart',
-                'label' => 'Health Metrics',
-                'value' => $metricsCount ?? 0,
-                'unit' => 'entries',
-                'trend' => 5,
-                'sparkline' => '0,25,10,15,30,20,25'
-            ],
-            [
-                'icon' => 'utensils',
-                'label' => 'Meals Logged',
-                'value' => $mealsCount ?? 0,
-                'unit' => 'meals',
-                'trend' => 2,
-                'sparkline' => '0,20,15,25,18,22,28'
-            ],
-            [
-                'icon' => 'dumbbell',
-                'label' => 'Workouts',
-                'value' => $exercisesCount ?? 0,
-                'unit' => 'exercises',
-                'trend' => -3,
-                'sparkline' => '30,25,20,18,15,22,25'
-            ],
-            [
-                'icon' => 'calendar-check',
-                'label' => 'Days Active',
-                'value' => $daysActive ?? 0,
-                'unit' => 'days',
-                'sparkline' => '5,10,8,15,12,18,20'
-            ]
-        ]
-    ])
-    @endcomponent
-
-    <!-- Charts Grid -->
-    <div class="charts-grid mb-4">
-        <!-- Weight Trend Chart -->
-        @component('components.clinical-chart-card', [
-            'title' => 'Weight Trend',
-            'subtitle' => 'Last 30 days',
-            'chart_id' => 'weight-trend-chart',
-            'chart_config' => $weightChartConfig ?? []
-        ])
-        @endcomponent
-
-        <!-- Activity Distribution Chart -->
-        @component('components.clinical-chart-card', [
-            'title' => 'Activity Distribution',
-            'subtitle' => 'By type',
-            'chart_id' => 'activity-chart',
-            'chart_config' => $activityChartConfig ?? []
-        ])
-        @endcomponent
-    </div>
-
-    <!-- User Profile Card -->
-    <div class="profile-card mb-4">
-        <div class="card-content">
-            <div class="profile-header">
-                <h3>User Profile</h3>
+    <div class="obsidian-dashboard">
+        <!-- KPI Row -->
+        <div class="kpi-row">
+            <div class="obsidian-kpi">
+                <div class="kpi-header">
+                    <span class="kpi-label">Health Metrics</span>
+                    <i class="fas fa-heart kpi-icon"></i>
+                </div>
+                <div class="kpi-value">{{ $metricsCount ?? 0 }}</div>
+                <div class="kpi-subtext">
+                    <span class="positive">+5%</span> vs last week
+                </div>
             </div>
-            <div class="profile-info">
-                <div class="info-row">
-                    <span class="info-label">Name:</span>
-                    <span class="info-value">{{ Auth::user()->name ?? 'Not set' }}</span>
+
+            <div class="obsidian-kpi">
+                <div class="kpi-header">
+                    <span class="kpi-label">Meals Logged</span>
+                    <i class="fas fa-utensils kpi-icon"></i>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span class="info-value">{{ Auth::user()->email }}</span>
+                <div class="kpi-value">{{ $mealsCount ?? 0 }}</div>
+                <div class="kpi-subtext">
+                    <span class="positive">+2%</span> vs last week
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Account Type:</span>
-                    <span class="info-value">
-                        @if(Auth::user()->google_id)
-                            <span class="badge bg-danger">Google OAuth</span>
-                        @else
-                            <span class="badge bg-primary">Email</span>
-                        @endif
-                    </span>
+            </div>
+
+            <div class="obsidian-kpi">
+                <div class="kpi-header">
+                    <span class="kpi-label">Workouts</span>
+                    <i class="fas fa-dumbbell kpi-icon"></i>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Member Since:</span>
-                    <span class="info-value">{{ Auth::user()->created_at->format('M d, Y') }}</span>
+                <div class="kpi-value">{{ $exercisesCount ?? 0 }}</div>
+                <div class="kpi-subtext">
+                    <span class="negative">-3%</span> vs last week
+                </div>
+            </div>
+
+            <div class="obsidian-kpi">
+                <div class="kpi-header">
+                    <span class="kpi-label">Days Active</span>
+                    <i class="fas fa-calendar-check kpi-icon"></i>
+                </div>
+                <div class="kpi-value">{{ $daysActive ?? 0 }}</div>
+                <div class="kpi-subtext">
+                    Current streak
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Recent Metrics Table -->
-    <div class="recent-metrics-card">
-        <div class="card-header">
-            <h3>Recent Health Metrics</h3>
-            <a href="{{ route('health-metrics') }}" class="btn btn-sm btn-primary">
-                <i class="fas fa-plus me-1"></i> View All
-            </a>
+        <!-- Charts Row -->
+        <div class="charts-row">
+            <div class="obsidian-chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">Weight Trend</span>
+                    <span class="chart-period">Last 30 days</span>
+                </div>
+                <div class="chart-container" id="weight-trend-chart">
+                    <!-- Chart will be rendered here -->
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Weight data visualization</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="obsidian-chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">Activity Breakdown</span>
+                    <span class="chart-period">Weekly</span>
+                </div>
+                <div class="chart-container" id="activity-chart">
+                    <!-- Chart will be rendered here -->
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Activity distribution</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        @if($recentMetrics && count($recentMetrics) > 0)
-            <div class="table-responsive">
-                <table class="table table-sm table-hover data-table" id="recentMetricsTable">
+        <!-- Recent Data Table -->
+        <div class="obsidian-card">
+            <div class="obsidian-card-header">
+                <h3>Recent Data</h3>
+                <a href="{{ route('health-metrics') }}" class="obsidian-btn obsidian-btn-sm">
+                    View All
+                </a>
+            </div>
+
+            @if($recentMetrics && count($recentMetrics) > 0)
+                <table class="obsidian-table">
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Weight (kg)</th>
-                            <th>Sleep (hrs)</th>
-                            <th>Steps</th>
-                            <th>Notes</th>
-                            <th class="no-sort">Actions</th>
+                            <th>Activity</th>
+                            <th>Duration</th>
+                            <th>Calories</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($recentMetrics as $metric)
-                        <tr>
-                            <td><strong>{{ $metric->date->format('M d, Y') }}</strong></td>
-                            <td><code class="metric-value">{{ $metric->weight_kg ?? '-' }}</code></td>
-                            <td>{{ $metric->sleep_hours ?? '-' }}</td>
-                            <td>{{ $metric->steps ? number_format($metric->steps) : '-' }}</td>
-                            <td><small class="text-muted">{{ Str::limit($metric->notes ?? '', 50) }}</small></td>
-                            <td>
-                                <a href="{{ route('health-metrics') }}" class="btn btn-icon-sm" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td>{{ $metric->date->format('Y-m-d') }}</td>
+                                <td>{{ $metric->notes ?? 'Health Check' }}</td>
+                                <td class="data-value">{{ $metric->sleep_hours ?? '-' }} hrs</td>
+                                <td class="data-value">{{ $metric->steps ? number_format($metric->steps) : '-' }}</td>
+                                <td><span class="status-complete">Completed</span></td>
+                            </tr>
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-        @else
-            <div class="empty-state">
-                <i class="fas fa-chart-line"></i>
-                <p>No health metrics yet. Start tracking your health!</p>
-                <a href="{{ route('health-metrics') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i> Add Your First Metric
-                </a>
-            </div>
-        @endif
+            @else
+                <div class="empty-state">
+                    <i class="fas fa-chart-line"></i>
+                    <p>No recent data available</p>
+                    <a href="{{ route('health-metrics') }}" class="obsidian-btn">
+                        Add Your First Entry
+                    </a>
+                </div>
+            @endif
+        </div>
     </div>
-</div>
 
-@push('scripts')
-<script type="module">
-    import { initCharts } from '{{ asset("js/modules/charts.js") }}';
-    import { initDataTables } from '{{ asset("js/modules/tables.js") }}';
-
-    document.addEventListener('DOMContentLoaded', () => {
-        // Initialize charts
-        if (document.getElementById('weight-trend-chart') || document.getElementById('activity-chart')) {
-            initCharts();
+    <style>
+        /* Obsidian Dashboard Layout */
+        .obsidian-dashboard {
+            padding: 0.5rem;
         }
 
-        // Initialize data table
-        if (document.getElementById('recentMetricsTable')) {
-            initDataTables('#recentMetricsTable');
+        /* KPI Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
-    });
-</script>
-@endpush
 
-<style>
-/* Dashboard Container */
-.dashboard-container {
-    padding: 2rem;
-}
+        @media (max-width: 1200px) {
+            .kpi-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
 
-/* Page Header */
-.page-header {
-    margin-bottom: 2rem;
-}
+        @media (max-width: 576px) {
+            .kpi-row {
+                grid-template-columns: 1fr;
+            }
+        }
 
-.page-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
-}
+        /* Charts Row */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
 
-.page-subtitle {
-    font-size: 1rem;
-    color: #64748b;
-    margin: 0;
-}
+        @media (max-width: 992px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
 
-/* Charts Grid */
-.charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1.5rem;
-}
+        /* Chart Placeholder */
+        .chart-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--obsidian-text-muted);
+            gap: 0.5rem;
 
-/* Profile Card */
-.profile-card {
-    background: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    overflow: hidden;
-}
+            i {
+                font-size: 2rem;
+                color: var(--obsidian-accent);
+                opacity: 0.5;
+            }
 
-.card-content {
-    padding: 1.5rem;
-}
+            span {
+                font-size: 0.75rem;
+            }
+        }
 
-.profile-header {
-    border-bottom: 1px solid var(--bs-border-color);
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-}
+        /* Empty State */
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--obsidian-text-muted);
 
-.profile-header h3 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1e293b;
-}
+            i {
+                font-size: 2.5rem;
+                color: var(--obsidian-accent);
+                opacity: 0.5;
+                margin-bottom: 1rem;
+            }
 
-.profile-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
+            p {
+                margin-bottom: 1rem;
+            }
+        }
 
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-label {
-    font-weight: 600;
-    color: #1e293b;
-    font-size: 0.9375rem;
-}
-
-.info-value {
-    color: #64748b;
-    font-size: 0.9375rem;
-}
-
-/* Recent Metrics Card */
-.recent-metrics-card {
-    background: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    overflow: hidden;
-}
-
-.card-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--bs-border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.card-header h3 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1e293b;
-}
-
-.table-responsive {
-    overflow-x: auto;
-}
-
-.table {
-    margin-bottom: 0;
-    font-size: 0.9375rem;
-}
-
-.table thead {
-    background: #f8fafc;
-    font-weight: 600;
-}
-
-.table th {
-    color: #1e293b;
-    border-color: var(--bs-border-color);
-    padding: 1rem;
-}
-
-.table td {
-    padding: 1rem;
-    border-color: var(--bs-border-color);
-}
-
-.table tbody tr:hover {
-    background: #f8fafc;
-}
-
-.metric-value {
-    padding: 0.25rem 0.5rem;
-    background: #f1f5f9;
-    border-radius: 0.25rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 600;
-}
-
-.btn-icon-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    background: none;
-    border: none;
-    color: #3b82f6;
-    cursor: pointer;
-}
-
-.btn-icon-sm:hover {
-    color: #2563eb;
-}
-
-/* Empty State */
-.empty-state {
-    padding: 3rem 1.5rem;
-    text-align: center;
-    color: #64748b;
-}
-
-.empty-state i {
-    font-size: 3rem;
-    color: #cbd5e1;
-    margin-bottom: 1rem;
-    display: block;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .dashboard-container {
-        padding: 1rem;
-    }
-
-    .page-title {
-        font-size: 1.5rem;
-    }
-
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .profile-info {
-        grid-template-columns: 1fr;
-    }
-
-    .card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-}
-
-/* Dark Mode */
-@media (prefers-color-scheme: dark),
-[data-theme="dark"] {
-    .page-title {
-        color: #ffffff;
-    }
-
-    .page-subtitle {
-        color: #cbd5e1;
-    }
-
-    .profile-header h3,
-    .card-header h3 {
-        color: #ffffff;
-    }
-
-    .info-label {
-        color: #ffffff;
-    }
-
-    .info-value {
-        color: #cbd5e1;
-    }
-
-    .table thead {
-        background: #0f172a;
-    }
-
-    .table th {
-        color: #ffffff;
-    }
-
-    .table tbody tr:hover {
-        background: #1e293b;
-    }
-
-    .metric-value {
-        background: #0f172a;
-        color: #93c5fd;
-    }
-
-    .empty-state {
-        color: #94a3b8;
-    }
-
-    .empty-state i {
-        color: #475569;
-    }
-}
-</style>
+        /* Override chart container height */
+        .obsidian-chart-card .chart-container {
+            height: 180px;
+        }
+    </style>
 @endsection

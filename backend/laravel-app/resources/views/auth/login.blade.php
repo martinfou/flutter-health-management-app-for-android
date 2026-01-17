@@ -1,18 +1,23 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="dark">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="color-scheme" content="light dark">
+    <meta name="color-scheme" content="dark">
 
-    <title>Sign In - HealthPro</title>
+    <title>Sign In - Obsidian Pro</title>
 
     <!-- Font Awesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Outfit + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <style>
         * {
@@ -23,26 +28,17 @@
 
         html {
             font-size: 16px;
-        }
-
-        html[data-theme="dark"] {
             color-scheme: dark;
         }
 
-        html[data-theme="light"] {
-            color-scheme: light;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            html:not([data-theme="light"]) {
-                color-scheme: dark;
-            }
-        }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            color: #1e293b;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #0a0a0f;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #ffffff;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -50,37 +46,28 @@
             padding: 1rem;
         }
 
-        [data-theme="dark"] body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #cbd5e1;
-        }
-
         .login-container {
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
         }
 
         .login-card {
-            background: #ffffff;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            padding: 2.5rem;
-        }
-
-        [data-theme="dark"] .login-card {
-            background: #1e293b;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            background: #15151e;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            padding: 2rem;
         }
 
         .login-header {
             text-align: center;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
         }
 
         .logo {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            color: #1e293b;
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -89,140 +76,109 @@
             text-decoration: none;
         }
 
-        [data-theme="dark"] .logo {
-            color: #ffffff;
-        }
-
         .logo i {
-            color: #3b82f6;
+            color: #22d3ee;
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
         }
 
         .login-header h1 {
-            font-family: 'Manrope', sans-serif;
-            font-size: 1.875rem;
-            font-weight: 800;
-            color: #1e293b;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
             margin-bottom: 0.5rem;
         }
 
-        [data-theme="dark"] .login-header h1 {
-            color: #ffffff;
-        }
-
         .login-header p {
-            color: #64748b;
-            font-size: 0.9375rem;
-        }
-
-        [data-theme="dark"] .login-header p {
-            color: #cbd5e1;
+            color: #a1a1aa;
+            font-size: 0.875rem;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
         }
 
         label {
             display: block;
             font-weight: 600;
-            color: #1e293b;
+            color: #a1a1aa;
             margin-bottom: 0.5rem;
-            font-size: 0.9375rem;
-        }
-
-        [data-theme="dark"] label {
-            color: #ffffff;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         input[type="email"],
         input[type="password"] {
             width: 100%;
             padding: 0.75rem 1rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            font-size: 0.9375rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            font-size: 0.875rem;
             font-family: inherit;
-            background: #ffffff;
-            color: #1e293b;
-            transition: all 0.15s;
-        }
-
-        [data-theme="dark"] input[type="email"],
-        [data-theme="dark"] input[type="password"] {
-            background: #334155;
-            border-color: #475569;
+            background: #1a1a25;
             color: #ffffff;
+            transition: all 0.2s ease;
         }
 
         input[type="email"]:focus,
         input[type="password"]:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: rgba(34, 211, 238, 0.5);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1), 0 0 20px rgba(34, 211, 238, 0.2);
         }
 
-        [data-theme="dark"] input[type="email"]:focus,
-        [data-theme="dark"] input[type="password"]:focus {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        input[type="email"]:invalid,
-        input[type="password"]:invalid {
-            border-color: #ef4444;
+        input[type="email"]::placeholder,
+        input[type="password"]::placeholder {
+            color: #71717a;
         }
 
         .error-message {
-            color: #ef4444;
-            font-size: 0.8125rem;
+            color: #f43f5e;
+            font-size: 0.75rem;
             margin-top: 0.375rem;
             display: block;
         }
 
         .alert {
-            background: #fee2e2;
-            border: 1px solid #fecaca;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            color: #991b1b;
-            font-size: 0.9375rem;
-        }
-
-        [data-theme="dark"] .alert {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            border-radius: 6px;
+            padding: 0.875rem;
+            margin-bottom: 1.25rem;
+            color: #fda4af;
+            font-size: 0.875rem;
         }
 
         .btn-sign-in {
             width: 100%;
-            padding: 0.875rem;
-            background: #3b82f6;
-            color: #ffffff;
-            border: none;
-            border-radius: 0.5rem;
+            padding: 0.75rem;
+            background: transparent;
+            color: #22d3ee;
+            border: 1px solid #22d3ee;
+            border-radius: 6px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.875rem;
             cursor: pointer;
-            transition: all 0.15s;
-            margin-bottom: 1.5rem;
+            transition: all 0.2s ease;
+            margin-bottom: 1.25rem;
         }
 
         .btn-sign-in:hover {
-            background: #2563eb;
-        }
-
-        .btn-sign-in:active {
-            background: #1d4ed8;
+            background: rgba(34, 211, 238, 0.1);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.3), 0 0 40px rgba(34, 211, 238, 0.1);
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
         }
 
         .divider {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin: 1.5rem 0;
-            color: #94a3b8;
-            font-size: 0.875rem;
+            margin: 1.25rem 0;
+            color: #71717a;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .divider::before,
@@ -230,25 +186,20 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: #e2e8f0;
-        }
-
-        [data-theme="dark"] .divider::before,
-        [data-theme="dark"] .divider::after {
-            background: #334155;
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .btn-google {
             width: 100%;
-            padding: 0.875rem;
-            background: #ffffff;
-            color: #1e293b;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
+            padding: 0.75rem;
+            background: #1a1a25;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
             font-weight: 500;
-            font-size: 1rem;
+            font-size: 0.875rem;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -256,65 +207,32 @@
             text-decoration: none;
         }
 
-        [data-theme="dark"] .btn-google {
-            background: #334155;
-            border-color: #475569;
-            color: #ffffff;
-        }
-
         .btn-google:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-        }
-
-        [data-theme="dark"] .btn-google:hover {
-            background: #475569;
+            background: #22222e;
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .btn-google i {
-            font-size: 1.125rem;
+            font-size: 1rem;
         }
 
         .login-footer {
             text-align: center;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #e2e8f0;
-            color: #64748b;
-            font-size: 0.9375rem;
-        }
-
-        [data-theme="dark"] .login-footer {
-            border-top-color: #334155;
-            color: #cbd5e1;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            color: #71717a;
+            font-size: 0.875rem;
         }
 
         .login-footer a {
-            color: #3b82f6;
+            color: #22d3ee;
             text-decoration: none;
             font-weight: 600;
         }
 
         .login-footer a:hover {
-            text-decoration: underline;
-        }
-
-        .back-link {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #64748b;
-            text-decoration: none;
-            font-size: 0.9375rem;
-            margin-bottom: 1.5rem;
-        }
-
-        [data-theme="dark"] .back-link {
-            color: #cbd5e1;
-        }
-
-        .back-link:hover {
-            color: #3b82f6;
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
         }
 
         /* Responsive */
@@ -324,11 +242,12 @@
             }
 
             .login-header h1 {
-                font-size: 1.5rem;
+                font-size: 1.25rem;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-card">
@@ -353,16 +272,8 @@
 
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value="{{ old('email') }}"
-                        required
-                        autofocus
-                        autocomplete="email"
-                        placeholder="name@example.com"
-                    >
+                    <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus
+                        autocomplete="email" placeholder="name@example.com">
                     @error('email')
                         <span class="error-message">
                             <i class="fas fa-times-circle"></i> {{ $message }}
@@ -372,14 +283,8 @@
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        required
-                        autocomplete="current-password"
-                        placeholder="Enter your password"
-                    >
+                    <input type="password" id="password" name="password" required autocomplete="current-password"
+                        placeholder="Enter your password">
                     @error('password')
                         <span class="error-message">
                             <i class="fas fa-times-circle"></i> {{ $message }}
@@ -409,7 +314,7 @@
 
     <script>
         // Initialize theme on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = savedTheme || (prefersDark ? 'dark' : 'light');
@@ -418,4 +323,5 @@
         });
     </script>
 </body>
+
 </html>
