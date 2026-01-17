@@ -5,6 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod/riverpod.dart';
 
 // Project
+import 'package:health_app/core/network/auth_helper.dart';
+import 'package:health_app/features/exercise_management/data/datasources/local/exercise_local_datasource.dart';
+import 'package:health_app/features/exercise_management/data/datasources/remote/exercise_remote_datasource.dart';
+import 'package:health_app/features/exercise_management/data/services/exercises_sync_service.dart';
 import 'package:health_app/features/exercise_management/domain/entities/exercise.dart';
 import 'package:health_app/features/exercise_management/domain/entities/workout_plan.dart';
 import 'package:health_app/features/exercise_management/domain/usecases/create_exercise_template.dart';
@@ -45,8 +49,7 @@ final getExerciseLibraryUseCaseProvider =
 });
 
 /// Provider for GetExerciseByIdUseCase
-final getExerciseByIdUseCaseProvider =
-    Provider<GetExerciseByIdUseCase>((ref) {
+final getExerciseByIdUseCaseProvider = Provider<GetExerciseByIdUseCase>((ref) {
   final repository = ref.watch(exerciseRepositoryProvider);
   return GetExerciseByIdUseCase(repository);
 });
@@ -73,20 +76,20 @@ final deleteExerciseTemplateUseCaseProvider =
 });
 
 /// Provider for exercise library
-/// 
+///
 /// Fetches all template exercises (exercises with date == null) for the current user.
 /// Returns empty list if no user profile found or error occurs.
 final exerciseLibraryProvider = FutureProvider<List<Exercise>>((ref) async {
   try {
     final userId = await ref.watch(currentUserIdProvider.future);
-    
+
     if (userId == null) {
       return [];
     }
-    
+
     final useCase = ref.watch(getExerciseLibraryUseCaseProvider);
     final result = await useCase.call(userId: userId);
-    
+
     return result.fold(
       (failure) {
         // Log error for debugging
@@ -105,7 +108,7 @@ final exerciseLibraryProvider = FutureProvider<List<Exercise>>((ref) async {
 });
 
 /// Provider for exercise by ID (family provider)
-/// 
+///
 /// Fetches a single exercise by its ID.
 /// Returns null if exercise not found or error occurs.
 final exerciseByIdProvider =
@@ -113,7 +116,7 @@ final exerciseByIdProvider =
   try {
     final useCase = ref.watch(getExerciseByIdUseCaseProvider);
     final result = await useCase.call(exerciseId: exerciseId);
-    
+
     return result.fold(
       (failure) {
         // Log error for debugging
@@ -132,13 +135,13 @@ final exerciseByIdProvider =
 });
 
 /// Provider for current user ID
-/// 
+///
 /// Gets the current user profile and extracts the user ID.
 /// Returns null if no user profile exists.
 final currentUserIdProvider = FutureProvider<String?>((ref) async {
   final repository = ref.watch(userProfileRepositoryProvider);
   final result = await repository.getCurrentUserProfile();
-  
+
   return result.fold(
     (failure) => null,
     (profile) => profile.id,
@@ -146,36 +149,37 @@ final currentUserIdProvider = FutureProvider<String?>((ref) async {
 });
 
 /// Provider for workout plans
-/// 
+///
 /// Fetches all workout plans for the current user.
 /// Note: Workout plan repository support is not yet implemented in MVP.
 /// This provider returns an empty list for now.
 /// Returns empty list if user not found or error occurs.
 final workoutPlansProvider = FutureProvider<List<WorkoutPlan>>((ref) async {
   final userId = await ref.watch(currentUserIdProvider.future);
-  
+
   if (userId == null) {
     return [];
   }
-  
+
   // TODO: Implement workout plan repository support in post-MVP
   // For MVP, return empty list as workout plans are not persisted yet
   return [];
 });
 
 /// Provider for workout history
-/// 
+///
 /// Uses family provider to accept date range parameters.
 /// Returns empty list if no user profile found or error occurs.
-final workoutHistoryProvider = FutureProvider.family<
-    List<Exercise>, WorkoutHistoryParams>((ref, params) async {
+final workoutHistoryProvider =
+    FutureProvider.family<List<Exercise>, WorkoutHistoryParams>(
+        (ref, params) async {
   try {
     final userId = await ref.watch(currentUserIdProvider.future);
-    
+
     if (userId == null) {
       return [];
     }
-    
+
     final useCase = ref.watch(getWorkoutHistoryUseCaseProvider);
     final result = await useCase.call(
       userId: userId,
@@ -183,7 +187,7 @@ final workoutHistoryProvider = FutureProvider.family<
       endDate: params.endDate,
       exerciseType: params.exerciseType,
     );
-    
+
     return result.fold(
       (failure) {
         // Log error for debugging
@@ -205,20 +209,20 @@ final workoutHistoryProvider = FutureProvider.family<
 class WorkoutHistoryParams {
   /// Start date for the workout history query
   final DateTime startDate;
-  
+
   /// End date for the workout history query
   final DateTime endDate;
-  
+
   /// Optional exercise type filter
   final String? exerciseType;
-  
+
   /// Creates WorkoutHistoryParams
   WorkoutHistoryParams({
     required this.startDate,
     required this.endDate,
     this.exerciseType,
   });
-  
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -227,9 +231,21 @@ class WorkoutHistoryParams {
           startDate == other.startDate &&
           endDate == other.endDate &&
           exerciseType == other.exerciseType;
-  
+
   @override
   int get hashCode =>
       startDate.hashCode ^ endDate.hashCode ^ exerciseType.hashCode;
 }
 
+/// Provider for ExerciseRemoteDataSource
+final exerciseRemoteDataSourceProvider =
+    Provider<ExerciseRemoteDataSource>((ref) {
+  return ExerciseRemoteDataSource();
+});
+
+/// Provider for ExercisesSyncService
+final exercisesSyncServiceProvider = Provider<ExercisesSyncService>((ref) {
+  final localDataSource = ref.watch(exerciseLocalDataSourceProvider);
+  final remoteDataSource = ref.watch(exerciseRemoteDataSourceProvider);
+  return ExercisesSyncService(localDataSource, remoteDataSource);
+});

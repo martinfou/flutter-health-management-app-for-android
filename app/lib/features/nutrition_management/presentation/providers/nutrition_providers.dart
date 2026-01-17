@@ -1,4 +1,8 @@
 import 'package:riverpod/riverpod.dart';
+import 'package:health_app/core/network/auth_helper.dart';
+import 'package:health_app/features/nutrition_management/data/datasources/local/nutrition_local_datasource.dart';
+import 'package:health_app/features/nutrition_management/data/datasources/remote/nutrition_remote_datasource.dart';
+import 'package:health_app/features/nutrition_management/data/services/meals_sync_service.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
 import 'package:health_app/features/nutrition_management/domain/usecases/calculate_macros.dart';
@@ -18,7 +22,7 @@ final logMealUseCaseProvider = Provider<LogMealUseCase>((ref) {
 });
 
 /// Provider for getting daily meals for a specific date
-/// 
+///
 /// Uses family provider to accept date parameter.
 /// Returns empty list if no user profile found or error occurs.
 final dailyMealsProvider =
@@ -58,7 +62,7 @@ final dailyMealsProvider =
 });
 
 /// Provider for getting macro summary for a specific date
-/// 
+///
 /// Uses family provider to accept date parameter.
 /// Calculates macro summary from meals for that date.
 /// Returns empty summary if no meals or error occurs.
@@ -131,8 +135,21 @@ final macroSummaryProvider = Provider.family<MacroSummary, DateTime>(
   },
 );
 
+/// Provider for NutritionRemoteDataSource
+final nutritionRemoteDataSourceProvider =
+    Provider<NutritionRemoteDataSource>((ref) {
+  return NutritionRemoteDataSource();
+});
+
+/// Provider for MealsSyncService
+final mealsSyncServiceProvider = Provider<MealsSyncService>((ref) {
+  final localDataSource = ref.watch(nutritionLocalDataSourceProvider);
+  final remoteDataSource = ref.watch(nutritionRemoteDataSourceProvider);
+  return MealsSyncService(localDataSource, remoteDataSource);
+});
+
 /// Provider for getting all recipes
-/// 
+///
 /// Returns all recipes from the repository.
 /// Returns empty list if error occurs.
 final recipesProvider = FutureProvider<List<Recipe>>((ref) async {
@@ -152,4 +169,3 @@ final recipesProvider = FutureProvider<List<Recipe>>((ref) async {
     return <Recipe>[];
   }
 });
-

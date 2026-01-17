@@ -77,8 +77,11 @@ This is the main product backlog tracking all feature requests and bug fixes.
 - BF-002: Food Save Bug Fix ✅ **COMPLETE** - Carb limit validation removed, users can save meals with any carb amount
 - **BF-003: Health Metrics Multiple Entries ✅ COMPLETE** - Timestamp migration deployed, users can now log multiple health metrics per day with full precision
 
+**Completed:**
+- **FR-008: Cloud Sync & Multi-Device Support ✅ COMPLETE** - Full sync implementation for all data types (21 points)
+
 **Next Sprints (Priority Order):**
-- **Sprint 25-26**: FR-008 (Cloud Sync & Multi-Device Support) - 21 points
+- **Sprint 27**: FR-011 (Advanced Analytics Module) - 21 points
 - **Sprint 25-26**: FR-008 (Cloud Sync & Multi-Device) - 21 points (depends on FR-009 complete)
 - **Sprint 26**: FR-019 (Open Food Facts Integration) - 13 points (parallel with Sprint 26)
 - **Sprint 27**: FR-011 (Advanced Analytics Module) - 21 points

@@ -141,8 +141,9 @@ class HealthMetricModel extends HiveObject {
   /// Create from JSON (API response)
   factory HealthMetricModel.fromJson(Map<String, dynamic> json) {
     final model = HealthMetricModel()
-      ..id = json['id'] as String
-      ..userId = json['user_id'] as String
+      ..id = json['id'].toString() // Handle both int and string from API
+      ..userId =
+          json['user_id'].toString() // Handle both int and string from API
       ..date = DateTime.parse(json['date'] as String)
       ..weight = json['weight_kg'] != null
           ? (json['weight_kg'] as num).toDouble()

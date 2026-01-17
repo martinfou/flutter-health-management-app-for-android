@@ -1,10 +1,14 @@
 import 'package:riverpod/riverpod.dart';
+import 'package:health_app/core/network/auth_helper.dart';
+import 'package:health_app/features/medication_management/data/datasources/local/medication_local_datasource.dart';
+import 'package:health_app/features/medication_management/data/datasources/remote/medication_remote_datasource.dart';
+import 'package:health_app/features/medication_management/data/services/medications_sync_service.dart';
 import 'package:health_app/features/medication_management/domain/entities/medication.dart';
 import 'package:health_app/features/medication_management/presentation/providers/medication_repository_provider.dart';
 import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
 
 /// Provider for all medications for the current user
-/// 
+///
 /// Fetches all medications for the current user from the repository.
 /// Returns empty list if user not found or no medications exist.
 /// Handles error states by returning empty list.
@@ -23,9 +27,9 @@ final medicationsProvider = FutureProvider<List<Medication>>((ref) async {
       return <Medication>[];
     }
 
-    // Get medications for the user
+    // Get active medications for the user
     final medicationRepo = ref.watch(medicationRepositoryProvider);
-    final result = await medicationRepo.getMedicationsByUserId(userProfile.id);
+    final result = await medicationRepo.getActiveMedications(userProfile.id);
 
     return result.fold(
       (failure) {
@@ -40,8 +44,21 @@ final medicationsProvider = FutureProvider<List<Medication>>((ref) async {
   }
 });
 
+/// Provider for MedicationRemoteDataSource
+final medicationRemoteDataSourceProvider =
+    Provider<MedicationRemoteDataSource>((ref) {
+  return MedicationRemoteDataSource();
+});
+
+/// Provider for MedicationsSyncService
+final medicationsSyncServiceProvider = Provider<MedicationsSyncService>((ref) {
+  final localDataSource = ref.watch(medicationLocalDataSourceProvider);
+  final remoteDataSource = ref.watch(medicationRemoteDataSourceProvider);
+  return MedicationsSyncService(localDataSource, remoteDataSource);
+});
+
 /// Provider for active medications for the current user
-/// 
+///
 /// Fetches only active medications (those without an end date or with end date in the future)
 /// for the current user from the repository.
 /// Returns empty list if user not found or no active medications exist.
@@ -77,4 +94,3 @@ final activeMedicationsProvider = FutureProvider<List<Medication>>((ref) async {
     return <Medication>[];
   }
 });
-
