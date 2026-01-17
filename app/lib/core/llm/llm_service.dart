@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import '../errors/failures.dart';
 import 'llm_provider.dart';
@@ -40,6 +41,10 @@ class LlmService {
     final onDeviceAdapter = _adapters[LlmProviderType.onDevice];
     final cloudAdapter = _adapters[_activeConfig.providerType];
 
+    // Log provider selection
+    debugPrint(
+        '🎯 LLM Provider Selection: Preference=${_activeConfig.aiPreference}, Selected=${_activeConfig.providerType}');
+
     // Determine primary and fallback providers based on preference
     LlmProvider? primaryAdapter;
     LlmProvider? fallbackAdapter;
@@ -71,20 +76,31 @@ class LlmService {
 
     // Try primary provider first
     if (primaryAdapter != null) {
+      debugPrint('🔄 Trying primary provider: ${primaryConfig.providerType}');
       final primaryResult =
           await primaryAdapter.generateCompletion(request, primaryConfig);
       if (primaryResult.isRight()) {
+        debugPrint(
+            '✅ Primary provider succeeded: ${primaryConfig.providerType}');
         return primaryResult;
       }
+      debugPrint('⚠️ Primary provider failed: ${primaryConfig.providerType}');
+
       // If primary fails and we have a fallback, try it
       if (fallbackAdapter != null &&
           _activeConfig.aiPreference != AiPreference.onDeviceOnly &&
           _activeConfig.aiPreference != AiPreference.cloudOnly) {
+        debugPrint(
+            '🔄 Trying fallback provider: ${fallbackConfig.providerType}');
         final fallbackResult =
             await fallbackAdapter.generateCompletion(request, fallbackConfig);
         if (fallbackResult.isRight()) {
+          debugPrint(
+              '✅ Fallback provider succeeded: ${fallbackConfig.providerType}');
           return fallbackResult;
         }
+        debugPrint(
+            '❌ Fallback provider also failed: ${fallbackConfig.providerType}');
       }
       // Return the primary failure if both failed or no fallback available
       return primaryResult;
