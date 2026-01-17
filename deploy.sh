@@ -18,7 +18,6 @@ NC='\033[0m'
 ENV="${1:-production}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LARAVEL_DIR="$PROJECT_ROOT/backend/laravel-app"
-API_DIR="$PROJECT_ROOT/backend/api"
 WEBAPP_DIR="$PROJECT_ROOT/backend/web-app"
 
 # Remote server configuration
@@ -281,12 +280,6 @@ check_dependencies() {
         exit 1
     fi
 
-    # Check for API deployment script
-    if [ ! -f "$API_DIR/scripts/deploy-dreamhost.sh" ]; then
-        log_error "API deployment script not found: $API_DIR/scripts/deploy-dreamhost.sh"
-        exit 1
-    fi
-
     # Check for web app deployment script
     if [ ! -f "$WEBAPP_DIR/deploy-web-app.sh" ]; then
         log_error "Web app deployment script not found: $WEBAPP_DIR/deploy-web-app.sh"
@@ -381,49 +374,6 @@ EOF
     fi
 }
 
-# Deploy API backend
-deploy_api() {
-    local deploy_dir="$1"
-
-    log_section "Deploying API Backend"
-
-    log_info "Deploying API to: $deploy_dir/api"
-
-    # Sync API files
-    rsync -avz --delete \
-        --exclude='.git/' \
-        --exclude='vendor/' \
-        --exclude='node_modules/' \
-        --exclude='.env' \
-        --exclude='*.log' \
-        --exclude='deploy*.sh' \
-        "$API_DIR/" \
-        "$REMOTE_USER@$REMOTE_HOST:$deploy_dir/api/" \
-        | grep -E "(sending|sent|100%|total)"
-
-    # Install composer dependencies on server
-    ssh "$REMOTE_USER@$REMOTE_HOST" << EOF
-        cd "$deploy_dir/api"
-
-        # Install dependencies
-        if command -v composer &> /dev/null; then
-            composer install --no-dev --optimize-autoloader --ignore-platform-reqs
-        fi
-
-        # Set permissions
-        find . -type d -exec chmod 755 {} \;
-        find . -type f -exec chmod 644 {} \;
-
-        echo "✓ API backend deployed to $deploy_dir/api"
-EOF
-
-    if [ $? -eq 0 ]; then
-        log_success "API backend deployed successfully"
-    else
-        log_error "API deployment failed"
-        exit 1
-    fi
-}
 
 # Deploy web app
 deploy_webapp() {
@@ -543,7 +493,6 @@ main() {
 
     # Deploy components to the new directory
     deploy_laravel "$DEPLOY_DIR"
-    deploy_api "$DEPLOY_DIR"
     deploy_webapp "$DEPLOY_DIR"
     run_migrations
 
@@ -558,7 +507,6 @@ main() {
 
     echo "Successfully deployed all components:"
     echo "  ✓ Laravel Backend (API + Web Dashboard)"
-    echo "  ✓ Slim API Backend"
     echo "  ✓ Web App Dashboard"
     echo "  ✓ Database Migrations (BF-003: Multiple daily health metrics)"
     echo ""
