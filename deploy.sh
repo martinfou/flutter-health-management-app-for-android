@@ -18,7 +18,6 @@ NC='\033[0m'
 ENV="${1:-production}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LARAVEL_DIR="$PROJECT_ROOT/backend/laravel-app"
-WEBAPP_DIR="$PROJECT_ROOT/backend/web-app"
 
 # Remote server configuration
 REMOTE_USER="compica_healthapp"
