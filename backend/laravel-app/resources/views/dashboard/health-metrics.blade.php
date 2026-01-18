@@ -214,5 +214,3 @@
         </script>
     @endpush
 @endsection
-
-@endsection

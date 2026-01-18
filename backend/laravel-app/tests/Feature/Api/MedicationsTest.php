@@ -302,11 +302,13 @@ class MedicationsTest extends ApiTestCase
     {
         $med1 = Medication::factory()->create([
             'user_id' => $this->user->id,
-            'name' => 'First Med'
+            'name' => 'First Med',
+            'created_at' => now()->subMinute()
         ]);
         $med2 = Medication::factory()->create([
             'user_id' => $this->user->id,
-            'name' => 'Second Med'
+            'name' => 'Second Med',
+            'created_at' => now()
         ]);
 
         $response = $this->authenticatedGet('/api/v1/medications');

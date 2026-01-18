@@ -201,10 +201,25 @@ class MealsController extends Controller
 
             // Update only provided fields
             $updateData = $request->only([
-                'date', 'meal_type', 'name', 'description', 'ingredients',
-                'nutritional_info', 'calories', 'protein_g', 'fats_g', 'carbs_g',
-                'fiber_g', 'sugar_g', 'sodium_mg', 'hunger_before', 'hunger_after',
-                'satisfaction', 'eating_reasons', 'notes', 'metadata'
+                'date',
+                'meal_type',
+                'name',
+                'description',
+                'ingredients',
+                'nutritional_info',
+                'calories',
+                'protein_g',
+                'fats_g',
+                'carbs_g',
+                'fiber_g',
+                'sugar_g',
+                'sodium_mg',
+                'hunger_before',
+                'hunger_after',
+                'satisfaction',
+                'eating_reasons',
+                'notes',
+                'metadata'
             ]);
 
             $meal->update($updateData);
@@ -250,82 +265,153 @@ class MealsController extends Controller
      * Sync meals (bulk upload for offline support)
      * POST /api/v1/meals/sync
      */
+    /**
+     * Sync meals (bidirectional delta sync)
+     * POST /api/v1/meals/sync
+     */
     public function sync(Request $request)
     {
         try {
             $user = $request->attributes->get('user');
 
             $validator = Validator::make($request->all(), [
-                'meals' => 'required|array',
-                'meals.*.date' => 'required|date',
-                'meals.*.meal_type' => 'required|in:breakfast,lunch,dinner,snack',
-                'meals.*.name' => 'required|string|max:255',
+                'channels' => 'nullable|array', // Optional: list of channel IDs to sync specific data? No, keep simple
+                'changes' => 'nullable|array', // List of changed records from client
+                'last_sync_timestamp' => 'nullable|date', // Last time client synced
             ]);
 
             if ($validator->fails()) {
                 return ResponseHelper::validationError($validator->errors());
             }
 
-            $meals = $request->input('meals', []);
-            $synced = 0;
-            $updated = 0;
+            $lastSync = $request->input('last_sync_timestamp');
+            $changes = $request->input('changes', []);
+            $syncedCount = 0;
+            $updatedCount = 0;
+            $deletedCount = 0;
             $errors = [];
 
-            foreach ($meals as $index => $mealData) {
+            // 1. Process client changes
+            foreach ($changes as $index => $change) {
                 try {
-                    // Match by user_id + date + meal_type + name
-                    $existing = Meal::where('user_id', $user->id)
-                        ->where('date', $mealData['date'])
-                        ->where('meal_type', $mealData['meal_type'])
-                        ->where('name', $mealData['name'])
-                        ->first();
+                    // Check required fields for sync
+                    if (!isset($change['client_id'])) {
+                        $errors[] = "Item $index: Missing client_id";
+                        continue;
+                    }
+
+                    // Try to find existing record by client_id (reliable) or id (fallback)
+                    $query = Meal::withTrashed()->where('user_id', $user->id);
+
+                    if (isset($change['client_id'])) {
+                        $query->where('client_id', $change['client_id']);
+                    } else if (isset($change['id'])) {
+                        $query->where('id', $change['id']);
+                    }
+
+                    $existing = $query->first();
+
+                    // DETERMINE ACTION:
+                    // If deleted_at is set in payload -> DELETE
+                    if (isset($change['deleted_at']) && $change['deleted_at']) {
+                        if ($existing) {
+                            if (!$existing->trashed() || $existing->deleted_at != $change['deleted_at']) {
+                                // Only update if not already deleted or timestamp differs
+                                // Conflict Resolution: Newest wins
+                                $clientUpdate = strtotime($change['updated_at'] ?? now());
+                                $serverUpdate = $existing->updated_at ? $existing->updated_at->timestamp : 0;
+
+                                if ($clientUpdate > $serverUpdate) {
+                                    $existing->delete(); // Soft delete
+                                    // Manually update updated_at to match client if desired, or let Laravel set it
+                                    // For sync to be idempotent, we might want to respect client timestamp
+                                    $existing->deleted_at = $change['deleted_at'];
+                                    $existing->save();
+                                    $deletedCount++;
+                                }
+                            }
+                        }
+                        continue; // Done with this item
+                    }
+
+                    // UPSERT (Create or Update)
+                    $data = array_filter($change, function ($key) {
+                        return in_array($key, [
+                            'client_id',
+                            'date',
+                            'meal_type',
+                            'name',
+                            'description',
+                            'ingredients',
+                            'nutritional_info',
+                            'calories',
+                            'protein_g',
+                            'fats_g',
+                            'carbs_g',
+                            'fiber_g',
+                            'sugar_g',
+                            'sodium_mg',
+                            'hunger_before',
+                            'hunger_after',
+                            'satisfaction',
+                            'eating_reasons',
+                            'notes',
+                            'metadata',
+                            'created_at',
+                            'updated_at'
+                        ]);
+                    }, ARRAY_FILTER_USE_KEY);
+
+                    // Ensure user_id is set
+                    $data['user_id'] = $user->id;
 
                     if ($existing) {
-                        // Update existing meal
-                        $updateData = array_filter($mealData, function ($key) {
-                            return !in_array($key, ['date', 'meal_type', 'name']);
-                        }, ARRAY_FILTER_USE_KEY);
+                        // Conflict Resolution: Newest wins
+                        $clientUpdate = strtotime($change['updated_at'] ?? 0);
+                        $serverUpdate = $existing->updated_at ? $existing->updated_at->timestamp : 0;
 
-                        $existing->update($updateData);
-                        $updated++;
+                        if ($clientUpdate > $serverUpdate) {
+                            // Restore if it was deleted but client says it's active
+                            if ($existing->trashed()) {
+                                $existing->restore();
+                            }
+                            $existing->update($data);
+                            $updatedCount++;
+                        }
+                        // Else: Server has newer data, ignore client change (server version will be sent back)
                     } else {
-                        // Create new meal
-                        Meal::create([
-                            'user_id' => $user->id,
-                            'date' => $mealData['date'] ?? null,
-                            'meal_type' => $mealData['meal_type'] ?? null,
-                            'name' => $mealData['name'] ?? null,
-                            'description' => $mealData['description'] ?? null,
-                            'ingredients' => $mealData['ingredients'] ?? [],
-                            'nutritional_info' => $mealData['nutritional_info'] ?? [],
-                            'calories' => $mealData['calories'] ?? null,
-                            'protein_g' => $mealData['protein_g'] ?? null,
-                            'fats_g' => $mealData['fats_g'] ?? null,
-                            'carbs_g' => $mealData['carbs_g'] ?? null,
-                            'fiber_g' => $mealData['fiber_g'] ?? null,
-                            'sugar_g' => $mealData['sugar_g'] ?? null,
-                            'sodium_mg' => $mealData['sodium_mg'] ?? null,
-                            'hunger_before' => $mealData['hunger_before'] ?? null,
-                            'hunger_after' => $mealData['hunger_after'] ?? null,
-                            'satisfaction' => $mealData['satisfaction'] ?? null,
-                            'eating_reasons' => $mealData['eating_reasons'] ?? [],
-                            'notes' => $mealData['notes'] ?? null,
-                            'metadata' => $mealData['metadata'] ?? [],
-                        ]);
-                        $synced++;
+                        // Create new
+                        Meal::create($data);
+                        $syncedCount++;
                     }
+
                 } catch (\Exception $e) {
-                    $errors[] = "Meal $index: " . $e->getMessage();
+                    $errors[] = "Item $index: " . $e->getMessage();
                 }
             }
 
+            // 2. Fetch updates for client (Delta Sync)
+            $query = Meal::withTrashed()->where('user_id', $user->id);
+
+            if ($lastSync) {
+                $query->where('updated_at', '>', $lastSync);
+            }
+
+            $serverChanges = $query->get();
+
+            // Format response
             return ResponseHelper::success(
                 [
-                    'synced_count' => $synced,
-                    'updated_count' => $updated,
+                    'changes' => $serverChanges, // Send back updated/new/deleted records
+                    'processed' => [
+                        'created' => $syncedCount,
+                        'updated' => $updatedCount,
+                        'deleted' => $deletedCount,
+                    ],
                     'errors' => $errors,
+                    'timestamp' => now()->toIso8601String(), // New sync watermark
                 ],
-                'Meals sync completed'
+                'Sync completed successfully'
             );
 
         } catch (\Exception $e) {

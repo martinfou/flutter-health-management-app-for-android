@@ -206,5 +206,3 @@
         </script>
     @endpush
 @endsection
-
-@endsection

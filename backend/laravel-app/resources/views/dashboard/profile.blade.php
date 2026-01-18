@@ -150,5 +150,3 @@
         }
     </style>
 @endsection
-
-@endsection

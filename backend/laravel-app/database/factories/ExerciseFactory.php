@@ -18,7 +18,7 @@ class ExerciseFactory extends Factory
     {
         return [
             'user_id' => null,
-            'date' => fake()->optional(0.7)->dateTimeBetween('-30 days', 'now')->format('Y-m-d'),
+            'date' => fake()->dateTimeBetween('-30 days', 'now')->format('Y-m-d'),
             'type' => fake()->randomElement(['strength', 'cardio', 'flexibility', 'sports']),
             'name' => fake()->word(),
             'description' => fake()->optional(0.5)->sentence(),

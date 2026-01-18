@@ -42,6 +42,15 @@ class Meal {
   /// Creation timestamp
   final DateTime createdAt;
 
+  /// Last update timestamp (for sync)
+  final DateTime updatedAt;
+
+  /// Deletion timestamp (soft delete)
+  final DateTime? deletedAt;
+
+  /// Sync status (true if synced with backend)
+  final bool isSynced;
+
   /// Hunger level before eating (0-10, nullable)
   /// 0 = extremely hungry, 5 = neutral, 10 = extremely full
   final int? hungerLevelBefore;
@@ -71,11 +80,14 @@ class Meal {
     required this.ingredients,
     this.recipeId,
     required this.createdAt,
+    DateTime? updatedAt,
+    this.deletedAt,
+    this.isSynced = false,
     this.hungerLevelBefore,
     this.hungerLevelAfter,
     this.fullnessAfterTimestamp,
     this.eatingReasons,
-  });
+  }) : updatedAt = updatedAt ?? createdAt;
 
   /// Calculate macro percentages
   Map<String, double> get macroPercentages {
@@ -108,6 +120,9 @@ class Meal {
     List<String>? ingredients,
     String? recipeId,
     DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+    bool? isSynced,
     int? hungerLevelBefore,
     int? hungerLevelAfter,
     DateTime? fullnessAfterTimestamp,
@@ -126,6 +141,9 @@ class Meal {
       ingredients: ingredients ?? this.ingredients,
       recipeId: recipeId ?? this.recipeId,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      isSynced: isSynced ?? this.isSynced,
       hungerLevelBefore: hungerLevelBefore ?? this.hungerLevelBefore,
       hungerLevelAfter: hungerLevelAfter ?? this.hungerLevelAfter,
       fullnessAfterTimestamp: fullnessAfterTimestamp ?? this.fullnessAfterTimestamp,
@@ -149,6 +167,9 @@ class Meal {
           calories == other.calories &&
           ingredients == other.ingredients &&
           recipeId == other.recipeId &&
+          updatedAt == other.updatedAt &&
+          deletedAt == other.deletedAt &&
+          isSynced == other.isSynced &&
           hungerLevelBefore == other.hungerLevelBefore &&
           hungerLevelAfter == other.hungerLevelAfter &&
           fullnessAfterTimestamp == other.fullnessAfterTimestamp &&

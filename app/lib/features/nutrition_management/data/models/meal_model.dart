@@ -76,6 +76,18 @@ class MealModel extends HiveObject {
   @HiveField(15)
   List<String>? eatingReasons;
 
+  /// Last update timestamp (for sync)
+  @HiveField(16)
+  late DateTime updatedAt;
+
+  /// Deletion timestamp (soft delete)
+  @HiveField(17)
+  DateTime? deletedAt;
+
+  /// Sync status (true if synced with backend)
+  @HiveField(18)
+  bool isSynced = false;
+
   /// Default constructor for Hive
   MealModel();
 
@@ -115,6 +127,9 @@ class MealModel extends HiveObject {
       ingredients: ingredients,
       recipeId: recipeId,
       createdAt: createdAt,
+      updatedAt: updatedAt,
+      deletedAt: deletedAt,
+      isSynced: isSynced,
       hungerLevelBefore: hungerLevelBefore,
       hungerLevelAfter: hungerLevelAfter,
       fullnessAfterTimestamp: fullnessAfterTimestamp,
@@ -143,6 +158,9 @@ class MealModel extends HiveObject {
       ..ingredients = entity.ingredients
       ..recipeId = entity.recipeId
       ..createdAt = entity.createdAt
+      ..updatedAt = entity.updatedAt
+      ..deletedAt = entity.deletedAt
+      ..isSynced = entity.isSynced
       ..hungerLevelBefore = entity.hungerLevelBefore
       ..hungerLevelAfter = entity.hungerLevelAfter
       ..fullnessAfterTimestamp = entity.fullnessAfterTimestamp
@@ -153,7 +171,7 @@ class MealModel extends HiveObject {
   /// Convert to JSON (API request)
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'client_id': id, // Map id to client_id
       'user_id': userId,
       'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD format for API
       'meal_type': mealType,
@@ -168,8 +186,8 @@ class MealModel extends HiveObject {
       'eating_reasons': eatingReasons,
       'notes': null, // Add notes field if needed
       'created_at': createdAt.toIso8601String(),
-      'updated_at':
-          DateTime.now().toIso8601String(), // Current time as updated_at
+      'updated_at': updatedAt.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 }

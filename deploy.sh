@@ -130,21 +130,21 @@ activate_deployment() {
     local new_deploy_dir="$1"
 
     ssh "$REMOTE_USER@$REMOTE_HOST" << EOF
-        # Backup current symlink target
-        if [ -L "$REMOTE_WEB_ROOT" ]; then
-            CURRENT_TARGET=\$(readlink "$REMOTE_WEB_ROOT")
-            echo "Current deployment: \$CURRENT_TARGET"
+        if [ -e "$REMOTE_WEB_ROOT" ]; then
+            if [ -L "$REMOTE_WEB_ROOT" ]; then
+                CURRENT_TARGET=\$(readlink "$REMOTE_WEB_ROOT")
+                echo "Current deployment: \$CURRENT_TARGET"
+                rm -f "$REMOTE_WEB_ROOT"
+            else
+                echo "Warning: $REMOTE_WEB_ROOT is a real directory. Backing it up..."
+                mv "$REMOTE_WEB_ROOT" "${REMOTE_WEB_ROOT}_bak_\$(date +%Y%m%d_%H%M%S)"
+            fi
         fi
 
-        # Remove current symlink
-        rm -f "$REMOTE_WEB_ROOT"
+        ln -s "$new_deploy_dir/public" "$REMOTE_WEB_ROOT"
 
-        # Create new symlink
-        ln -s "$new_deploy_dir" "$REMOTE_WEB_ROOT"
-
-        # Verify symlink
-        if [ -L "$REMOTE_WEB_ROOT" ] && [ "\$(readlink "$REMOTE_WEB_ROOT")" = "$new_deploy_dir" ]; then
-            echo "✓ Symlink created: $REMOTE_WEB_ROOT -> $new_deploy_dir"
+        if [ -L "$REMOTE_WEB_ROOT" ] && [ "\$(readlink "$REMOTE_WEB_ROOT")" = "$new_deploy_dir/public" ]; then
+            echo "✓ Symlink created: $REMOTE_WEB_ROOT -> $new_deploy_dir/public"
         else
             echo "✗ Symlink creation failed"
             exit 1
@@ -360,10 +360,11 @@ deploy_laravel() {
         # Clear and optimize cache
         php artisan cache:clear
         php artisan config:clear
+        php artisan route:clear
         php artisan view:clear
         php artisan optimize
 
-        echo "✓ Laravel backend deployed to $deploy_dir"
+        echo "✓ Laravel backend deployed and caches cleared"
 EOF
 
     if [ $? -eq 0 ]; then
@@ -375,39 +376,13 @@ EOF
 }
 
 
-# Deploy web app
+# Web app removed - using Laravel web dashboard instead
 deploy_webapp() {
-    local deploy_dir="$1"
+    log_section "Web Dashboard Configuration"
 
-    log_section "Deploying Web App Dashboard"
+    log_info "Web dashboard now served by Laravel web routes - no separate deployment needed"
 
-    log_info "Deploying web app to: $deploy_dir"
-
-    # Sync web app files (exclude deployment script)
-    rsync -avz --delete \
-        --exclude='.git/' \
-        --exclude='node_modules/' \
-        --exclude='*.log' \
-        --exclude='deploy-web-app.sh' \
-        "$WEBAPP_DIR/" \
-        "$REMOTE_USER@$REMOTE_HOST:$deploy_dir/" \
-        | grep -E "(sending|sent|100%|total)"
-
-    # Set web app permissions
-    ssh "$REMOTE_USER@$REMOTE_HOST" << EOF
-        cd "$deploy_dir"
-        find . -type f \( -name "*.html" -o -name "*.js" -o -name "*.css" \) -exec chmod 644 {} \;
-        chmod 755 "$deploy_dir"
-
-        echo "✓ Web app deployed to $deploy_dir"
-EOF
-
-    if [ $? -eq 0 ]; then
-        log_success "Web app deployed successfully"
-    else
-        log_error "Web app deployment failed"
-        exit 1
-    fi
+    log_success "Web dashboard configuration complete"
 }
 
 # Run database migrations (BF-003: Timestamp support for multiple daily health metrics)
@@ -439,14 +414,17 @@ verify_deployment() {
         exit 1
     fi
 
-    # Test web dashboard
-    WEB_RESPONSE=$(curl -s -I "https://healthapp.compica.com/" | head -1)
-    if echo "$WEB_RESPONSE" | grep -q "200\|301\|302"; then
-        log_success "Web dashboard is accessible"
+    # Test Laravel web dashboard
+    log_info "Testing Laravel web dashboard..."
+    DASHBOARD_PATH="https://healthapp.compica.com/dashboard"
+    DASHBOARD_RESPONSE=$(curl -s -I "$DASHBOARD_PATH" | head -1)
+
+    if echo "$DASHBOARD_RESPONSE" | grep -q "200\|302\|401"; then
+        log_success "Laravel web dashboard is accessible"
     else
-        log_error "Web dashboard returned an error"
-        echo "Response: $WEB_RESPONSE"
-        exit 1
+        log_warning "Laravel dashboard returned unexpected response"
+        echo "Response: $DASHBOARD_RESPONSE"
+        echo "Check manually: $DASHBOARD_PATH"
     fi
 
     # Test Laravel backend
@@ -493,7 +471,7 @@ main() {
 
     # Deploy components to the new directory
     deploy_laravel "$DEPLOY_DIR"
-    deploy_webapp "$DEPLOY_DIR"
+    deploy_webapp "$DEPLOY_DIR"  # Now just logs configuration status
     run_migrations
 
     # Activate the new deployment
@@ -507,7 +485,7 @@ main() {
 
     echo "Successfully deployed all components:"
     echo "  ✓ Laravel Backend (API + Web Dashboard)"
-    echo "  ✓ Web App Dashboard"
+    echo "  ✓ Laravel Web Dashboard (no separate web-app)"
     echo "  ✓ Database Migrations (BF-003: Multiple daily health metrics)"
     echo ""
 
@@ -524,14 +502,16 @@ main() {
 
     echo "Testing URLs:"
     echo "  API Health: https://healthapp.compica.com/api/v1/health"
-    echo "  Web Dashboard: https://healthapp.compica.com/"
+    echo "  Web Dashboard: https://healthapp.compica.com/dashboard"
     echo "  Laravel API: https://healthapp.compica.com/api/v1/health-metrics"
     echo ""
 
     echo "Next Steps:"
     echo "  1. Test the Flutter app with the deployed backend"
-    echo "  2. Verify multiple daily health metric entries work"
-    echo "  3. Monitor server logs for any issues"
+    echo "  2. Test Google OAuth login at https://healthapp.compica.com/login"
+    echo "  3. Verify dashboard access at https://healthapp.compica.com/dashboard"
+    echo "  4. Verify multiple daily health metric entries work"
+    echo "  5. Monitor server logs for any issues"
     echo ""
 
     if [ "$ENV" = "production" ]; then

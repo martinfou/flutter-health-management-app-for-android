@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -54,6 +53,7 @@ return new class extends Migration
             $table->integer('satisfaction')->nullable();
             $table->json('eating_reasons')->nullable();
             $table->text('notes')->nullable();
+            $table->boolean('is_template')->default(false);
             $table->json('metadata')->nullable();
             $table->timestamps();
 

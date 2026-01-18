@@ -80,7 +80,7 @@ This sprint requires completion of:
 
 **Story Points**: 6
 
-**Status**: ⭕ Not Started
+**Status**: ⏳ In Progress
 
 ---
 
@@ -98,7 +98,7 @@ This sprint requires completion of:
 
 **Story Points**: 8
 
-**Status**: ⭕ Not Started
+**Status**: ⏳ In Progress
 
 ---
 
@@ -142,7 +142,7 @@ This sprint requires completion of:
 
 | Task ID | Task Description | Status | Points |
 |---------|------------------|--------|--------|
-| T-2501 | Implement meals sync endpoints (backend) | ⭕ | 3 |
+| T-2501 | Implement meals sync endpoints (backend) | ✅ | 3 |
 | T-2502 | Implement meals sync service (app) | ⭕ | 3 |
 | T-2503 | Implement exercises sync (backend) | ⭕ | 3 |
 | T-2504 | Implement exercises sync service (app) | ⭕ | 3 |
