@@ -4,6 +4,23 @@
 // Clinical Pro Variables (base overrides)
 @import 'clinical-variables';
 
+// Override Bootstrap variables for dark theme BEFORE importing Bootstrap
+$body-bg: #0a0a0f;
+$body-color: #ffffff;
+$primary: #22d3ee;
+$dark: #0a0a0f;
+$light: #15151e;
+$card-bg: #15151e;
+$card-border-color: rgba(255, 255, 255, 0.08);
+$modal-content-bg: #15151e;
+$dropdown-bg: #15151e;
+$dropdown-border-color: rgba(255, 255, 255, 0.08);
+$input-bg: #1a1a25;
+$input-border-color: rgba(255, 255, 255, 0.08);
+$input-color: #ffffff;
+$table-bg: transparent;
+$table-color: #a1a1aa;
+
 // Obsidian Theme (dark, neon accents, glow effects)
 @import 'obsidian-theme';
 
@@ -14,10 +31,30 @@
 // Import Bootstrap with Obsidian color overrides
 @import 'bootstrap/scss/bootstrap';
 
-// ========== OBSIDIAN GLOBAL STYLES ==========
-// Apply Obsidian body by default
+// ========== OBSIDIAN GLOBAL OVERRIDES ==========
+// Force dark background AFTER Bootstrap to ensure it takes precedence
+
+html,
 body {
-    @extend .obsidian-body;
+    background-color: #0a0a0f !important;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) !important;
+    background-size: 40px 40px !important;
+    background-attachment: fixed !important;
+    color: #ffffff !important;
+    min-height: 100vh;
+}
+
+// Override Bootstrap's container background
+.container,
+.container-fluid {
+    background-color: transparent !important;
+}
+
+// Force main content background
+.obsidian-main {
+    background-color: transparent;
 }
 
 // ========== RESPONSIVE UTILITIES ==========
