@@ -280,11 +280,8 @@ check_dependencies() {
         exit 1
     fi
 
-    # Check for web app deployment script
-    if [ ! -f "$WEBAPP_DIR/deploy-web-app.sh" ]; then
-        log_error "Web app deployment script not found: $WEBAPP_DIR/deploy-web-app.sh"
-        exit 1
-    fi
+    # Web app removed - no separate deployment script needed
+    # Dashboard now served by Laravel web routes
 
     log_success "All dependencies and scripts found"
 }

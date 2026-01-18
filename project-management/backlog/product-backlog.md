@@ -43,7 +43,7 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [BF-002](../backlog/bug-fixes/BF-002-food-save-blocked-by-carb-limit.md) | Food Save Blocked by 40g Carb Limit Validation | 🟠 High | 3 | ✅ | [Sprint 24](../sprints/sprint-24-user-authentication.md) | 2025-01-03 | 2026-01-17 |
 | [BF-003](../backlog/bugs/BF-003-backend-only-one-health-metric-per-day.md) | Backend Only Stores One Health Metric Per Day | 🟠 High | 8 | ✅ | Backlog | 2026-01-17 | 2026-01-17 |
 | [BF-004](../backlog/bugs/BF-004-llm-selection-always-defaults-to-on-device.md) | LLM Selection Always Defaults to On-Device Instead of Selected Provider | 🟠 High | 5 | ✅ | Current | 2026-01-17 | 2026-01-17 |
-| [BF-005](../backlog/bugs/BF-005-google-signin-redirect-uri-mismatch.md) | Google OAuth Login Fails in Laravel Application | 🟠 High | 8 | ⭕ | Backlog | 2026-01-18 | 2026-01-18 |
+| [BF-005](../backlog/bugs/BF-005-google-signin-redirect-uri-mismatch.md) | Google OAuth Login Fails in Laravel Application | 🟠 High | 8 | ✅ | Backlog | 2026-01-18 | 2026-01-18 |
 
 ---
 

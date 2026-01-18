@@ -286,11 +286,21 @@ class ExercisesController extends Controller
                             ->first();
                     } else {
                         // Match regular exercises by user_id + date + name + type
-                        $existing = Exercise::where('user_id', $user->id)
-                            ->where('date', $exerciseData['date'] ?? null)
+                        // Convert date string to proper format for comparison
+                        $exerciseDate = $exerciseData['date'] ?? null;
+
+                        $query = Exercise::where('user_id', $user->id)
                             ->where('name', $exerciseData['name'])
-                            ->where('type', $exerciseData['type'])
-                            ->first();
+                            ->where('type', $exerciseData['type']);
+
+                        if ($exerciseDate) {
+                            // Use whereDate to compare just the date part
+                            $query->whereDate('date', $exerciseDate);
+                        } else {
+                            $query->whereNull('date');
+                        }
+
+                        $existing = $query->first();
                     }
 
                     if ($existing) {
