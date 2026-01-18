@@ -95,27 +95,13 @@ class UserProfileLocalDataSource {
             // Now try to open a fresh box
             return await Hive.openBox<UserProfileModel>(HiveBoxNames.userProfile);
           } catch (deleteError) {
-            // If deletion or retry fails, we need to inform the user
-            // But first, let's try one more time with a different approach
-            try {
-              // Force close all Hive boxes and try again
-              await Hive.close();
-              await Future.delayed(const Duration(milliseconds: 200));
-              
-              // Re-register adapter
-              if (!Hive.isAdapterRegistered(0)) {
-                Hive.registerAdapter(UserProfileModelAdapter());
-              }
-              
-              return await Hive.openBox<UserProfileModel>(HiveBoxNames.userProfile);
-            } catch (finalError) {
-              // Last resort - throw a clear error message
-              throw DatabaseFailure(
-                'Failed to open user profile box due to corrupted data. '
-                'Original error: $e\n'
-                'Please clear app data in Android settings and restart the app.',
-              );
-            }
+            // If deletion or retry fails, just throw error
+            // Don't close ALL Hive boxes as it breaks other sync services
+            throw DatabaseFailure(
+              'Failed to recover corrupted user profile box. '
+              'Original error: $e\n'
+              'Please clear app data in Android settings and restart the app.',
+            );
           }
         }
         // For other errors, throw as-is
