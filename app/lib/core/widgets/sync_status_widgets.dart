@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:health_app/core/providers/sync_coordinator_provider.dart';
 import 'package:health_app/core/providers/sync_providers.dart';
-import 'package:health_app/core/sync/services/offline_sync_queue.dart';
 
 /// Sync status indicator widget
 class SyncStatusIndicator extends ConsumerWidget {
@@ -100,56 +99,6 @@ class SyncStatusDialog extends StatelessWidget {
           ? const Icon(Icons.check_circle, color: Colors.green)
           : const Icon(Icons.offline_bolt, color: Colors.orange),
     );
-  }
-}
-
-  Widget _buildSyncStatusItem(
-      BuildContext context, String name, IconData icon, WidgetRef ref) {
-    // For now, just show static status. In a real implementation, you'd track per-data-type status
-    final isOnline = true; // This would come from connectivity monitoring
-
-    return ListTile(
-      leading: Icon(icon, color: isOnline ? Colors.green : Colors.grey),
-      title: Text(name),
-      subtitle: Text(isOnline ? 'Ready to sync' : 'Offline'),
-      trailing: isOnline
-          ? const Icon(Icons.check_circle, color: Colors.green)
-          : const Icon(Icons.offline_bolt, color: Colors.orange),
-    );
-  }
-
-
-
-  Future<void> _triggerManualSync(WidgetRef ref, BuildContext context) async {
-    try {
-      final result = await ref.read(completeSyncProvider.future);
-
-      result.fold(
-        (error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Sync failed: $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        },
-        (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(success),
-              backgroundColor: Colors.green,
-            ),
-          );
-        },
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Sync error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }
 

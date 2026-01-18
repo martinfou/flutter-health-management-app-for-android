@@ -78,7 +78,7 @@ class MealModel extends HiveObject {
 
   /// Last update timestamp (for sync)
   @HiveField(16)
-  late DateTime updatedAt;
+  DateTime? updatedAt;
 
   /// Deletion timestamp (soft delete)
   @HiveField(17)
@@ -186,7 +186,7 @@ class MealModel extends HiveObject {
       'eating_reasons': eatingReasons,
       'notes': null, // Add notes field if needed
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'updated_at': (updatedAt ?? createdAt).toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
     };
   }
