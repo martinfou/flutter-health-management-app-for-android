@@ -190,14 +190,51 @@ class MealsSyncService {
   }
 
   /// Pull remote changes from backend
+  ///
+  /// Fetches meals that have been created or modified on the server since the last sync.
+  /// This enables multi-device synchronization - changes made on other devices will be
+  /// pulled to this device and merged with local data using conflict resolution.
   Future<Result<void>> _pullRemoteChanges(String userId, DateTime? lastSync) async {
     try {
-      // This method would be implemented when the backend supports pulling changes
-      // For now, we skip pull since the backend API doesn't support it yet
-      // This is a placeholder for future implementation when backend supports it
-      print('MealsSyncService: Pull remote changes (placeholder - backend support needed)');
-      return const Right(null);
+      print('MealsSyncService: Pulling remote changes since $lastSync');
+
+      // Fetch meals changed since last sync from backend
+      final remoteResult = await _remoteDataSource.getChangesSince(lastSync);
+
+      return remoteResult.fold(
+        (failure) {
+          print('MealsSyncService: Failed to fetch remote meals: ${failure.message}');
+          return Left(failure);
+        },
+        (remoteModels) async {
+          if (remoteModels.isEmpty) {
+            print('MealsSyncService: No remote changes since $lastSync');
+            return const Right(null);
+          }
+
+          print('MealsSyncService: Received ${remoteModels.length} remote meal changes');
+
+          // Convert models to entities
+          final remoteMeals = remoteModels.map((m) => m.toEntity()).toList();
+
+          // Save to local database with conflict resolution
+          // (newer timestamp wins - implemented in saveMealsBatch)
+          final saveResult = await _localDataSource.saveMealsBatch(remoteMeals);
+
+          return saveResult.fold(
+            (failure) {
+              print('MealsSyncService: Failed to save remote meals: ${failure.message}');
+              return Left(failure);
+            },
+            (_) {
+              print('MealsSyncService: Successfully merged ${remoteMeals.length} remote meals locally');
+              return const Right(null);
+            },
+          );
+        },
+      );
     } catch (e) {
+      print('MealsSyncService: Error pulling remote changes: $e');
       return Left(MealsSyncFailure('Pull error: ${e.toString()}'));
     }
   }
