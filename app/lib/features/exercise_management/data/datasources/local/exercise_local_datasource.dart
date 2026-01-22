@@ -165,7 +165,7 @@ class ExerciseLocalDataSource {
     try {
       final box = _box;
       final model = box.get(id);
-      
+
       if (model == null) {
         return Left(NotFoundFailure('Exercise'));
       }
@@ -174,6 +174,51 @@ class ExerciseLocalDataSource {
       return const Right(null);
     } catch (e) {
       return Left(DatabaseFailure('Failed to delete exercise: $e'));
+    }
+  }
+
+  /// Batch save exercises with conflict resolution
+  ///
+  /// Saves multiple exercises in a single operation for better performance.
+  /// Uses timestamp-based conflict resolution: only overwrites local data if
+  /// incoming exercise is newer (has later updatedAt).
+  ///
+  /// This ensures that in case of concurrent edits, the latest version wins.
+  Future<Result<List<Exercise>>> saveExercisesBatch(
+    List<Exercise> exercises,
+  ) async {
+    try {
+      final box = _box;
+      final modelsMap = <String, ExerciseModel>{};
+      int skippedCount = 0;
+
+      for (final exercise in exercises) {
+        final existing = box.get(exercise.id);
+
+        // Conflict resolution: Compare timestamps
+        if (existing != null) {
+          // Only overwrite if incoming exercise is newer
+          if (exercise.updatedAt.isBefore(existing.updatedAt)) {
+            // Skip this exercise - local version is newer
+            skippedCount++;
+            continue;
+          }
+        }
+
+        // Either no existing record or incoming is newer - save it
+        modelsMap[exercise.id] = ExerciseModel.fromEntity(exercise);
+      }
+
+      // Use batch put operation
+      await box.putAll(modelsMap);
+
+      if (skippedCount > 0) {
+        print('saveExercisesBatch: Skipped $skippedCount exercises (local versions are newer)');
+      }
+
+      return Right(exercises);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to batch save exercises: $e'));
     }
   }
 }

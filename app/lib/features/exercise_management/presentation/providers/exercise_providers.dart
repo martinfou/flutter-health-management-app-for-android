@@ -247,5 +247,10 @@ final exerciseRemoteDataSourceProvider =
 final exercisesSyncServiceProvider = Provider<ExercisesSyncService>((ref) {
   final localDataSource = ref.watch(exerciseLocalDataSourceProvider);
   final remoteDataSource = ref.watch(exerciseRemoteDataSourceProvider);
-  return ExercisesSyncService(localDataSource, remoteDataSource);
+  final userProfileRepository = ref.watch(userProfileRepositoryProvider);
+  return ExercisesSyncService(
+    localDataSource,
+    remoteDataSource,
+    userProfileRepository: userProfileRepository,
+  );
 });

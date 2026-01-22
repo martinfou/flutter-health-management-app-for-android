@@ -12,16 +12,27 @@ class NutritionRemoteDataSource {
   static const String _baseUrl = 'https://healthapp.compica.com/api/v1';
   static const String _mealsEndpoint = '/meals';
 
-  /// Bulk sync meals
-  Future<Result<Map<String, dynamic>>> bulkSync(List<MealModel> meals) async {
+  /// Bulk sync meals with optional last sync timestamp for delta sync
+  ///
+  /// Sends local meal changes to the server and optionally receives server changes
+  /// since the last sync timestamp for bidirectional synchronization.
+  Future<Result<Map<String, dynamic>>> bulkSync(
+    List<MealModel> meals, {
+    DateTime? lastSyncTimestamp,
+  }) async {
     try {
       final uri = Uri.parse('$_baseUrl$_mealsEndpoint/sync');
 
       final payload = {
-        'meals': meals.map((m) => m.toJson()).toList(),
+        'changes': meals.map((m) => m.toJson()).toList(),
+        if (lastSyncTimestamp != null)
+          'last_sync_timestamp': lastSyncTimestamp.toIso8601String(),
       };
 
       print('MealsBulkSync: Sending ${meals.length} meals to $uri');
+      if (lastSyncTimestamp != null) {
+        print('MealsBulkSync: Using last sync timestamp: $lastSyncTimestamp');
+      }
 
       final response = await AuthenticatedHttpClient.post(
         uri,
@@ -33,7 +44,12 @@ class NutritionRemoteDataSource {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return Right(data['data'] as Map<String, dynamic>);
+        final responseData = data['data'] as Map<String, dynamic>;
+
+        // Extract server changes and timestamp for bidirectional sync
+        print('MealsBulkSync: Response contains ${responseData['changes']?.length ?? 0} server changes');
+
+        return Right(responseData);
       } else {
         return Left(NetworkFailure(
           'Meals sync failed: ${response.statusCode}',

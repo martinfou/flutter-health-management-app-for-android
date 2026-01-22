@@ -205,7 +205,7 @@ class MedicationLocalDataSource {
     try {
       final box = _medicationLogsBox;
       final model = box.get(id);
-      
+
       if (model == null) {
         return Left(NotFoundFailure('MedicationLog'));
       }
@@ -214,6 +214,51 @@ class MedicationLocalDataSource {
       return const Right(null);
     } catch (e) {
       return Left(DatabaseFailure('Failed to delete medication log: $e'));
+    }
+  }
+
+  /// Batch save medications with conflict resolution
+  ///
+  /// Saves multiple medications in a single operation for better performance.
+  /// Uses timestamp-based conflict resolution: only overwrites local data if
+  /// incoming medication is newer (has later updatedAt).
+  ///
+  /// This ensures that in case of concurrent edits, the latest version wins.
+  Future<Result<List<Medication>>> saveMedicationsBatch(
+    List<Medication> medications,
+  ) async {
+    try {
+      final box = _medicationsBox;
+      final modelsMap = <String, MedicationModel>{};
+      int skippedCount = 0;
+
+      for (final medication in medications) {
+        final existing = box.get(medication.id);
+
+        // Conflict resolution: Compare timestamps
+        if (existing != null) {
+          // Only overwrite if incoming medication is newer
+          if (medication.updatedAt.isBefore(existing.updatedAt)) {
+            // Skip this medication - local version is newer
+            skippedCount++;
+            continue;
+          }
+        }
+
+        // Either no existing record or incoming is newer - save it
+        modelsMap[medication.id] = MedicationModel.fromEntity(medication);
+      }
+
+      // Use batch put operation
+      await box.putAll(modelsMap);
+
+      if (skippedCount > 0) {
+        print('saveMedicationsBatch: Skipped $skippedCount medications (local versions are newer)');
+      }
+
+      return Right(medications);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to batch save medications: $e'));
     }
   }
 }

@@ -145,7 +145,12 @@ final nutritionRemoteDataSourceProvider =
 final mealsSyncServiceProvider = Provider<MealsSyncService>((ref) {
   final localDataSource = ref.watch(nutritionLocalDataSourceProvider);
   final remoteDataSource = ref.watch(nutritionRemoteDataSourceProvider);
-  return MealsSyncService(localDataSource, remoteDataSource);
+  final userProfileRepository = ref.watch(userProfileRepositoryProvider);
+  return MealsSyncService(
+    localDataSource,
+    remoteDataSource,
+    userProfileRepository: userProfileRepository,
+  );
 });
 
 /// Provider for getting all recipes

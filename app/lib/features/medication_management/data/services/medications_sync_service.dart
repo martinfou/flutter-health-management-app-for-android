@@ -29,7 +29,7 @@ class MedicationsSyncService {
       : _authHelper = authHelper ?? AuthHelper(),
         _userProfileRepository = userProfileRepository;
 
-  /// Synchronize medications (push changes, pull changes, resolve conflicts)
+  /// Synchronize medications (push changes with delta filtering)
   Future<Result<void>> syncMedications({bool forceCount = false}) async {
     _syncStatusController.add(true);
     try {
@@ -57,16 +57,22 @@ class MedicationsSyncService {
         return Left(MedicationsSyncFailure('No user ID available for sync'));
       }
 
-      // 3. Push local changes to backend
-      final pushResult = await _pushLocalChanges(userId);
+      // 3. Get last sync timestamp for delta filtering
+      final prefs = await SharedPreferences.getInstance();
+      final lastSyncStr = prefs.getString(_lastSyncKey);
+      final lastSync = lastSyncStr != null ? DateTime.parse(lastSyncStr) : null;
+      print('MedicationsSyncService: Last sync: $lastSync');
+
+      // 4. Push local changes to backend
+      final pushResult = await _pushLocalChanges(userId, lastSync);
       print(
           'MedicationsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
       if (pushResult.isLeft()) {
         return pushResult;
       }
 
-      // 4. Update last sync timestamp
-      await _updateLastSyncTimestamp();
+      // 5. Update last sync timestamp
+      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
 
       return const Right(null);
     } catch (e) {
@@ -77,8 +83,8 @@ class MedicationsSyncService {
     }
   }
 
-  /// Push local changes to backend
-  Future<Result<void>> _pushLocalChanges(String userId) async {
+  /// Push local changes to backend with delta filtering
+  Future<Result<void>> _pushLocalChanges(String userId, DateTime? lastSync) async {
     try {
       print(
           'MedicationsSyncService: Querying local medications for userId=$userId');
@@ -95,14 +101,22 @@ class MedicationsSyncService {
         (medications) async {
           print(
               'MedicationsSyncService: Total local medications: ${medications.length}');
+          print('MedicationsSyncService: Last sync time: $lastSync');
 
-          if (medications.isEmpty) {
-            print('MedicationsSyncService: No medications to sync');
+          // Delta filtering: only sync medications updated since last sync
+          final medicationsToSync = lastSync == null
+              ? medications
+              : medications.where((m) => m.updatedAt.isAfter(lastSync)).toList();
+
+          print('MedicationsSyncService: Medications to sync: ${medicationsToSync.length}');
+
+          if (medicationsToSync.isEmpty) {
+            print('MedicationsSyncService: No medications to sync - all are already synced');
             return const Right(null);
           }
 
           final models =
-              medications.map((e) => MedicationModel.fromEntity(e)).toList();
+              medicationsToSync.map((e) => MedicationModel.fromEntity(e)).toList();
 
           print(
               'MedicationsSyncService: Pushing ${models.length} medications to backend');
@@ -128,12 +142,9 @@ class MedicationsSyncService {
     }
   }
 
-  Future<void> _updateLastSyncTimestamp() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
-    } catch (e) {
-      print('MedicationsSyncService: Error updating sync timestamp: $e');
-    }
+  /// Force clear sync timestamp (for debugging or logout)
+  Future<void> clearSyncTimestamp() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastSyncKey);
   }
 }

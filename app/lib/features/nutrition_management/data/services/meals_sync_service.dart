@@ -45,53 +45,101 @@ class MealsSyncService {
         return const Right(null); // Silent skip if not authenticated
       }
 
-      // 2. Get user ID from auth helper (same pattern as health metrics)
-      final userResult = await _authHelper.getProfile();
-      final userId = userResult.fold(
-        (failure) {
-          print(
-              'MealsSyncService: Failed to get user profile: ${failure.message}');
-          return null;
-        },
-        (user) => user.id,
-      );
+      // 2. Get user ID from local profile first (more reliable)
+      String? userId = await _getLocalUserId();
 
       if (userId == null) {
-        print('MealsSyncService: No user ID available');
-        return Left(MealsSyncFailure('No user ID available for sync'));
+        print('MealsSyncService: No local user ID, trying backend profile call');
+        // Fallback to backend call if local profile not available
+        var userResult = await _authHelper.getProfile();
+        return userResult.fold(
+          (failure) {
+            print('MealsSyncService: Backend profile call failed: ${failure.message}');
+            return Left(failure);
+          },
+          (user) async {
+            return await _performSync(user.id);
+          },
+        );
       }
 
-      // 3. Migrate any existing meals to correct userId
-      final migrationResult =
-          await _localDataSource.migrateMealsToUserId(userId);
-      if (migrationResult.isLeft()) {
-        print(
-            'MealsSyncService: Migration failed: ${migrationResult.fold((f) => f.message, (_) => "")}');
-        // Continue with sync even if migration fails
-      }
-
-      // 4. Push local changes (created/updated since last sync)
-      final pushResult = await _pushLocalChanges(userId);
-      print(
-          'MealsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
-      if (pushResult.isLeft()) {
-        return pushResult;
-      }
-
-      // 5. Update last sync timestamp
-      await _updateLastSyncTimestamp();
-
-      return const Right(null);
+      print('MealsSyncService: Using local user ID: $userId');
+      return await _performSync(userId);
     } catch (e) {
-      print('MealsSyncService: Error during sync: $e');
+      print('MealsSyncService: Exception: $e');
       return Left(MealsSyncFailure('Sync error: ${e.toString()}'));
     } finally {
       _syncStatusController.add(false);
     }
   }
 
+  /// Get the local user ID from the user profile repository
+  Future<String?> _getLocalUserId() async {
+    try {
+      if (_userProfileRepository == null) {
+        print('MealsSyncService: UserProfileRepository not available');
+        return null;
+      }
+
+      final profileResult = await _userProfileRepository!.getCurrentUserProfile();
+
+      return profileResult.fold(
+        (failure) {
+          print('MealsSyncService: Failed to get local profile: ${failure.message}');
+          return null;
+        },
+        (profile) {
+          print('MealsSyncService: Got local user ID from profile: ${profile.id}');
+          return profile.id;
+        },
+      );
+    } catch (e) {
+      print('MealsSyncService: Error getting local user ID: $e');
+      return null;
+    }
+  }
+
+  /// Perform the actual sync operation with the given user ID
+  Future<Either<Failure, void>> _performSync(String userId) async {
+    try {
+      // Get last sync timestamp
+      final prefs = await SharedPreferences.getInstance();
+      final lastSyncStr = prefs.getString(_lastSyncKey);
+      final lastSync = lastSyncStr != null ? DateTime.parse(lastSyncStr) : null;
+      print('MealsSyncService: Last sync: $lastSync');
+
+      // 1. Migrate any existing meals to correct userId (for meals created before authentication)
+      final migrationResult = await _localDataSource.migrateMealsToUserId(userId);
+      if (migrationResult.isLeft()) {
+        print('MealsSyncService: Migration failed: ${migrationResult.fold((f) => f.message, (_) => "")}');
+        // Continue with sync even if migration fails
+      }
+
+      // 2. Push local changes (created/updated since last sync)
+      final pushResult = await _pushLocalChanges(userId, lastSync);
+      print('MealsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
+      if (pushResult.isLeft()) {
+        return pushResult;
+      }
+
+      // 3. Pull remote changes
+      final pullResult = await _pullRemoteChanges(userId, lastSync);
+      print('MealsSyncService: Pull result: ${pullResult.isRight() ? "Success" : "Failure"}');
+
+      // 4. Update last sync timestamp if successful
+      if (pullResult.isRight()) {
+        await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+      }
+
+      return pullResult;
+    } catch (e) {
+      print('MealsSyncService: Error during sync: $e');
+      return Left(MealsSyncFailure('Sync error: ${e.toString()}'));
+    }
+  }
+
   /// Push local changes to backend
-  Future<Result<void>> _pushLocalChanges(String userId) async {
+  Future<Result<void>> _pushLocalChanges(String userId, DateTime? lastSync) async {
     try {
       print('MealsSyncService: Querying local meals for userId=$userId');
 
@@ -99,33 +147,38 @@ class MealsSyncService {
 
       return localMealsResult.fold(
         (failure) {
-          print(
-              'MealsSyncService: Failed to get local meals: ${failure.message}');
+          print('MealsSyncService: Failed to get local meals: ${failure.message}');
           return Left(failure);
         },
         (meals) async {
           print('MealsSyncService: Total local meals: ${meals.length}');
+          print('MealsSyncService: Last sync time: $lastSync');
 
-          if (meals.isEmpty) {
-            print('MealsSyncService: No meals to sync');
+          // Delta filtering: only sync meals updated since last sync
+          final mealsToSync = lastSync == null
+              ? meals
+              : meals.where((m) => m.updatedAt.isAfter(lastSync)).toList();
+
+          print('MealsSyncService: Meals to sync: ${mealsToSync.length}');
+
+          if (mealsToSync.isEmpty) {
+            print('MealsSyncService: No meals to sync - all are already synced');
             return const Right(null);
           }
 
-          final models = meals.map((e) => MealModel.fromEntity(e)).toList();
+          final models = mealsToSync.map((e) => MealModel.fromEntity(e)).toList();
 
+          // Use bulk sync endpoint with last sync timestamp for bidirectional sync
           print('MealsSyncService: Pushing ${models.length} meals to backend');
-
-          final syncResult = await _remoteDataSource.bulkSync(models);
+          final syncResult = await _remoteDataSource.bulkSync(models, lastSyncTimestamp: lastSync);
 
           return syncResult.fold(
             (failure) {
-              print(
-                  'MealsSyncService: Push failed with error: ${failure.message}');
+              print('MealsSyncService: Push failed with error: ${failure.message}');
               return Left(failure);
             },
             (result) {
-              print(
-                  'MealsSyncService: Push succeeded. Synced: ${result['synced_count']}, Updated: ${result['updated_count']}');
+              print('MealsSyncService: Push succeeded. Synced: ${result['synced_count']}, Updated: ${result['updated_count']}');
               return const Right(null);
             },
           );
@@ -136,12 +189,22 @@ class MealsSyncService {
     }
   }
 
-  Future<void> _updateLastSyncTimestamp() async {
+  /// Pull remote changes from backend
+  Future<Result<void>> _pullRemoteChanges(String userId, DateTime? lastSync) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+      // This method would be implemented when the backend supports pulling changes
+      // For now, we skip pull since the backend API doesn't support it yet
+      // This is a placeholder for future implementation when backend supports it
+      print('MealsSyncService: Pull remote changes (placeholder - backend support needed)');
+      return const Right(null);
     } catch (e) {
-      print('MealsSyncService: Error updating sync timestamp: $e');
+      return Left(MealsSyncFailure('Pull error: ${e.toString()}'));
     }
+  }
+
+  /// Force clear sync timestamp (for debugging or logout)
+  Future<void> clearSyncTimestamp() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastSyncKey);
   }
 }

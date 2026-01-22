@@ -332,4 +332,49 @@ class NutritionLocalDataSource {
       return Left(DatabaseFailure('Failed to delete recipe: $e'));
     }
   }
+
+  /// Batch save meals with conflict resolution
+  ///
+  /// Saves multiple meals in a single operation for better performance.
+  /// Uses timestamp-based conflict resolution: only overwrites local data if
+  /// incoming meal is newer (has later updatedAt).
+  ///
+  /// This ensures that in case of concurrent edits, the latest version wins.
+  Future<Result<List<Meal>>> saveMealsBatch(
+    List<Meal> meals,
+  ) async {
+    try {
+      final box = _mealsBox;
+      final modelsMap = <String, MealModel>{};
+      int skippedCount = 0;
+
+      for (final meal in meals) {
+        final existing = box.get(meal.id);
+
+        // Conflict resolution: Compare timestamps
+        if (existing != null) {
+          // Only overwrite if incoming meal is newer
+          if (meal.updatedAt.isBefore(existing.updatedAt)) {
+            // Skip this meal - local version is newer
+            skippedCount++;
+            continue;
+          }
+        }
+
+        // Either no existing record or incoming is newer - save it
+        modelsMap[meal.id] = MealModel.fromEntity(meal);
+      }
+
+      // Use batch put operation
+      await box.putAll(modelsMap);
+
+      if (skippedCount > 0) {
+        print('saveMealsBatch: Skipped $skippedCount meals (local versions are newer)');
+      }
+
+      return Right(meals);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to batch save meals: $e'));
+    }
+  }
 }

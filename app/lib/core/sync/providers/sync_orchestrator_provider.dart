@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health_app/core/sync/services/unified_sync_orchestrator.dart';
 import 'package:health_app/core/sync/strategies/health_metrics_sync_strategy.dart';
+import 'package:health_app/core/sync/strategies/meals_sync_strategy.dart';
+import 'package:health_app/core/sync/strategies/exercises_sync_strategy.dart';
+import 'package:health_app/core/sync/strategies/medications_sync_strategy.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
-import 'package:health_app/features/nutrition_management/data/services/meals_sync_strategy.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
-import 'package:health_app/features/exercise_management/data/services/exercises_sync_strategy.dart';
 import 'package:health_app/features/exercise_management/presentation/providers/exercise_providers.dart';
-import 'package:health_app/features/medication_management/data/services/medications_sync_strategy.dart';
 import 'package:health_app/features/medication_management/presentation/providers/medication_providers.dart';
 
 /// Provider for the UnifiedSyncOrchestrator

@@ -54,7 +54,12 @@ final medicationRemoteDataSourceProvider =
 final medicationsSyncServiceProvider = Provider<MedicationsSyncService>((ref) {
   final localDataSource = ref.watch(medicationLocalDataSourceProvider);
   final remoteDataSource = ref.watch(medicationRemoteDataSourceProvider);
-  return MedicationsSyncService(localDataSource, remoteDataSource);
+  final userProfileRepository = ref.watch(userProfileRepositoryProvider);
+  return MedicationsSyncService(
+    localDataSource,
+    remoteDataSource,
+    userProfileRepository: userProfileRepository,
+  );
 });
 
 /// Provider for active medications for the current user
