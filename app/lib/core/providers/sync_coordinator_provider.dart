@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:health_app/core/sync/providers/sync_orchestrator_provider.dart';
 import 'package:health_app/core/sync/sync_coordinator.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
@@ -11,11 +12,15 @@ final syncCoordinatorProvider = Provider<SyncCoordinator>((ref) {
   final mealsSync = ref.watch(mealsSyncServiceProvider);
   final exercisesSync = ref.watch(exercisesSyncServiceProvider);
   final medicationsSync = ref.watch(medicationsSyncServiceProvider);
+  final syncStatus = ref.watch(syncStatusServiceProvider);
+  final offlineQueue = ref.read(offlineSyncQueueProvider);
 
   return SyncCoordinator(
     healthMetricsSync: healthMetricsSync,
     mealsSync: mealsSync,
     exercisesSync: exercisesSync,
     medicationsSync: medicationsSync,
+    syncStatus: syncStatus,
+    offlineQueue: offlineQueue,
   );
 });

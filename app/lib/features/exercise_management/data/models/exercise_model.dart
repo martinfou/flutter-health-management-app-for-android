@@ -118,6 +118,33 @@ class ExerciseModel extends HiveObject {
     return model;
   }
 
+  /// Create from JSON (API response)
+  factory ExerciseModel.fromJson(Map<String, dynamic> json) {
+    final model = ExerciseModel()
+      ..id = json['id'].toString()
+      ..userId = json['user_id'].toString()
+      ..name = json['name'] as String
+      ..type = json['type'] as String
+      ..muscleGroups = (json['muscle_groups'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          []
+      ..equipment = (json['equipment'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          []
+      ..duration = int.tryParse(json['duration_minutes']?.toString() ?? '')
+      ..sets = int.tryParse(json['sets']?.toString() ?? '')
+      ..reps = int.tryParse(json['reps']?.toString() ?? '')
+      ..weight = double.tryParse(json['weight_kg']?.toString() ?? '')
+      ..distance = double.tryParse(json['distance_km']?.toString() ?? '')
+      ..date = json['date'] != null ? DateTime.parse(json['date'] as String) : null
+      ..notes = json['notes'] as String?
+      ..createdAt = DateTime.parse(json['created_at'] as String)
+      ..updatedAt = DateTime.parse(json['updated_at'] as String);
+    return model;
+  }
+
   /// Convert to JSON (API request)
   Map<String, dynamic> toJson() {
     return {

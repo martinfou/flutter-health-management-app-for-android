@@ -133,8 +133,8 @@ class NotificationService {
     return false;
   }
 
-  /// Handle notification tap
-  void _onNotificationTapped(NotificationResponse response) {
+  /// Handle notification tap (NotificationResponse when flutter_local_notifications is added)
+  void _onNotificationTapped(dynamic response) {
     // Handle notification tap - could navigate to medication page
     // For MVP, this is a placeholder
   }

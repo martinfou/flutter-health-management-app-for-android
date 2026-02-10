@@ -115,31 +115,43 @@ class MealsSyncService {
         // Continue with sync even if migration fails
       }
 
-      // 2. Push local changes (created/updated since last sync)
-      final pushResult = await _pushLocalChanges(userId, lastSync);
-      print('MealsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
-      if (pushResult.isLeft()) {
-        return pushResult;
-      }
+      // 2. Perform bidirectional sync (Push local changes, Pull remote changes)
+      final syncResult = await _pushLocalChanges(userId, lastSync);
+      
+      return syncResult.fold(
+        (failure) {
+          print('MealsSyncService: Sync failed: ${failure.message}');
+          return Left(failure);
+        },
+        (remoteModels) async {
+          print('MealsSyncService: Push succeeded. Received ${remoteModels.length} remote changes.');
+          
+          // 3. Merge remote changes locally (Pull)
+          if (remoteModels.isNotEmpty) {
+            final remoteMeals = remoteModels.map((m) => m.toEntity()).toList();
+            final saveResult = await _localDataSource.saveMealsBatch(remoteMeals);
+            
+            if (saveResult.isLeft()) {
+              print('MealsSyncService: Failed to merge remote meals: ${saveResult.fold((f) => f.message, (_) => "")}');
+              // We don't fail the whole sync just because merge failed
+            } else {
+              print('MealsSyncService: Successfully merged ${remoteMeals.length} remote meals locally');
+            }
+          }
 
-      // 3. Pull remote changes
-      final pullResult = await _pullRemoteChanges(userId, lastSync);
-      print('MealsSyncService: Pull result: ${pullResult.isRight() ? "Success" : "Failure"}');
-
-      // 4. Update last sync timestamp if successful
-      if (pullResult.isRight()) {
-        await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
-      }
-
-      return pullResult;
+          // 4. Update last sync timestamp
+          await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+          return const Right(null);
+        },
+      );
     } catch (e) {
       print('MealsSyncService: Error during sync: $e');
       return Left(MealsSyncFailure('Sync error: ${e.toString()}'));
     }
   }
 
-  /// Push local changes to backend
-  Future<Result<void>> _pushLocalChanges(String userId, DateTime? lastSync) async {
+  /// Push local changes to backend and return remote changes
+  Future<Result<List<MealModel>>> _pushLocalChanges(String userId, DateTime? lastSync) async {
     try {
       print('MealsSyncService: Querying local meals for userId=$userId');
 
@@ -161,81 +173,15 @@ class MealsSyncService {
 
           print('MealsSyncService: Meals to sync: ${mealsToSync.length}');
 
-          if (mealsToSync.isEmpty) {
-            print('MealsSyncService: No meals to sync - all are already synced');
-            return const Right(null);
-          }
-
           final models = mealsToSync.map((e) => MealModel.fromEntity(e)).toList();
 
-          // Use bulk sync endpoint with last sync timestamp for bidirectional sync
+          // Use bidirectional sync endpoint
           print('MealsSyncService: Pushing ${models.length} meals to backend');
-          final syncResult = await _remoteDataSource.bulkSync(models, lastSyncTimestamp: lastSync);
-
-          return syncResult.fold(
-            (failure) {
-              print('MealsSyncService: Push failed with error: ${failure.message}');
-              return Left(failure);
-            },
-            (result) {
-              print('MealsSyncService: Push succeeded. Synced: ${result['synced_count']}, Updated: ${result['updated_count']}');
-              return const Right(null);
-            },
-          );
+          return await _remoteDataSource.bulkSync(models, lastSyncTimestamp: lastSync);
         },
       );
     } catch (e) {
       return Left(MealsSyncFailure('Push error: ${e.toString()}'));
-    }
-  }
-
-  /// Pull remote changes from backend
-  ///
-  /// Fetches meals that have been created or modified on the server since the last sync.
-  /// This enables multi-device synchronization - changes made on other devices will be
-  /// pulled to this device and merged with local data using conflict resolution.
-  Future<Result<void>> _pullRemoteChanges(String userId, DateTime? lastSync) async {
-    try {
-      print('MealsSyncService: Pulling remote changes since $lastSync');
-
-      // Fetch meals changed since last sync from backend
-      final remoteResult = await _remoteDataSource.getChangesSince(lastSync);
-
-      return remoteResult.fold(
-        (failure) {
-          print('MealsSyncService: Failed to fetch remote meals: ${failure.message}');
-          return Left(failure);
-        },
-        (remoteModels) async {
-          if (remoteModels.isEmpty) {
-            print('MealsSyncService: No remote changes since $lastSync');
-            return const Right(null);
-          }
-
-          print('MealsSyncService: Received ${remoteModels.length} remote meal changes');
-
-          // Convert models to entities
-          final remoteMeals = remoteModels.map((m) => m.toEntity()).toList();
-
-          // Save to local database with conflict resolution
-          // (newer timestamp wins - implemented in saveMealsBatch)
-          final saveResult = await _localDataSource.saveMealsBatch(remoteMeals);
-
-          return saveResult.fold(
-            (failure) {
-              print('MealsSyncService: Failed to save remote meals: ${failure.message}');
-              return Left(failure);
-            },
-            (_) {
-              print('MealsSyncService: Successfully merged ${remoteMeals.length} remote meals locally');
-              return const Right(null);
-            },
-          );
-        },
-      );
-    } catch (e) {
-      print('MealsSyncService: Error pulling remote changes: $e');
-      return Left(MealsSyncFailure('Pull error: ${e.toString()}'));
     }
   }
 

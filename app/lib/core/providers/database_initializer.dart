@@ -20,6 +20,8 @@ import 'package:health_app/features/behavioral_support/data/models/goal_model.da
 import 'package:health_app/features/health_tracking/data/models/progress_photo_model.dart';
 import 'package:health_app/features/nutrition_management/data/models/sale_item_model.dart';
 import 'package:health_app/core/data/models/user_preferences_model.dart';
+import 'package:health_app/core/sync/models/offline_sync_operation.dart';
+import 'package:health_app/features/nutrition_management/data/models/product_model.dart';
 
 /// Type alias for database initialization result
 typedef DatabaseInitResult = Result<bool>;
@@ -81,43 +83,41 @@ class DatabaseInitializer {
       if (!Hive.isAdapterRegistered(14)) {
         Hive.registerAdapter(GoalModelAdapter());
       }
+      if (!Hive.isAdapterRegistered(11)) {
+        Hive.registerAdapter(OfflineSyncOperationAdapter());
+      }
+      if (!Hive.isAdapterRegistered(15)) {
+        Hive.registerAdapter(ProductModelAdapter());
+      }
 
-      // Open all Hive boxes
-      if (!Hive.isBoxOpen(HiveBoxNames.userProfile)) {
-        await Hive.openBox<UserProfileModel>(HiveBoxNames.userProfile);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.healthMetrics)) {
-        await Hive.openBox<HealthMetricModel>(HiveBoxNames.healthMetrics);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.medications)) {
-        await Hive.openBox<MedicationModel>(HiveBoxNames.medications);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.medicationLogs)) {
-        await Hive.openBox<MedicationLogModel>(HiveBoxNames.medicationLogs);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.meals)) {
-        await Hive.openBox<MealModel>(HiveBoxNames.meals);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.exercises)) {
-        await Hive.openBox<ExerciseModel>(HiveBoxNames.exercises);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.recipes)) {
-        await Hive.openBox<RecipeModel>(HiveBoxNames.recipes);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.saleItems)) {
-        await Hive.openBox<SaleItemModel>(HiveBoxNames.saleItems);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.progressPhotos)) {
-        await Hive.openBox<ProgressPhotoModel>(HiveBoxNames.progressPhotos);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.userPreferences)) {
-        await Hive.openBox<UserPreferencesModel>(HiveBoxNames.userPreferences);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.habits)) {
-        await Hive.openBox<HabitModel>(HiveBoxNames.habits);
-      }
-      if (!Hive.isBoxOpen(HiveBoxNames.goals)) {
-        await Hive.openBox<GoalModel>(HiveBoxNames.goals);
+      // Open all Hive boxes with individual error handling
+      final List<MapEntry<String, Future<Box<dynamic>> Function()>> boxOpeners = [
+        MapEntry(HiveBoxNames.userProfile, () => Hive.openBox<UserProfileModel>(HiveBoxNames.userProfile)),
+        MapEntry(HiveBoxNames.healthMetrics, () => Hive.openBox<HealthMetricModel>(HiveBoxNames.healthMetrics)),
+        MapEntry(HiveBoxNames.medications, () => Hive.openBox<MedicationModel>(HiveBoxNames.medications)),
+        MapEntry(HiveBoxNames.medicationLogs, () => Hive.openBox<MedicationLogModel>(HiveBoxNames.medicationLogs)),
+        MapEntry(HiveBoxNames.meals, () => Hive.openBox<MealModel>(HiveBoxNames.meals)),
+        MapEntry(HiveBoxNames.exercises, () => Hive.openBox<ExerciseModel>(HiveBoxNames.exercises)),
+        MapEntry(HiveBoxNames.recipes, () => Hive.openBox<RecipeModel>(HiveBoxNames.recipes)),
+        MapEntry(HiveBoxNames.saleItems, () => Hive.openBox<SaleItemModel>(HiveBoxNames.saleItems)),
+        MapEntry(HiveBoxNames.progressPhotos, () => Hive.openBox<ProgressPhotoModel>(HiveBoxNames.progressPhotos)),
+        MapEntry(HiveBoxNames.userPreferences, () => Hive.openBox<UserPreferencesModel>(HiveBoxNames.userPreferences)),
+        MapEntry(HiveBoxNames.habits, () => Hive.openBox<HabitModel>(HiveBoxNames.habits)),
+        MapEntry(HiveBoxNames.goals, () => Hive.openBox<GoalModel>(HiveBoxNames.goals)),
+        MapEntry(HiveBoxNames.offlineSyncQueue, () => Hive.openBox<OfflineSyncOperation>(HiveBoxNames.offlineSyncQueue)),
+        MapEntry(HiveBoxNames.products, () => Hive.openBox<ProductModel>(HiveBoxNames.products)),
+      ];
+
+      for (final opener in boxOpeners) {
+        try {
+          if (!Hive.isBoxOpen(opener.key)) {
+            await opener.value();
+            print('DatabaseInitializer: Successfully opened box ${opener.key}');
+          }
+        } catch (e) {
+          print('DatabaseInitializer: CRITICAL ERROR - Failed to open box ${opener.key}: $e');
+          // We continue to try opening other boxes even if one fails
+        }
       }
 
       // Seed default recipes if recipes box is empty
@@ -180,6 +180,7 @@ class DatabaseInitializer {
       HiveBoxNames.habits,
       HiveBoxNames.goals,
       HiveBoxNames.userPreferences,
+      HiveBoxNames.products,
     ];
   }
 

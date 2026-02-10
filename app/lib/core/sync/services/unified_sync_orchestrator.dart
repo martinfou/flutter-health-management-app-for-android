@@ -129,6 +129,16 @@ class UnifiedSyncOrchestrator {
     }
   }
 
+  /// Dispatch single item sync to the correct strategy
+  Future<Either<Failure, void>> syncItem(SyncDataType type, String operation, Map<String, dynamic> data) async {
+    try {
+      final strategy = _strategies.firstWhere((s) => s.dataType == type);
+      return await strategy.syncItem(operation, data);
+    } catch (e) {
+      return Left(SyncFailure('No strategy found for ${type.name}'));
+    }
+  }
+
   /// Get sync status for a specific data type
   DataTypeSyncStatus? getStatus(SyncDataType type) {
     return _currentState.getStatus(type);

@@ -1,16 +1,23 @@
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/providers/database_provider.dart';
-import 'package:health_app/features/medication_management/data/models/medication_model.dart';
 import 'package:health_app/features/medication_management/data/models/medication_log_model.dart';
+import 'package:health_app/features/medication_management/data/models/medication_model.dart';
 import 'package:health_app/features/medication_management/domain/entities/medication.dart';
 import 'package:health_app/features/medication_management/domain/entities/medication_log.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
+import 'package:health_app/core/sync/models/offline_sync_operation.dart';
+import 'package:health_app/core/sync/enums/sync_data_type.dart';
 
 /// Local data source for Medication and MedicationLog
 /// 
 /// Handles direct Hive database operations for medications and logs.
 class MedicationLocalDataSource {
+  final OfflineSyncQueue? _offlineQueue;
+
+  MedicationLocalDataSource({OfflineSyncQueue? offlineQueue}) : _offlineQueue = offlineQueue;
+
   /// Get Hive box for medications
   Box<MedicationModel> get _medicationsBox {
     if (!Hive.isBoxOpen(HiveBoxNames.medications)) {
@@ -86,6 +93,15 @@ class MedicationLocalDataSource {
       final box = _medicationsBox;
       final model = MedicationModel.fromEntity(medication);
       await box.put(medication.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-medication-${medication.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.medications,
+        operation: 'create',
+        data: model.toJson(),
+      ));
+
       return Right(medication);
     } catch (e) {
       return Left(DatabaseFailure('Failed to save medication: $e'));
@@ -104,6 +120,15 @@ class MedicationLocalDataSource {
 
       final model = MedicationModel.fromEntity(medication);
       await box.put(medication.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-medication-${medication.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.medications,
+        operation: 'update',
+        data: model.toJson(),
+      ));
+
       return Right(medication);
     } catch (e) {
       return Left(DatabaseFailure('Failed to update medication: $e'));
@@ -121,6 +146,15 @@ class MedicationLocalDataSource {
       }
 
       await box.delete(id);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-medication-delete-$id-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.medications,
+        operation: 'delete',
+        data: {'id': id, 'client_id': id, 'deleted_at': DateTime.now().toIso8601String()},
+      ));
+
       return const Right(null);
     } catch (e) {
       return Left(DatabaseFailure('Failed to delete medication: $e'));
@@ -238,7 +272,10 @@ class MedicationLocalDataSource {
         // Conflict resolution: Compare timestamps
         if (existing != null) {
           // Only overwrite if incoming medication is newer
-          if (medication.updatedAt.isBefore(existing.updatedAt)) {
+          final incomingUpdate = medication.updatedAt;
+          final existingUpdate = existing.updatedAt; // medication_model.dart has late updatedAt
+
+          if (incomingUpdate.isBefore(existingUpdate)) {
             // Skip this medication - local version is newer
             skippedCount++;
             continue;

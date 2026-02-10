@@ -17,6 +17,9 @@ abstract class SyncStrategy {
   /// Should handle its own error recovery and retry logic.
   Future<Either<Failure, DataTypeSyncStatus>> sync();
 
+  /// Sync a specific item (for offline queue processing)
+  Future<Either<Failure, void>> syncItem(String operation, Map<String, dynamic> data);
+
   /// Get the last time this data type was synced
   ///
   /// Returns null if never synced before.

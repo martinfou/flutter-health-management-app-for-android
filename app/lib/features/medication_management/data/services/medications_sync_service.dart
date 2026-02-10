@@ -41,49 +41,85 @@ class MedicationsSyncService {
         return const Right(null); // Silent skip if not authenticated
       }
 
-      // 2. Get user ID from auth helper
-      final userResult = await _authHelper.getProfile();
-      final userId = userResult.fold(
-        (failure) {
-          print(
-              'MedicationsSyncService: Failed to get user profile: ${failure.message}');
-          return null;
-        },
-        (user) => user.id,
-      );
+      // 2. Get user ID from local profile first (more reliable)
+      String? userId = await _getLocalUserId();
 
       if (userId == null) {
-        print('MedicationsSyncService: No user ID available');
-        return Left(MedicationsSyncFailure('No user ID available for sync'));
+        print('MedicationsSyncService: No local user ID, trying backend profile call');
+        // Fallback to backend call if local profile not available
+        var userResult = await _authHelper.getProfile();
+        return userResult.fold(
+          (failure) {
+            print('MedicationsSyncService: Backend profile call failed: ${failure.message}');
+            return Left(failure);
+          },
+          (user) async {
+            return await _performSync(user.id);
+          },
+        );
       }
 
-      // 3. Get last sync timestamp for delta filtering
-      final prefs = await SharedPreferences.getInstance();
-      final lastSyncStr = prefs.getString(_lastSyncKey);
-      final lastSync = lastSyncStr != null ? DateTime.parse(lastSyncStr) : null;
-      print('MedicationsSyncService: Last sync: $lastSync');
-
-      // 4. Push local changes to backend
-      final pushResult = await _pushLocalChanges(userId, lastSync);
-      print(
-          'MedicationsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
-      if (pushResult.isLeft()) {
-        return pushResult;
-      }
-
-      // 5. Update last sync timestamp
-      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
-
-      return const Right(null);
+      print('MedicationsSyncService: Using local user ID: $userId');
+      return await _performSync(userId);
     } catch (e) {
-      print('MedicationsSyncService: Error during sync: $e');
+      print('MedicationsSyncService: Exception: $e');
       return Left(MedicationsSyncFailure('Sync error: ${e.toString()}'));
     } finally {
       _syncStatusController.add(false);
     }
   }
 
-  /// Push local changes to backend with delta filtering
+  /// Get the local user ID from the user profile repository
+  Future<String?> _getLocalUserId() async {
+    try {
+      if (_userProfileRepository == null) {
+        print('MedicationsSyncService: UserProfileRepository not available');
+        return null;
+      }
+
+      final profileResult = await _userProfileRepository!.getCurrentUserProfile();
+
+      return profileResult.fold(
+        (failure) {
+          print('MedicationsSyncService: Failed to get local profile: ${failure.message}');
+          return null;
+        },
+        (profile) {
+          print('MedicationsSyncService: Got local user ID from profile: ${profile.id}');
+          return profile.id;
+        },
+      );
+    } catch (e) {
+      print('MedicationsSyncService: Error getting local user ID: $e');
+      return null;
+    }
+  }
+
+  /// Perform the actual sync operation with the given user ID
+  Future<Either<Failure, void>> _performSync(String userId) async {
+    try {
+      // 1. Get last sync timestamp for delta filtering
+      final prefs = await SharedPreferences.getInstance();
+      final lastSyncStr = prefs.getString(_lastSyncKey);
+      final lastSync = lastSyncStr != null ? DateTime.parse(lastSyncStr) : null;
+      print('MedicationsSyncService: Last sync: $lastSync');
+
+      // 2. Push local changes to backend
+      final pushResult = await _pushLocalChanges(userId, lastSync);
+      print('MedicationsSyncService: Push result: ${pushResult.isRight() ? "Success" : "Failure"}');
+      if (pushResult.isLeft()) {
+        return pushResult;
+      }
+
+      // 3. Update last sync timestamp
+      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+
+      return const Right(null);
+    } catch (e) {
+      print('MedicationsSyncService: Error during sync: $e');
+      return Left(MedicationsSyncFailure('Sync error: ${e.toString()}'));
+    }
+  }
   Future<Result<void>> _pushLocalChanges(String userId, DateTime? lastSync) async {
     try {
       print(

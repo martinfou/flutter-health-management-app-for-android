@@ -41,6 +41,14 @@ class MedicationsSyncStrategy implements SyncStrategy {
   }
 
   @override
+  Future<Either<Failure, void>> syncItem(
+    String operation,
+    Map<String, dynamic> data,
+  ) async {
+    return _medicationsSyncService.syncMedications();
+  }
+
+  @override
   Future<DateTime?> getLastSyncTime() async {
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -1,14 +1,21 @@
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/providers/database_provider.dart';
 import 'package:health_app/features/health_tracking/data/models/health_metric_model.dart';
 import 'package:health_app/features/health_tracking/domain/entities/health_metric.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
+import 'package:health_app/core/sync/models/offline_sync_operation.dart';
+import 'package:health_app/core/sync/enums/sync_data_type.dart';
 
 /// Local data source for HealthMetric
 /// 
 /// Handles direct Hive database operations for health metrics.
 class HealthTrackingLocalDataSource {
+  final OfflineSyncQueue? _offlineQueue;
+
+  HealthTrackingLocalDataSource({OfflineSyncQueue? offlineQueue}) : _offlineQueue = offlineQueue;
+
   /// Get Hive box for health metrics
   Box<HealthMetricModel> get _box {
     if (!Hive.isBoxOpen(HiveBoxNames.healthMetrics)) {
@@ -202,6 +209,15 @@ class HealthTrackingLocalDataSource {
       final box = _box;
       final model = HealthMetricModel.fromEntity(metric);
       await box.put(metric.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-metric-${metric.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.healthMetrics,
+        operation: 'create',
+        data: model.toJson(),
+      ));
+
       return Right(metric);
     } catch (e) {
       return Left(DatabaseFailure('Failed to save health metric: $e'));
@@ -220,6 +236,15 @@ class HealthTrackingLocalDataSource {
 
       final model = HealthMetricModel.fromEntity(metric);
       await box.put(metric.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-metric-${metric.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.healthMetrics,
+        operation: 'update',
+        data: model.toJson(),
+      ));
+
       return Right(metric);
     } catch (e) {
       return Left(DatabaseFailure('Failed to update health metric: $e'));
@@ -237,6 +262,15 @@ class HealthTrackingLocalDataSource {
       }
 
       await box.delete(id);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-metric-delete-$id-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.healthMetrics,
+        operation: 'delete',
+        data: {'id': id, 'client_id': id, 'deleted_at': DateTime.now().toIso8601String()},
+      ));
+
       return const Right(null);
     } catch (e) {
       return Left(DatabaseFailure('Failed to delete health metric: $e'));
@@ -286,7 +320,10 @@ class HealthTrackingLocalDataSource {
         // Conflict resolution: Compare timestamps
         if (existing != null) {
           // Only overwrite if incoming metric is newer
-          if (metric.updatedAt.isBefore(existing.updatedAt)) {
+          final incomingUpdate = metric.updatedAt;
+          final existingUpdate = existing.updatedAt; // health_metric_model.dart has late updatedAt
+
+          if (incomingUpdate.isBefore(existingUpdate)) {
             // Skip this metric - local version is newer
             skippedCount++;
             continue;
@@ -329,7 +366,7 @@ class HealthTrackingLocalDataSource {
           .toList();
 
       if (metricsToMigrate.isEmpty) {
-        return const Right(0);
+        return Right(0);
       }
 
       print('HealthTrackingLocalDataSource: Migrating ${metricsToMigrate.length} metrics from $fromUserId to $toUserId');

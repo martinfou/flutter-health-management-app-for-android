@@ -14,9 +14,9 @@ class NutritionRemoteDataSource {
 
   /// Bulk sync meals with optional last sync timestamp for delta sync
   ///
-  /// Sends local meal changes to the server and optionally receives server changes
+  /// Sends local meal changes to the server and returns server changes
   /// since the last sync timestamp for bidirectional synchronization.
-  Future<Result<Map<String, dynamic>>> bulkSync(
+  Future<Result<List<MealModel>>> bulkSync(
     List<MealModel> meals, {
     DateTime? lastSyncTimestamp,
   }) async {
@@ -46,10 +46,15 @@ class NutritionRemoteDataSource {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final responseData = data['data'] as Map<String, dynamic>;
 
-        // Extract server changes and timestamp for bidirectional sync
-        print('MealsBulkSync: Response contains ${responseData['changes']?.length ?? 0} server changes');
+        // Extract server changes for bidirectional sync
+        final List<dynamic> serverChanges = responseData['changes'] ?? [];
+        print('MealsBulkSync: Response contains ${serverChanges.length} server changes');
 
-        return Right(responseData);
+        final remoteMeals = serverChanges
+            .map((m) => MealModel.fromJson(m as Map<String, dynamic>))
+            .toList();
+
+        return Right(remoteMeals);
       } else {
         return Left(NetworkFailure(
           'Meals sync failed: ${response.statusCode}',
@@ -58,52 +63,6 @@ class NutritionRemoteDataSource {
       }
     } catch (e) {
       print('MealsBulkSync: Error: $e');
-      return Left(NetworkFailure('Network error: ${e.toString()}'));
-    }
-  }
-
-  /// Fetch meals changed since a given timestamp
-  ///
-  /// Returns a list of meals that have been created or modified on the server
-  /// since the specified timestamp. Used for pull sync to keep local database
-  /// in sync with server changes made on other devices.
-  Future<Result<List<MealModel>>> getChangesSince(
-      DateTime? lastSyncTimestamp) async {
-    try {
-      final uri = lastSyncTimestamp != null
-          ? Uri.parse('$_baseUrl$_mealsEndpoint/changes')
-              .replace(queryParameters: {
-              'since': lastSyncTimestamp.toIso8601String(),
-            })
-          : Uri.parse('$_baseUrl$_mealsEndpoint');
-
-      print('MealsGetChangesSince: Fetching meals from $uri');
-      if (lastSyncTimestamp != null) {
-        print('MealsGetChangesSince: Since timestamp: $lastSyncTimestamp');
-      }
-
-      final response = await AuthenticatedHttpClient.get(uri);
-
-      print('MealsGetChangesSince: Response status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final mealsData = data['data'] as List<dynamic>;
-
-        final meals = mealsData
-            .map((m) => MealModel.fromJson(m as Map<String, dynamic>))
-            .toList();
-
-        print('MealsGetChangesSince: Received ${meals.length} meals');
-        return Right(meals);
-      } else {
-        return Left(NetworkFailure(
-          'Failed to fetch meal changes: ${response.statusCode}',
-          response.statusCode,
-        ));
-      }
-    } catch (e) {
-      print('MealsGetChangesSince: Error: $e');
       return Left(NetworkFailure('Network error: ${e.toString()}'));
     }
   }

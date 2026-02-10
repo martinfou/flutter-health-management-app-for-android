@@ -105,4 +105,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(MealPlan::class);
     }
+
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
+    }
 }

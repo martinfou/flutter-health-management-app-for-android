@@ -41,6 +41,14 @@ class ExercisesSyncStrategy implements SyncStrategy {
   }
 
   @override
+  Future<Either<Failure, void>> syncItem(
+    String operation,
+    Map<String, dynamic> data,
+  ) async {
+    return _exercisesSyncService.syncExercises();
+  }
+
+  @override
   Future<DateTime?> getLastSyncTime() async {
     try {
       final prefs = await SharedPreferences.getInstance();

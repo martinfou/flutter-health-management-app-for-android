@@ -1,14 +1,21 @@
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/providers/database_provider.dart';
 import 'package:health_app/features/exercise_management/data/models/exercise_model.dart';
 import 'package:health_app/features/exercise_management/domain/entities/exercise.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
+import 'package:health_app/core/sync/models/offline_sync_operation.dart';
+import 'package:health_app/core/sync/enums/sync_data_type.dart';
 
 /// Local data source for Exercise
 /// 
 /// Handles direct Hive database operations for exercises.
 class ExerciseLocalDataSource {
+  final OfflineSyncQueue? _offlineQueue;
+
+  ExerciseLocalDataSource({OfflineSyncQueue? offlineQueue}) : _offlineQueue = offlineQueue;
+
   /// Get Hive box for exercises
   Box<ExerciseModel> get _box {
     if (!Hive.isBoxOpen(HiveBoxNames.exercises)) {
@@ -136,6 +143,15 @@ class ExerciseLocalDataSource {
       final box = _box;
       final model = ExerciseModel.fromEntity(exercise);
       await box.put(exercise.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-exercise-${exercise.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.exercises,
+        operation: 'create',
+        data: model.toJson(),
+      ));
+
       return Right(exercise);
     } catch (e) {
       return Left(DatabaseFailure('Failed to save exercise: $e'));
@@ -154,6 +170,15 @@ class ExerciseLocalDataSource {
 
       final model = ExerciseModel.fromEntity(exercise);
       await box.put(exercise.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-exercise-${exercise.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.exercises,
+        operation: 'update',
+        data: model.toJson(),
+      ));
+
       return Right(exercise);
     } catch (e) {
       return Left(DatabaseFailure('Failed to update exercise: $e'));
@@ -171,7 +196,16 @@ class ExerciseLocalDataSource {
       }
 
       await box.delete(id);
-      return const Right(null);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-exercise-delete-$id-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.exercises,
+        operation: 'delete',
+        data: {'id': id, 'client_id': id, 'deleted_at': DateTime.now().toIso8601String()},
+      ));
+
+      return Right(null);
     } catch (e) {
       return Left(DatabaseFailure('Failed to delete exercise: $e'));
     }
@@ -198,7 +232,10 @@ class ExerciseLocalDataSource {
         // Conflict resolution: Compare timestamps
         if (existing != null) {
           // Only overwrite if incoming exercise is newer
-          if (exercise.updatedAt.isBefore(existing.updatedAt)) {
+          final incomingUpdate = exercise.updatedAt;
+          final existingUpdate = existing.updatedAt; // exercise_model.dart has late updatedAt
+
+          if (incomingUpdate.isBefore(existingUpdate)) {
             // Skip this exercise - local version is newer
             skippedCount++;
             continue;

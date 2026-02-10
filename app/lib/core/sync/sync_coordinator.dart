@@ -1,9 +1,12 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:health_app/core/errors/failures.dart';
+import 'package:health_app/core/sync/enums/sync_data_type.dart';
 import 'package:health_app/features/health_tracking/data/services/health_metrics_sync_service.dart';
 import 'package:health_app/features/nutrition_management/data/services/meals_sync_service.dart';
 import 'package:health_app/features/exercise_management/data/services/exercises_sync_service.dart';
 import 'package:health_app/features/medication_management/data/services/medications_sync_service.dart';
+import 'package:health_app/core/sync/services/sync_status_service.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
 
 /// Unified sync coordinator for all data types
 ///
@@ -14,16 +17,22 @@ class SyncCoordinator {
   final MealsSyncService _mealsSync;
   final ExercisesSyncService _exercisesSync;
   final MedicationsSyncService _medicationsSync;
+  final SyncStatusService _syncStatus;
+  final OfflineSyncQueue _offlineQueue;
 
   SyncCoordinator({
     required HealthMetricsSyncService healthMetricsSync,
     required MealsSyncService mealsSync,
     required ExercisesSyncService exercisesSync,
     required MedicationsSyncService medicationsSync,
+    required SyncStatusService syncStatus,
+    required OfflineSyncQueue offlineQueue,
   }) : _healthMetricsSync = healthMetricsSync,
        _mealsSync = mealsSync,
        _exercisesSync = exercisesSync,
-       _medicationsSync = medicationsSync;
+       _medicationsSync = medicationsSync,
+       _syncStatus = syncStatus,
+       _offlineQueue = offlineQueue;
 
   /// Perform complete synchronization of all data types
   Future<Either<Failure, SyncResult>> syncAll({bool forceCount = false}) async {
@@ -32,6 +41,19 @@ class SyncCoordinator {
     final results = <String, Either<Failure, void>>{};
     final errors = <String>[];
 
+    // 1. Maintenance Sync (Device Tracking & Registration)
+    print('SyncCoordinator: Registering device status...');
+    await _syncStatus.updateSyncStatus(SyncDataType.healthMetrics); // Representative type
+
+    // 2. Process Offline Queue
+    print('SyncCoordinator: Processing offline queue...');
+    final queueResult = await _offlineQueue.processQueue();
+    queueResult.fold(
+      (failure) => print('SyncCoordinator: Queue processing failed: ${failure.message}'),
+      (processed) => print('SyncCoordinator: Processed ${processed.length} queued operations'),
+    );
+
+    // 3. Regular Data Sync
     // Sync health metrics
     print('SyncCoordinator: Syncing health metrics...');
     final healthResult = await _healthMetricsSync.syncHealthMetrics(forceCount: forceCount);
@@ -126,6 +148,29 @@ class SyncCoordinator {
             'Core data sync failed: ${errors.join(", ")}'));
   }
 
+  /// Dispatch single item sync (for offline queue)
+  Future<Either<Failure, void>> syncItem(
+    SyncDataType type,
+    String operation,
+    Map<String, dynamic> data,
+  ) async {
+    switch (type) {
+      case SyncDataType.healthMetrics:
+        return _healthMetricsSync.syncHealthMetrics();
+      case SyncDataType.meals:
+        return _mealsSync.syncMeals();
+      case SyncDataType.exercises:
+        return _exercisesSync.syncExercises();
+      case SyncDataType.medications:
+        return _medicationsSync.syncMedications();
+      case SyncDataType.medicationLogs:
+      case SyncDataType.goals:
+      case SyncDataType.habits:
+      case SyncDataType.progressPhotos:
+        return Left(SyncCoordinatorFailure('Sync not supported for $type'));
+    }
+  }
+
   /// Get individual sync service streams
   Stream<bool> get healthMetricsSyncing => _healthMetricsSync.isSyncing;
   Stream<bool> get mealsSyncing => _mealsSync.isSyncing;
@@ -153,5 +198,5 @@ class SyncResult {
 
 /// Sync coordinator failure
 class SyncCoordinatorFailure extends Failure {
-  const SyncCoordinatorFailure(super.message);
+  SyncCoordinatorFailure(super.message);
 }

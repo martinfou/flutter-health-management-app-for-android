@@ -95,6 +95,30 @@ class MedicationModel extends HiveObject {
     return model;
   }
 
+  /// Create from JSON (API response)
+  factory MedicationModel.fromJson(Map<String, dynamic> json) {
+    final model = MedicationModel()
+      ..id = json['id'].toString()
+      ..userId = json['user_id'].toString()
+      ..name = json['name'] as String
+      ..dosage = json['dosage'] as String
+      ..frequency = json['frequency'] as String
+      ..times = (json['reminder_times'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          []
+      ..startDate = DateTime.parse(json['start_date'] as String)
+      ..endDate = json['end_date'] != null
+          ? DateTime.parse(json['end_date'] as String)
+          : null
+      ..reminderEnabled = json['reminder_enabled'] == true || 
+                          json['reminder_enabled']?.toString() == '1' ||
+                          json['reminder_enabled']?.toString().toLowerCase() == 'true'
+      ..createdAt = DateTime.parse(json['created_at'] as String)
+      ..updatedAt = DateTime.parse(json['updated_at'] as String);
+    return model;
+  }
+
   /// Convert to JSON (API request)
   Map<String, dynamic> toJson() {
     return {

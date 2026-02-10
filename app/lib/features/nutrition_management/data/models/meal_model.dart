@@ -168,6 +168,38 @@ class MealModel extends HiveObject {
     return model;
   }
 
+  /// Create from JSON (API response)
+  factory MealModel.fromJson(Map<String, dynamic> json) {
+    final model = MealModel()
+      ..id = (json['client_id'] ?? json['id']).toString()
+      ..userId = json['user_id'].toString()
+      ..date = DateTime.parse(json['date'] as String)
+      ..mealType = json['meal_type'] as String
+      ..name = json['name'] as String
+      ..protein = double.tryParse(json['protein_g']?.toString() ?? '') ?? 0.0
+      ..fats = double.tryParse(json['fats_g']?.toString() ?? '') ?? 0.0
+      ..netCarbs = double.tryParse(json['carbs_g']?.toString() ?? '') ?? 0.0
+      ..calories = double.tryParse(json['calories']?.toString() ?? '') ?? 0.0
+      ..ingredients = (json['ingredients'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          []
+      ..hungerLevelBefore = int.tryParse(json['hunger_before']?.toString() ?? '')
+      ..hungerLevelAfter = int.tryParse(json['hunger_after']?.toString() ?? '')
+      ..eatingReasons = (json['eating_reasons'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList()
+      ..createdAt = DateTime.parse(json['created_at'] as String)
+      ..updatedAt = json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null
+      ..deletedAt = json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null
+      ..isSynced = true;
+    return model;
+  }
+
   /// Convert to JSON (API request)
   Map<String, dynamic> toJson() {
     return {

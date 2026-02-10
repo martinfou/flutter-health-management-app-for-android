@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 // Packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
 
 // Project
 import 'package:health_app/core/navigation/app_router.dart';
@@ -16,6 +17,14 @@ import 'package:health_app/core/sync/background_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Configure Open Food Facts SDK (required by API)
+  OpenFoodAPIConfiguration.userAgent = UserAgent(
+    name: 'HealthApp',
+    url: 'https://github.com/health-app',
+  );
+  OpenFoodAPIConfiguration.globalLanguages = [OpenFoodFactsLanguage.ENGLISH];
+  OpenFoodAPIConfiguration.globalCountry = OpenFoodFactsCountry.USA;
 
   // Initialize Hive database
   final initResult = await DatabaseInitializer.initialize();

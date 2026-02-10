@@ -194,7 +194,7 @@ class SyncStatusDetails extends ConsumerWidget {
 
       final color = status.wasSuccessful ? Colors.green : Colors.red;
       final icon =
-          status.wasSuccessful ? Icons.check_circle : Icons.error_circle;
+          status.wasSuccessful ? Icons.check_circle : Icons.error_outline;
 
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),

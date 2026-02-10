@@ -1,217 +1,145 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:health_app/core/errors/failures.dart';
-import 'package:health_app/core/sync/enums/sync_data_type.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:health_app/core/sync/models/offline_sync_operation.dart';
+import 'package:health_app/core/sync/services/unified_sync_orchestrator.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-/// Offline sync operation
-class OfflineSyncOperation {
-  final String id;
-  final SyncDataType dataType;
-  final String operation; // 'create', 'update', 'delete'
-  final Map<String, dynamic> data;
-  final DateTime timestamp;
-  final int retryCount;
+// Re-export offlineSyncQueueProvider so existing imports of offline_sync_queue continue to work
+export 'package:health_app/core/sync/providers/sync_orchestrator_provider.dart'
+    show offlineSyncQueueProvider;
 
-  const OfflineSyncOperation({
-    required this.id,
-    required this.dataType,
-    required this.operation,
-    required this.data,
-    required this.timestamp,
-    this.retryCount = 0,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'dataType': dataType.name,
-      'operation': operation,
-      'data': data,
-      'timestamp': timestamp.toIso8601String(),
-      'retryCount': retryCount,
-    };
-  }
-
-  factory OfflineSyncOperation.fromJson(Map<String, dynamic> json) {
-    return OfflineSyncOperation(
-      id: json['id'],
-      dataType: SyncDataType.values.firstWhere(
-        (type) => type.name == json['dataType'],
-        orElse: () => SyncDataType.healthMetrics,
-      ),
-      operation: json['operation'],
-      data: json['data'] as Map<String, dynamic>,
-      timestamp: DateTime.parse(json['timestamp']),
-      retryCount: json['retryCount'] ?? 0,
-    );
-  }
-
-  OfflineSyncOperation copyWith({
-    int? retryCount,
-  }) {
-    return OfflineSyncOperation(
-      id: id,
-      dataType: dataType,
-      operation: operation,
-      data: data,
-      timestamp: timestamp,
-      retryCount: retryCount ?? this.retryCount,
-    );
-  }
-}
-
-/// Service to manage offline sync operations
+/// Service to manage offline sync operations using Hive for persistence
+///
+/// Orchestrator getter is set after construction to avoid circular provider
+/// dependency (offlineSyncQueueProvider -> syncOrchestratorProvider).
 class OfflineSyncQueue {
-  static const String _queueKey = 'offline_sync_queue';
-  static const int _maxRetries = 3;
+  static const int _maxRetries = 5;
 
-  final SharedPreferences _prefs;
+  final Box<OfflineSyncOperation> _box;
+  UnifiedSyncOrchestrator Function()? _getOrchestrator;
   final StreamController<List<OfflineSyncOperation>> _queueController;
 
-  OfflineSyncQueue(this._prefs)
+  OfflineSyncQueue(this._box)
       : _queueController =
-            StreamController<List<OfflineSyncOperation>>.broadcast();
+            StreamController<List<OfflineSyncOperation>>.broadcast() {
+    _emitLatest();
+  }
+
+  /// Set the orchestrator getter (called by syncOrchestratorProvider after init)
+  void setOrchestratorGetter(UnifiedSyncOrchestrator Function() getter) {
+    _getOrchestrator = getter;
+  }
 
   Stream<List<OfflineSyncOperation>> get queueStream => _queueController.stream;
 
   /// Add operation to offline queue
   Future<void> enqueueOperation(OfflineSyncOperation operation) async {
-    final queue = await _getQueue();
-    queue.add(operation);
-    await _saveQueue(queue);
-    _queueController.add(queue);
+    print('OfflineSyncQueue: Enqueuing operation ${operation.operation} for ${operation.dataTypeStr}');
+    await _box.put(operation.id, operation);
+    _emitLatest();
   }
 
   /// Process queued operations when online
   Future<Either<Failure, List<OfflineSyncOperation>>> processQueue() async {
-    final queue = await _getQueue();
-    if (queue.isEmpty) {
+    final getter = _getOrchestrator;
+    if (getter == null) return const Right([]);
+    return processQueueWith(getter());
+  }
+
+  /// Process queued operations with the given orchestrator
+  Future<Either<Failure, List<OfflineSyncOperation>>> processQueueWith(
+    UnifiedSyncOrchestrator orchestrator,
+  ) async {
+    if (_box.isEmpty) {
       return const Right([]);
     }
 
+    print('OfflineSyncQueue: Processing ${_box.length} queued operations');
     final processed = <OfflineSyncOperation>[];
-    final failed = <OfflineSyncOperation>[];
+    final operations = _box.values.toList();
 
-    for (final operation in queue) {
+    // Sort by timestamp to preserve order
+    operations.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    for (final operation in operations) {
       try {
-        // Here you would call the appropriate sync service
-        // For now, we'll just simulate success/failure
-        final success = await _processOperation(operation);
+        final success = await _processOperationWith(operation, orchestrator);
 
         if (success) {
+          print('OfflineSyncQueue: Successfully processed ${operation.id}');
+          await _box.delete(operation.id);
           processed.add(operation);
-        } else if (operation.retryCount < _maxRetries) {
-          // Increment retry count and keep in queue
-          final updatedOperation = operation.copyWith(
-            retryCount: operation.retryCount + 1,
-          );
-          failed.add(updatedOperation);
         } else {
-          // Max retries exceeded, remove from queue
-          print('Max retries exceeded for operation: ${operation.id}');
+          operation.retryCount++;
+          if (operation.retryCount >= _maxRetries) {
+            print('OfflineSyncQueue: Max retries exceeded for ${operation.id}, removing.');
+            await _box.delete(operation.id);
+          } else {
+            await operation.save();
+          }
         }
       } catch (e) {
-        print('Error processing operation ${operation.id}: $e');
-        if (operation.retryCount < _maxRetries) {
-          failed.add(operation.copyWith(retryCount: operation.retryCount + 1));
-        }
+        print('OfflineSyncQueue: Error processing ${operation.id}: $e');
       }
     }
 
-    // Update queue with failed operations
-    final newQueue = failed;
-    await _saveQueue(newQueue);
-    _queueController.add(newQueue);
-
+    _emitLatest();
     return Right(processed);
   }
 
   /// Check if device is online
   Future<bool> isOnline() async {
     try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      return connectivityResult != ConnectivityResult.none;
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
     } catch (e) {
       return false;
     }
   }
 
   /// Listen for connectivity changes and process queue when online
-  StreamSubscription<List<ConnectivityResult>> startConnectivityMonitoring() {
+  StreamSubscription<List<ConnectivityResult>> startConnectivityMonitoring(
+    UnifiedSyncOrchestrator Function() getOrchestrator,
+  ) {
     return Connectivity().onConnectivityChanged.listen((results) async {
-      // Check if any result indicates connectivity
       final hasConnectivity =
           results.any((result) => result != ConnectivityResult.none);
 
-      if (hasConnectivity) {
-        print('Connectivity restored, processing offline queue...');
-        final result = await processQueue();
-        result.fold(
-          (failure) =>
-              print('Failed to process offline queue: ${failure.message}'),
-          (processed) =>
-              print('Processed ${processed.length} offline operations'),
-        );
+      if (hasConnectivity && _box.isNotEmpty) {
+        print('OfflineSyncQueue: Connectivity restored, processing queue...');
+        await processQueueWith(getOrchestrator());
       }
     });
   }
 
   /// Get current queue size
-  Future<int> getQueueSize() async {
-    final queue = await _getQueue();
-    return queue.length;
-  }
+  int get queueSize => _box.length;
 
   /// Clear all queued operations
   Future<void> clearQueue() async {
-    await _saveQueue([]);
-    _queueController.add([]);
+    await _box.clear();
+    _emitLatest();
   }
 
-  Future<List<OfflineSyncOperation>> _getQueue() async {
-    final queueJson = _prefs.getStringList(_queueKey) ?? [];
-    return queueJson.map((json) {
-      final decoded = jsonDecode(json) as Map<String, dynamic>;
-      return OfflineSyncOperation.fromJson(decoded);
-    }).toList();
+  void _emitLatest() {
+    _queueController.add(_box.values.toList());
   }
 
-  Future<void> _saveQueue(List<OfflineSyncOperation> queue) async {
-    final queueJson = queue.map((op) => jsonEncode(op.toJson())).toList();
-    await _prefs.setStringList(_queueKey, queueJson);
-  }
-
-  /// Simulate processing an operation (replace with actual sync logic)
-  Future<bool> _processOperation(OfflineSyncOperation operation) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // Simulate 90% success rate
-    return DateTime.now().millisecondsSinceEpoch % 10 != 0;
+  Future<bool> _processOperationWith(
+    OfflineSyncOperation operation,
+    UnifiedSyncOrchestrator orchestrator,
+  ) async {
+    final result = await orchestrator.syncItem(
+      operation.dataType,
+      operation.operation,
+      operation.data,
+    );
+    return result.isRight();
   }
 
   void dispose() {
     _queueController.close();
   }
 }
-
-/// Provider for OfflineSyncQueue
-final offlineSyncQueueProvider = FutureProvider<OfflineSyncQueue>((ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  final queue = OfflineSyncQueue(prefs);
-
-  // Start connectivity monitoring
-  final subscription = queue.startConnectivityMonitoring();
-
-  // Clean up subscription when provider is disposed
-  ref.onDispose(() {
-    subscription.cancel();
-    queue.dispose();
-  });
-
-  return queue;
-});

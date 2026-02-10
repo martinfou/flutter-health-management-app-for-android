@@ -7,22 +7,31 @@ import 'package:health_app/features/nutrition_management/data/models/recipe_mode
 import 'package:health_app/features/nutrition_management/domain/entities/meal.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
 
+import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
+import 'package:health_app/core/sync/models/offline_sync_operation.dart';
+import 'package:health_app/core/sync/enums/sync_data_type.dart';
+
 /// Local data source for Meal and Recipe
 ///
 /// Handles direct Hive database operations for meals and recipes.
 class NutritionLocalDataSource {
-  /// Get Hive box for meals
-  Box<MealModel> get _mealsBox {
+  final OfflineSyncQueue? _offlineQueue;
+
+  NutritionLocalDataSource({OfflineSyncQueue? offlineQueue}) : _offlineQueue = offlineQueue;
+
+  /// Ensure meals box is open (lazy open if init failed)
+  Future<Box<MealModel>> _getMealsBox() async {
     if (!Hive.isBoxOpen(HiveBoxNames.meals)) {
-      throw DatabaseFailure('Meals box is not open');
+      await Hive.openBox<MealModel>(HiveBoxNames.meals);
     }
     return Hive.box<MealModel>(HiveBoxNames.meals);
   }
 
-  /// Get Hive box for recipes
-  Box<RecipeModel> get _recipesBox {
+  /// Ensure recipes box is open (lazy open if init failed)
+  Future<Box<RecipeModel>> _getRecipesBox() async {
     if (!Hive.isBoxOpen(HiveBoxNames.recipes)) {
-      throw DatabaseFailure('Recipes box is not open');
+      await Hive.openBox<RecipeModel>(HiveBoxNames.recipes);
     }
     return Hive.box<RecipeModel>(HiveBoxNames.recipes);
   }
@@ -30,7 +39,7 @@ class NutritionLocalDataSource {
   /// Get meal by ID
   Future<Result<Meal>> getMeal(String id) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final model = box.get(id);
 
       if (model == null) {
@@ -46,7 +55,7 @@ class NutritionLocalDataSource {
   /// Get all meals for a user
   Future<Result<List<Meal>>> getMealsByUserId(String userId) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final models = box.values
           .where((model) => model.userId == userId)
           .map((model) => model.toEntity())
@@ -61,7 +70,7 @@ class NutritionLocalDataSource {
   /// Migrate meals to correct user ID (for meals created before authentication)
   Future<Result<void>> migrateMealsToUserId(String newUserId) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final mealsToMigrate =
           box.values.where((model) => model.userId != newUserId).toList();
 
@@ -88,7 +97,7 @@ class NutritionLocalDataSource {
     DateTime endDate,
   ) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final start = DateTime(startDate.year, startDate.month, startDate.day);
       final end =
           DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
@@ -119,7 +128,7 @@ class NutritionLocalDataSource {
     DateTime date,
   ) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final targetDate = DateTime(date.year, date.month, date.day);
 
       final models = box.values
@@ -148,7 +157,7 @@ class NutritionLocalDataSource {
     String mealType,
   ) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final targetDate = DateTime(date.year, date.month, date.day);
 
       final models = box.values
@@ -174,9 +183,18 @@ class NutritionLocalDataSource {
   /// Save meal
   Future<Result<Meal>> saveMeal(Meal meal) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final model = MealModel.fromEntity(meal);
       await box.put(meal.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-meal-${meal.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.meals,
+        operation: 'create',
+        data: model.toJson(),
+      ));
+
       return Right(meal);
     } catch (e) {
       return Left(DatabaseFailure('Failed to save meal: $e'));
@@ -186,7 +204,7 @@ class NutritionLocalDataSource {
   /// Update meal
   Future<Result<Meal>> updateMeal(Meal meal) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final existing = box.get(meal.id);
 
       if (existing == null) {
@@ -195,6 +213,15 @@ class NutritionLocalDataSource {
 
       final model = MealModel.fromEntity(meal);
       await box.put(meal.id, model);
+
+      // Enqueue sync operation
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-meal-${meal.id}-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.meals,
+        operation: 'update',
+        data: model.toJson(),
+      ));
+
       return Right(meal);
     } catch (e) {
       return Left(DatabaseFailure('Failed to update meal: $e'));
@@ -204,7 +231,7 @@ class NutritionLocalDataSource {
   /// Delete meal
   Future<Result<void>> deleteMeal(String id) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final model = box.get(id);
 
       if (model == null) {
@@ -212,6 +239,16 @@ class NutritionLocalDataSource {
       }
 
       await box.delete(id);
+
+      // Enqueue sync operation (soft delete handled by backend if deleted_at is set, 
+      // but for direct removal we send an operation)
+      await _offlineQueue?.enqueueOperation(OfflineSyncOperation.create(
+        id: 'sync-meal-delete-$id-${DateTime.now().millisecondsSinceEpoch}',
+        dataType: SyncDataType.meals,
+        operation: 'delete',
+        data: {'id': id, 'client_id': id, 'deleted_at': DateTime.now().toIso8601String()},
+      ));
+
       return const Right(null);
     } catch (e) {
       return Left(DatabaseFailure('Failed to delete meal: $e'));
@@ -221,7 +258,7 @@ class NutritionLocalDataSource {
   /// Get recipe by ID
   Future<Result<Recipe>> getRecipe(String id) async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final model = box.get(id);
 
       if (model == null) {
@@ -237,7 +274,7 @@ class NutritionLocalDataSource {
   /// Get all recipes
   Future<Result<List<Recipe>>> getAllRecipes() async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final models = box.values.map((model) => model.toEntity()).toList();
 
       return Right(models);
@@ -249,7 +286,7 @@ class NutritionLocalDataSource {
   /// Search recipes by name or description
   Future<Result<List<Recipe>>> searchRecipes(String query) async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final lowerQuery = query.toLowerCase();
       final models = box.values
           .where((model) {
@@ -270,7 +307,7 @@ class NutritionLocalDataSource {
   /// Get recipes by tags
   Future<Result<List<Recipe>>> getRecipesByTags(List<String> tags) async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final lowerTags = tags.map((t) => t.toLowerCase()).toSet();
       final models = box.values
           .where((model) {
@@ -289,7 +326,7 @@ class NutritionLocalDataSource {
   /// Save recipe
   Future<Result<Recipe>> saveRecipe(Recipe recipe) async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final model = RecipeModel.fromEntity(recipe);
       await box.put(recipe.id, model);
       return Right(recipe);
@@ -301,7 +338,7 @@ class NutritionLocalDataSource {
   /// Update recipe
   Future<Result<Recipe>> updateRecipe(Recipe recipe) async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final existing = box.get(recipe.id);
 
       if (existing == null) {
@@ -319,7 +356,7 @@ class NutritionLocalDataSource {
   /// Delete recipe
   Future<Result<void>> deleteRecipe(String id) async {
     try {
-      final box = _recipesBox;
+      final box = await _getRecipesBox();
       final model = box.get(id);
 
       if (model == null) {
@@ -344,7 +381,7 @@ class NutritionLocalDataSource {
     List<Meal> meals,
   ) async {
     try {
-      final box = _mealsBox;
+      final box = await _getMealsBox();
       final modelsMap = <String, MealModel>{};
       int skippedCount = 0;
 
@@ -354,7 +391,10 @@ class NutritionLocalDataSource {
         // Conflict resolution: Compare timestamps
         if (existing != null) {
           // Only overwrite if incoming meal is newer
-          if (meal.updatedAt.isBefore(existing.updatedAt)) {
+          final incomingUpdate = meal.updatedAt;
+          final existingUpdate = existing.updatedAt ?? existing.createdAt;
+
+          if (incomingUpdate.isBefore(existingUpdate)) {
             // Skip this meal - local version is newer
             skippedCount++;
             continue;

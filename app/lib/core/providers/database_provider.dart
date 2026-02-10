@@ -20,6 +20,8 @@ class HiveBoxNames {
   static const String habits = 'habitsBox';
   static const String goals = 'goalsBox';
   static const String userPreferences = 'userPreferencesBox';
+  static const String offlineSyncQueue = 'offlineSyncQueueBox';
+  static const String products = 'productsBox';
 }
 
 /// Provider for Hive database instance

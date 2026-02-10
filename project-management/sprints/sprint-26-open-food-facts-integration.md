@@ -68,18 +68,18 @@ This sprint can run:
 **User Story**: As a user logging a meal, I want to type a food name and see autocomplete suggestions from Open Food Facts, so I can quickly find foods without typing the entire name.
 
 **Acceptance Criteria**:
-- [ ] Typing food name shows suggestions as-you-type
-- [ ] Search is debounced for performance
-- [ ] Results show food name, brand, calories
-- [ ] Selecting suggestion pre-fills nutritional data
+- [x] Typing food name shows suggestions as-you-type
+- [x] Search is debounced for performance
+- [x] Results show food name, brand, calories
+- [x] Selecting suggestion pre-fills nutritional data
 - [ ] Recent foods appear at top
 - [ ] Favorites easily accessible
-- [ ] Works offline with cached results
-- [ ] Clear distinction between open facts vs manual entries
+- [x] Works offline with cached results
+- [x] Clear distinction between open facts vs manual entries
 
 **Story Points**: 5
 
-**Status**: ⭕ Not Started
+**Status**: ⏳ In Progress
 
 ---
 
@@ -88,18 +88,18 @@ This sprint can run:
 **User Story**: As a user, I want to scan a product barcode to automatically populate food name and nutrition info, so I can log packaged foods quickly.
 
 **Acceptance Criteria**:
-- [ ] Barcode scanner opens from add food button
-- [ ] Camera permission requested if needed
-- [ ] Barcode formats supported: UPC, EAN, Code128
-- [ ] Scanned barcode looked up in Open Food Facts
-- [ ] Nutritional data auto-populated if found
-- [ ] User can accept or manually edit data
-- [ ] Fallback if barcode not found (manual entry)
-- [ ] Scanned barcodes cached for offline
+- [x] Barcode scanner opens from add food button
+- [x] Camera permission requested if needed
+- [x] Barcode formats supported: UPC, EAN, Code128
+- [x] Scanned barcode looked up in Open Food Facts
+- [x] Nutritional data auto-populated if found
+- [x] User can accept or manually edit data
+- [x] Fallback if barcode not found (manual entry)
+- [x] Scanned barcodes cached for offline
 
 **Story Points**: 5
 
-**Status**: ⭕ Not Started
+**Status**: ⏳ In Progress
 
 ---
 
@@ -125,13 +125,13 @@ This sprint can run:
 
 | Task ID | Task Description | Status | Points |
 |---------|------------------|--------|--------|
-| T-2601 | Integrate Open Food Facts API client | ⭕ | 2 |
-| T-2602 | Implement food search with autocomplete | ⭕ | 3 |
-| T-2603 | Add debouncing to search | ⭕ | 2 |
-| T-2604 | Create food search UI component | ⭕ | 3 |
-| T-2605 | Implement barcode scanner integration | ⭕ | 3 |
-| T-2606 | Create barcode scan UI | ⭕ | 2 |
-| T-2607 | Implement nutritional data auto-fill | ⭕ | 3 |
+| T-2601 | Integrate Open Food Facts API client | ✅ | 2 |
+| T-2602 | Implement food search with autocomplete | ✅ | 3 |
+| T-2603 | Add debouncing to search | ✅ | 2 |
+| T-2604 | Create food search UI component | ✅ | 3 |
+| T-2605 | Implement barcode scanner integration | ✅ | 3 |
+| T-2606 | Create barcode scan UI | ✅ | 2 |
+| T-2607 | Implement nutritional data auto-fill | ✅ | 3 |
 | T-2608 | Add recent foods cache | ⭕ | 2 |
 | T-2609 | Add favorites food management | ⭕ | 2 |
 | T-2610 | Implement missing data fallback | ⭕ | 2 |

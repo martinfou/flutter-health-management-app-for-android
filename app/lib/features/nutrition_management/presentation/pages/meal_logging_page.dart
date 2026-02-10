@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,12 +12,15 @@ import 'package:health_app/features/nutrition_management/domain/entities/meal_ty
 import 'package:health_app/features/nutrition_management/domain/usecases/calculate_macros.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/recipe.dart';
 import 'package:health_app/features/nutrition_management/domain/entities/eating_reason.dart';
+import 'package:health_app/features/nutrition_management/domain/entities/product.dart';
 import 'package:health_app/features/nutrition_management/presentation/providers/nutrition_providers.dart';
+import 'package:health_app/features/nutrition_management/presentation/providers/open_food_facts_provider.dart';
 import 'package:health_app/features/nutrition_management/presentation/widgets/hunger_scale_widget.dart';
 import 'package:health_app/features/nutrition_management/presentation/widgets/eating_reasons_widget.dart';
 import 'package:health_app/features/user_profile/presentation/providers/user_profile_repository_provider.dart';
 import 'package:health_app/features/user_profile/domain/entities/user_profile.dart';
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 /// Simple food item model for meal logging
 class FoodItem {
@@ -741,23 +746,28 @@ class _MacroRow extends StatelessWidget {
 }
 
 /// Dialog for adding/editing food items
-class _AddFoodItemDialog extends StatefulWidget {
+class _AddFoodItemDialog extends ConsumerStatefulWidget {
   final FoodItem? initialItem;
 
   const _AddFoodItemDialog({this.initialItem});
 
   @override
-  State<_AddFoodItemDialog> createState() => _AddFoodItemDialogState();
+  ConsumerState<_AddFoodItemDialog> createState() => _AddFoodItemDialogState();
 }
 
-class _AddFoodItemDialogState extends State<_AddFoodItemDialog> {
+class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _nameFocusNode = FocusNode();
   final _proteinController = TextEditingController();
   final _fatsController = TextEditingController();
   final _netCarbsController = TextEditingController();
   final _caloriesController = TextEditingController();
   final _ingredientsController = TextEditingController();
+
+  String _debouncedQuery = '';
+  Timer? _debounceTimer;
+  bool _showSuggestions = false;
 
   @override
   void initState() {
@@ -775,13 +785,85 @@ class _AddFoodItemDialogState extends State<_AddFoodItemDialog> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _nameController.dispose();
+    _nameFocusNode.dispose();
     _proteinController.dispose();
     _fatsController.dispose();
     _netCarbsController.dispose();
     _caloriesController.dispose();
     _ingredientsController.dispose();
     super.dispose();
+  }
+
+  void _onNameChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _debouncedQuery = value.trim();
+          _showSuggestions = value.trim().length >= 2;
+        });
+      }
+    });
+  }
+
+  void _selectProduct(Product product) {
+    final data = product.toFoodItemData();
+    _nameController.text = data['name'] as String;
+    _proteinController.text = (data['protein'] as double).toStringAsFixed(1);
+    _fatsController.text = (data['fats'] as double).toStringAsFixed(1);
+    _netCarbsController.text = (data['netCarbs'] as double).toStringAsFixed(1);
+    _caloriesController.text = (data['calories'] as double).toStringAsFixed(1);
+    _ingredientsController.text = (data['ingredients'] as List<String>).join(', ');
+    setState(() {
+      _showSuggestions = false;
+      _debouncedQuery = '';
+    });
+    _nameFocusNode.unfocus();
+    // Cache product for offline use
+    ref.read(openFoodFactsLocalDataSourceProvider).saveProduct(product);
+  }
+
+  Future<void> _showBarcodeScanner() async {
+    final barcode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => _BarcodeScannerPage(),
+      ),
+    );
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+    // Show loading while fetching product (API call can take 1–3s)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Looking up product...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final product = await ref.read(productByBarcodeProvider(barcode).future);
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Dismiss loading dialog
+    if (product != null) {
+      _selectProduct(product);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Product not found. Enter manually.'),
+        ),
+      );
+    }
   }
 
   void _calculateCalories() {
@@ -839,10 +921,23 @@ class _AddFoodItemDialogState extends State<_AddFoodItemDialog> {
               children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                focusNode: _nameFocusNode,
+                decoration: InputDecoration(
                   labelText: 'Food Name',
-                  hintText: 'e.g., Grilled Chicken',
+                  hintText: 'e.g., Grilled Chicken (search Open Food Facts)',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scan barcode',
+                    onPressed: () => _showBarcodeScanner(),
+                  ),
                 ),
+                onChanged: _onNameChanged,
+                onTap: () => setState(() {
+                  if (_nameController.text.trim().length >= 2) {
+                    _showSuggestions = true;
+                    _debouncedQuery = _nameController.text.trim();
+                  }
+                }),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a food name';
@@ -850,6 +945,14 @@ class _AddFoodItemDialogState extends State<_AddFoodItemDialog> {
                   return null;
                 },
               ),
+              if (_showSuggestions && _debouncedQuery.isNotEmpty) ...[
+                const SizedBox(height: UIConstants.spacingXs),
+                _FoodSearchSuggestions(
+                  query: _debouncedQuery,
+                  onSelect: _selectProduct,
+                  onDismiss: () => setState(() => _showSuggestions = false),
+                ),
+              ],
               const SizedBox(height: UIConstants.spacingSm),
               Row(
                 children: [
@@ -985,6 +1088,200 @@ class _AddFoodItemDialogState extends State<_AddFoodItemDialog> {
         ElevatedButton(
           onPressed: _save,
           child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Autocomplete suggestions for food search
+class _FoodSearchSuggestions extends ConsumerWidget {
+  final String query;
+  final void Function(Product product) onSelect;
+  final VoidCallback onDismiss;
+
+  const _FoodSearchSuggestions({
+    required this.query,
+    required this.onSelect,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncProducts = ref.watch(foodSearchProvider(query));
+
+    return asyncProducts.when(
+      data: (products) {
+        if (products.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final list = products.take(8).toList();
+        // Fixed height so AlertDialog's intrinsic layout never asks this subtree
+        // for intrinsic dimensions (scroll views/viewports don't support that).
+        return SizedBox(
+          height: 180,
+          child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: list.map((p) => ListTile(
+                dense: true,
+                leading: p.imageUrl != null
+                    ? Image.network(
+                        p.imageUrl!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.restaurant),
+                      )
+                    : const Icon(Icons.restaurant),
+                title: Text(
+                  p.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                subtitle: Text(
+                  '${p.calories.toStringAsFixed(0)} cal • '
+                  '${p.protein.toStringAsFixed(0)}g P / '
+                  '${p.fats.toStringAsFixed(0)}g F / '
+                  '${p.netCarbs.toStringAsFixed(0)}g C',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: p.source == 'api'
+                    ? Icon(Icons.cloud, size: 16, color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => onSelect(p),
+              )).toList(),
+            ),
+          ),
+        ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Full-screen barcode scanner page
+class _BarcodeScannerPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scan Barcode'),
+      ),
+      body: _BarcodeScannerWidget(
+        onBarcodeDetected: (barcode) => Navigator.of(context).pop(barcode),
+      ),
+    );
+  }
+}
+
+/// Barcode scanner widget using mobile_scanner
+class _BarcodeScannerWidget extends StatefulWidget {
+  final void Function(String barcode) onBarcodeDetected;
+
+  const _BarcodeScannerWidget({required this.onBarcodeDetected});
+
+  @override
+  State<_BarcodeScannerWidget> createState() => _BarcodeScannerWidgetState();
+}
+
+class _BarcodeScannerWidgetState extends State<_BarcodeScannerWidget> {
+  bool _permissionDenied = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_permissionDenied) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.camera_alt_outlined, size: 64, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                'Camera permission is required to scan barcodes.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return _MobileScannerWrapper(
+      onBarcodeDetected: widget.onBarcodeDetected,
+      onPermissionDenied: () => setState(() => _permissionDenied = true),
+    );
+  }
+}
+
+/// Wrapper for mobile_scanner
+class _MobileScannerWrapper extends StatefulWidget {
+  final void Function(String barcode) onBarcodeDetected;
+  final VoidCallback onPermissionDenied;
+
+  const _MobileScannerWrapper({
+    required this.onBarcodeDetected,
+    required this.onPermissionDenied,
+  });
+
+  @override
+  State<_MobileScannerWrapper> createState() => _MobileScannerWrapperState();
+}
+
+class _MobileScannerWrapperState extends State<_MobileScannerWrapper> {
+  bool _alreadyDetected = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        MobileScanner(
+          onDetect: (capture) {
+            if (_alreadyDetected) return;
+            final barcodes = capture.barcodes;
+            for (final barcode in barcodes) {
+              final code = barcode.rawValue;
+              if (code != null && code.isNotEmpty) {
+                _alreadyDetected = true;
+                // Schedule on UI thread to avoid freeze; onDetect may run on camera thread
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!context.mounted) return;
+                  widget.onBarcodeDetected(code);
+                });
+                return;
+              }
+            }
+          },
+          errorBuilder: (context, error) {
+            widget.onPermissionDenied();
+            return const Center(child: Icon(Icons.error));
+          },
+        ),
+        Positioned(
+          bottom: 24,
+          left: 24,
+          right: 24,
+          child: TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
         ),
       ],
     );

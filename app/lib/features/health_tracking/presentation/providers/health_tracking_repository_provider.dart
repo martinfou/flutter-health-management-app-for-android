@@ -2,6 +2,7 @@ import 'package:riverpod/riverpod.dart';
 import 'package:health_app/features/health_tracking/domain/repositories/health_tracking_repository.dart';
 import 'package:health_app/features/health_tracking/data/repositories/health_tracking_repository_impl.dart';
 import 'package:health_app/features/health_tracking/data/datasources/local/health_tracking_local_datasource.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
 
 import 'package:health_app/features/health_tracking/data/datasources/remote/health_tracking_remote_datasource.dart';
 import 'package:health_app/features/health_tracking/data/services/health_metrics_sync_service.dart';
@@ -10,7 +11,8 @@ import 'package:health_app/features/user_profile/presentation/providers/user_pro
 /// Provider for HealthTrackingLocalDataSource
 final healthTrackingLocalDataSourceProvider =
     Provider<HealthTrackingLocalDataSource>((ref) {
-  return HealthTrackingLocalDataSource();
+  final offlineQueue = ref.watch(offlineSyncQueueProvider);
+  return HealthTrackingLocalDataSource(offlineQueue: offlineQueue);
 });
 
 /// Provider for HealthTrackingRemoteDataSource

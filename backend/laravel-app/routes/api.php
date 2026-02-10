@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\MealsController;
 use App\Http\Controllers\Api\ExercisesController;
 use App\Http\Controllers\Api\MedicationsController;
 use App\Http\Controllers\Api\MealPlansController;
+use App\Http\Controllers\Api\SyncStatusController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -103,5 +104,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/meal-plans/{id}', [MealPlansController::class, 'update']);
         Route::delete('/meal-plans/{id}', [MealPlansController::class, 'destroy']);
         Route::post('/meal-plans/sync', [MealPlansController::class, 'sync']);
+        // Sync Status & Device Tracking
+        Route::get('/sync-status', [SyncStatusController::class, 'index']);
+        Route::post('/sync-status', [SyncStatusController::class, 'sync']);
     });
 });

@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart' show Either, Left, Right;
 import 'package:health_app/core/errors/failures.dart';
 import 'package:health_app/core/sync/enums/sync_data_type.dart';
+import 'package:health_app/core/sync/services/offline_sync_queue.dart';
 import 'package:health_app/core/sync/models/data_type_sync_status.dart';
 import 'package:health_app/core/sync/strategies/sync_strategy.dart';
 import 'package:health_app/core/sync/utils/sync_failure.dart';
@@ -18,12 +19,13 @@ typedef _FoldFunction = Either<Failure, dynamic> Function();
 /// Includes automatic retry with exponential backoff for transient failures.
 class HealthMetricsSyncStrategy implements SyncStrategy {
   final HealthMetricsSyncService _syncService;
+  final OfflineSyncQueue _offlineQueue;
   static const String _lastSyncKey = 'last_health_metrics_sync_timestamp';
   static const String _lastSyncErrorKey = 'last_health_metrics_sync_error';
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 2);
 
-  HealthMetricsSyncStrategy(this._syncService);
+  HealthMetricsSyncStrategy(this._syncService, this._offlineQueue);
 
   @override
   SyncDataType get dataType => SyncDataType.healthMetrics;
@@ -126,6 +128,16 @@ class HealthMetricsSyncStrategy implements SyncStrategy {
       return prefs.getString(_lastSyncErrorKey);
     } catch (e) {
       return null;
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> syncItem(String operation, Map<String, dynamic> data) async {
+    try {
+      final result = await _syncService.syncHealthMetrics();
+      return result.map((_) => null);
+    } catch (e) {
+      return Left(SyncFailure('Single health metric sync failed: $e'));
     }
   }
 
