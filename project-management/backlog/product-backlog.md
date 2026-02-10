@@ -2,7 +2,7 @@
 
 This is the main product backlog tracking all feature requests and bug fixes.
 
-**Last Updated**: 2026-01-23
+**Last Updated**: 2026-02-09
 **Implementation Order**: See [Implementation Order Recommendation](./implementation-order-recommendation.md)
 
 ## Feature Requests
@@ -34,6 +34,8 @@ This is the main product backlog tracking all feature requests and bug fixes.
 | [FR-024](../backlog/features/FR-024-garmin-watch-sync.md) | Garmin Watch Sync via Health Connect | 🟠 High | 13 | ⭕ | Backlog | 2026-01-04 | 2026-01-04 |
 | [FR-025](../backlog/features/FR-025-weight-history-display.md) | Weight History Display on Weight Entry Screen | 🟡 Medium | 5 | ✅ | Backlog | 2026-01-06 | 2026-01-06 |
 | [FR-027](../backlog/features/FR-027-weekly-review-data-requirement-info.md) | Weekly Review Data Requirement Info | 🟡 Medium | 2 | ✅ | Backlog | 2026-01-06 | 2026-01-06 |
+| [FR-028](../backlog/features/FR-028-log-meal-page-redesign-proposals.md) | Log Meal Page Redesign (3 Design Proposals) | 🟠 High | 8 | ⭕ | Backlog | 2026-02-09 | 2026-02-09 |
+| [FR-029](../backlog/features/FR-029-log-meal-page-implement-proposal-b.md) | Log Meal Page Implement Proposal B (Quick Log First) | 🟠 High | 8 | ⏳ | Backlog | 2026-02-09 | 2026-02-09 |
 
 ## Bug Fixes
 

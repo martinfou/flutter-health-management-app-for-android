@@ -22,7 +22,81 @@ import 'package:health_app/features/user_profile/domain/entities/user_profile.da
 import 'package:health_app/features/health_tracking/presentation/providers/health_tracking_repository_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-/// Simple food item model for meal logging
+/// Unit for food quantity: metric and imperial, including recipe-friendly measures.
+enum FoodQuantityUnit {
+  // Metric mass
+  g,
+  kg,
+  // Metric volume
+  ml,
+  L,
+  // Imperial mass
+  oz,
+  lb,
+  // Imperial volume (recipe-friendly)
+  cup,
+  tbsp,
+  tsp,
+  // Recipe
+  serving;
+
+  String get displayLabel {
+    switch (this) {
+      case FoodQuantityUnit.g:
+        return 'g';
+      case FoodQuantityUnit.kg:
+        return 'kg';
+      case FoodQuantityUnit.ml:
+        return 'ml';
+      case FoodQuantityUnit.L:
+        return 'L';
+      case FoodQuantityUnit.oz:
+        return 'oz';
+      case FoodQuantityUnit.lb:
+        return 'lb';
+      case FoodQuantityUnit.cup:
+        return 'cup';
+      case FoodQuantityUnit.tbsp:
+        return 'tbsp';
+      case FoodQuantityUnit.tsp:
+        return 'tsp';
+      case FoodQuantityUnit.serving:
+        return 'serving';
+    }
+  }
+}
+
+/// Converts quantity in given unit to grams (for scaling per-100g nutrition).
+/// Volume units use 1 g/ml when per-100ml is not available from data source.
+/// [serving] is treated as 100 "gram equivalent" per serving so factor = quantity (for per-serving base).
+double quantityToGrams(double quantity, FoodQuantityUnit unit) {
+  switch (unit) {
+    case FoodQuantityUnit.g:
+      return quantity;
+    case FoodQuantityUnit.kg:
+      return quantity * 1000;
+    case FoodQuantityUnit.ml:
+      return quantity; // 1 g/ml default; use per-100ml from OFF when available
+    case FoodQuantityUnit.L:
+      return quantity * 1000;
+    case FoodQuantityUnit.oz:
+      return quantity * 28.35;
+    case FoodQuantityUnit.lb:
+      return quantity * 453.592;
+    case FoodQuantityUnit.cup:
+      return quantity * 240; // US cup ≈ 240 ml
+    case FoodQuantityUnit.tbsp:
+      return quantity * 15; // 15 ml
+    case FoodQuantityUnit.tsp:
+      return quantity * 5; // 5 ml
+    case FoodQuantityUnit.serving:
+      return quantity * 100; // factor = quantity for per-serving base
+  }
+}
+
+/// Simple food item model for meal logging.
+/// Supports quantity + unit; macros are stored scaled to that amount.
+/// Base per-100g values allow recalculating when quantity/unit change (from Product/recipe).
 class FoodItem {
   final String name;
   final double protein;
@@ -30,6 +104,15 @@ class FoodItem {
   final double netCarbs;
   final double calories;
   final List<String> ingredients;
+  /// Quantity in [unit]; default 100.
+  final double quantity;
+  /// Unit for [quantity]; default g.
+  final FoodQuantityUnit unit;
+  /// Base nutrition per 100g (for rescaling when quantity/unit change). Null for manual entry without base.
+  final double? baseProteinPer100g;
+  final double? baseFatsPer100g;
+  final double? baseNetCarbsPer100g;
+  final double? baseCaloriesPer100g;
 
   FoodItem({
     required this.name,
@@ -38,7 +121,16 @@ class FoodItem {
     required this.netCarbs,
     required this.calories,
     required this.ingredients,
+    this.quantity = 100,
+    this.unit = FoodQuantityUnit.g,
+    this.baseProteinPer100g,
+    this.baseFatsPer100g,
+    this.baseNetCarbsPer100g,
+    this.baseCaloriesPer100g,
   });
+
+  /// Quantity and unit label for display (e.g. "150 g", "200 ml").
+  String get quantityLabel => '${quantity.toStringAsFixed(quantity == quantity.roundToDouble() ? 0 : 1)} ${unit.displayLabel}';
 
   FoodItem copyWith({
     String? name,
@@ -47,6 +139,12 @@ class FoodItem {
     double? netCarbs,
     double? calories,
     List<String>? ingredients,
+    double? quantity,
+    FoodQuantityUnit? unit,
+    double? baseProteinPer100g,
+    double? baseFatsPer100g,
+    double? baseNetCarbsPer100g,
+    double? baseCaloriesPer100g,
   }) {
     return FoodItem(
       name: name ?? this.name,
@@ -55,7 +153,55 @@ class FoodItem {
       netCarbs: netCarbs ?? this.netCarbs,
       calories: calories ?? this.calories,
       ingredients: ingredients ?? this.ingredients,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      baseProteinPer100g: baseProteinPer100g ?? this.baseProteinPer100g,
+      baseFatsPer100g: baseFatsPer100g ?? this.baseFatsPer100g,
+      baseNetCarbsPer100g: baseNetCarbsPer100g ?? this.baseNetCarbsPer100g,
+      baseCaloriesPer100g: baseCaloriesPer100g ?? this.baseCaloriesPer100g,
     );
+  }
+
+  /// Builds a FoodItem from a Product with given quantity/unit (default 100 g).
+  static FoodItem fromProduct(Product product, {double quantity = 100, FoodQuantityUnit unit = FoodQuantityUnit.g}) {
+    final grams = quantityToGrams(quantity, unit);
+    final data = product.toFoodItemData(servingSizeGrams: grams);
+    return FoodItem(
+      name: data['name'] as String,
+      protein: data['protein'] as double,
+      fats: data['fats'] as double,
+      netCarbs: data['netCarbs'] as double,
+      calories: data['calories'] as double,
+      ingredients: data['ingredients'] as List<String>,
+      quantity: quantity,
+      unit: unit,
+      baseProteinPer100g: product.protein,
+      baseFatsPer100g: product.fats,
+      baseNetCarbsPer100g: product.netCarbs,
+      baseCaloriesPer100g: product.calories,
+    );
+  }
+
+  /// Create a new FoodItem with updated quantity/unit and recalculated macros from base per 100g.
+  /// If no base values, returns copy with quantity/unit only (macros unchanged).
+  FoodItem withQuantityAndUnit(double newQuantity, FoodQuantityUnit newUnit) {
+    final grams = quantityToGrams(newQuantity, newUnit);
+    final factor = grams / 100;
+    final baseP = baseProteinPer100g;
+    final baseF = baseFatsPer100g;
+    final baseC = baseNetCarbsPer100g;
+    final baseCal = baseCaloriesPer100g;
+    if (baseP != null && baseF != null && baseC != null && baseCal != null) {
+      return copyWith(
+        quantity: newQuantity,
+        unit: newUnit,
+        protein: baseP * factor,
+        fats: baseF * factor,
+        netCarbs: baseC * factor,
+        calories: baseCal * factor,
+      );
+    }
+    return copyWith(quantity: newQuantity, unit: newUnit);
   }
 }
 
@@ -67,17 +213,33 @@ class MealLoggingPage extends ConsumerStatefulWidget {
   ConsumerState<MealLoggingPage> createState() => _MealLoggingPageState();
 }
 
+/// Default meal type from current time (morning → Breakfast, etc.).
+MealType _defaultMealTypeByTime() {
+  final hour = DateTime.now().hour;
+  if (hour < 11) return MealType.breakfast;
+  if (hour < 15) return MealType.lunch;
+  if (hour < 21) return MealType.dinner;
+  return MealType.snack;
+}
+
 class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
   MealType _selectedMealType = MealType.breakfast;
   final List<FoodItem> _foodItems = [];
   bool _isSaving = false;
   String? _errorMessage;
   String? _successMessage;
-  
+  bool _addDetailsExpanded = false;
+
   // Behavioral tracking fields
   int? _hungerLevelBefore;
   int? _hungerLevelAfter;
   Set<EatingReason> _selectedEatingReasons = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMealType = _defaultMealTypeByTime();
+  }
 
   /// Calculate meal totals from food items
   MacroSummary _calculateMealTotals() {
@@ -196,7 +358,7 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
         );
 
         if (selectedRecipe != null) {
-          // Convert recipe to FoodItem
+          // Convert recipe to FoodItem (per serving; base* = per-serving for scaling)
           final foodItem = FoodItem(
             name: selectedRecipe.name,
             protein: selectedRecipe.protein,
@@ -204,6 +366,12 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
             netCarbs: selectedRecipe.netCarbs,
             calories: selectedRecipe.calories,
             ingredients: selectedRecipe.ingredients,
+            quantity: 1,
+            unit: FoodQuantityUnit.serving,
+            baseProteinPer100g: selectedRecipe.protein,
+            baseFatsPer100g: selectedRecipe.fats,
+            baseNetCarbsPer100g: selectedRecipe.netCarbs,
+            baseCaloriesPer100g: selectedRecipe.calories,
           );
 
           setState(() {
@@ -393,356 +561,415 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final totals = _calculateMealTotals();
+    final hasItems = _foodItems.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Log Meal'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(UIConstants.screenPaddingHorizontal),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Meal type selector
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(UIConstants.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Meal Type',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: UIConstants.spacingSm),
-                    SegmentedButton<MealType>(
-                      segments: MealType.values.map((type) {
-                        return ButtonSegment<MealType>(
-                          value: type,
-                          label: Text(type.displayName),
-                        );
-                      }).toList(),
-                      selected: {_selectedMealType},
-                      onSelectionChanged: (Set<MealType> newSelection) {
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              UIConstants.screenPaddingHorizontal,
+              UIConstants.spacingSm,
+              UIConstants.screenPaddingHorizontal,
+              UIConstants.spacingMd,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Meal type chips (compact)
+                Wrap(
+                  spacing: UIConstants.spacingSm,
+                  runSpacing: UIConstants.spacingSm,
+                  children: MealType.values.map((type) {
+                    final selected = _selectedMealType == type;
+                    return FilterChip(
+                      label: Text(type.displayName),
+                      selected: selected,
+                      onSelected: (_) {
                         setState(() {
-                          _selectedMealType = newSelection.first;
+                          _selectedMealType = type;
                           _errorMessage = null;
                           _successMessage = null;
                         });
                       },
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
-              ),
-            ),
+                const SizedBox(height: UIConstants.spacingMd),
 
-            const SizedBox(height: UIConstants.spacingMd),
-
-            // Food items list
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(UIConstants.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Quick add block
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(UIConstants.cardPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Food Items',
-                          style: TextStyle(
-                            fontSize: 16,
+                        Text(
+                          'Quick add',
+                          style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: UIConstants.spacingSm),
                         Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.restaurant_menu),
-                              onPressed: _showRecipeSelector,
-                              tooltip: 'Select Recipe',
+                            Expanded(
+                              child: TextField(
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  hintText: 'Search or scan barcode',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: const OutlineInputBorder(),
+                                ),
+                                onTap: _showAddFoodItemDialog,
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: _showAddFoodItemDialog,
-                              tooltip: 'Add Food Item',
+                            const SizedBox(width: UIConstants.spacingSm),
+                            Semantics(
+                              label: 'Scan barcode',
+                              child: SizedBox(
+                                width: UIConstants.minTouchTarget,
+                                height: UIConstants.minTouchTarget,
+                                child: IconButton(
+                                  icon: const Icon(Icons.qr_code_scanner),
+                                  onPressed: () async {
+                                    final result = await _showAddFoodItemDialogWithBarcode();
+                                    if (result != null) {
+                                      setState(() {
+                                        _foodItems.add(result);
+                                        _errorMessage = null;
+                                        _successMessage = null;
+                                      });
+                                    }
+                                  },
+                                  tooltip: 'Scan barcode',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: UIConstants.spacingSm),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _showAddFoodItemDialog,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add food'),
+                              ),
+                            ),
+                            const SizedBox(width: UIConstants.spacingSm),
+                            OutlinedButton.icon(
+                              onPressed: _showRecipeSelector,
+                              icon: const Icon(Icons.restaurant_menu),
+                              label: const Text('Recipe'),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: UIConstants.spacingSm),
-                    if (_foodItems.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(UIConstants.spacingMd),
-                        child: Text(
-                          'No food items added yet. Tap the + button to add.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _foodItems.length,
-                        itemBuilder: (context, index) {
-                          final item = _foodItems[index];
-                          return ListTile(
-                            title: Text(item.name),
-                            subtitle: Text(
-                              '${item.protein.toStringAsFixed(1)}g P / '
-                              '${item.fats.toStringAsFixed(1)}g F / '
-                              '${item.netCarbs.toStringAsFixed(1)}g C / '
-                              '${item.calories.toStringAsFixed(0)} cal',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () => _editFoodItem(index),
-                                  tooltip: 'Edit',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () => _removeFoodItem(index),
-                                  tooltip: 'Remove',
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: UIConstants.spacingMd),
-
-            // Meal totals card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(UIConstants.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Meal Totals',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: UIConstants.spacingSm),
-                    _MacroRow(
-                      label: 'Protein',
-                      value: totals.protein,
-                      unit: 'g',
-                      percent: totals.proteinPercent,
-                    ),
-                    const SizedBox(height: UIConstants.spacingXs),
-                    _MacroRow(
-                      label: 'Fats',
-                      value: totals.fats,
-                      unit: 'g',
-                      percent: totals.fatsPercent,
-                    ),
-                    const SizedBox(height: UIConstants.spacingXs),
-                    _MacroRow(
-                      label: 'Net Carbs',
-                      value: totals.netCarbs,
-                      unit: 'g',
-                      percent: totals.carbsPercent,
-                    ),
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total Calories',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '${totals.calories.toStringAsFixed(0)} cal',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: UIConstants.spacingMd),
-
-            // Meal Context section (Optional)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(UIConstants.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Meal Context (Optional)',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: UIConstants.spacingMd),
-                    
-                    // Hunger Before scale
-                    HungerScaleWidget(
-                      selectedValue: _hungerLevelBefore,
-                      label: 'How hungry are you? (Before eating)',
-                      onChanged: (value) {
-                        setState(() {
-                          _hungerLevelBefore = value;
-                          _errorMessage = null;
-                          _successMessage = null;
-                        });
-                      },
-                    ),
-                    
-                    const SizedBox(height: UIConstants.spacingLg),
-                    
-                    // Hunger After scale
-                    HungerScaleWidget(
-                      selectedValue: _hungerLevelAfter,
-                      label: 'How full are you now? (After eating)',
-                      onChanged: (value) {
-                        setState(() {
-                          _hungerLevelAfter = value;
-                          _errorMessage = null;
-                          _successMessage = null;
-                        });
-                      },
-                    ),
-                    
-                    const SizedBox(height: UIConstants.spacingLg),
-                    const Divider(),
-                    const SizedBox(height: UIConstants.spacingMd),
-                    
-                    // Eating reasons
-                    EatingReasonsWidget(
-                      selectedReasons: _selectedEatingReasons,
-                      onChanged: (reasons) {
-                        setState(() {
-                          _selectedEatingReasons = reasons;
-                          _errorMessage = null;
-                          _successMessage = null;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: UIConstants.spacingMd),
-
-            // Error message
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: theme.colorScheme.error,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
+                const SizedBox(height: UIConstants.spacingMd),
 
-            // Success message
-            if (_successMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
-                child: Text(
-                  _successMessage!,
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
+                // Your meal section
+                Text(
+                  'Your meal',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: UIConstants.spacingSm),
+              ]),
+            ),
+          ),
+
+          // Sticky totals bar (when items exist)
+          if (hasItems)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickyTotalsBarDelegate(
+                totals: totals,
+                color: theme.colorScheme.surfaceContainerHighest,
+              ),
+            ),
+
+          // List of food items
+          if (_foodItems.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: UIConstants.screenPaddingHorizontal),
+              sliver: SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(UIConstants.spacingMd),
+                  child: Text(
+                    'No items yet. Use Quick add to search, scan barcode, or add manually.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-
-            // Save button
-            CustomButton(
-              label: 'Save Meal',
-              onPressed: _isSaving ? null : _saveMeal,
-              isLoading: _isSaving,
-              width: double.infinity,
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: UIConstants.screenPaddingHorizontal),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final item = _foodItems[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: UIConstants.spacingSm),
+                      child: ListTile(
+                        title: Text(item.name),
+                        subtitle: Text(
+                          '${item.quantityLabel} · '
+                          '${item.protein.toStringAsFixed(0)}P ${item.fats.toStringAsFixed(0)}F '
+                          '${item.netCarbs.toStringAsFixed(0)}C ${item.calories.toStringAsFixed(0)} cal',
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _editFoodItem(index),
+                              tooltip: 'Edit',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _removeFoodItem(index),
+                              tooltip: 'Remove',
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  childCount: _foodItems.length,
+                ),
+              ),
             ),
-            const SizedBox(height: UIConstants.spacingMd),
-          ],
+
+          // Add another button
+          if (hasItems)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                UIConstants.screenPaddingHorizontal,
+                UIConstants.spacingSm,
+                UIConstants.screenPaddingHorizontal,
+                UIConstants.spacingMd,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: OutlinedButton.icon(
+                  onPressed: _showAddFoodItemDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add another'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(UIConstants.minTouchTarget),
+                  ),
+                ),
+              ),
+            ),
+
+          // Add details (expandable, collapsed by default)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: UIConstants.screenPaddingHorizontal),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  InkWell(
+                    onTap: () {
+                      setState(() => _addDetailsExpanded = !_addDetailsExpanded);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: UIConstants.spacingSm),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _addDetailsExpanded ? Icons.expand_less : Icons.expand_more,
+                          ),
+                          const SizedBox(width: UIConstants.spacingSm),
+                          Text(
+                            'Add details (hunger & reasons)',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_addDetailsExpanded) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(UIConstants.cardPadding),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            HungerScaleWidget(
+                              selectedValue: _hungerLevelBefore,
+                              label: 'How hungry are you? (Before eating)',
+                              onChanged: (value) {
+                                setState(() {
+                                  _hungerLevelBefore = value;
+                                  _errorMessage = null;
+                                  _successMessage = null;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: UIConstants.spacingLg),
+                            HungerScaleWidget(
+                              selectedValue: _hungerLevelAfter,
+                              label: 'How full are you now? (After eating)',
+                              onChanged: (value) {
+                                setState(() {
+                                  _hungerLevelAfter = value;
+                                  _errorMessage = null;
+                                  _successMessage = null;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: UIConstants.spacingLg),
+                            const Divider(),
+                            const SizedBox(height: UIConstants.spacingMd),
+                            EatingReasonsWidget(
+                              selectedReasons: _selectedEatingReasons,
+                              onChanged: (reasons) {
+                                setState(() {
+                                  _selectedEatingReasons = reasons;
+                                  _errorMessage = null;
+                                  _successMessage = null;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: UIConstants.spacingMd),
+
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  if (_successMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: UIConstants.spacingSm),
+                      child: Text(
+                        _successMessage!,
+                        style: TextStyle(color: theme.colorScheme.primary),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
+                  CustomButton(
+                    label: 'Save meal',
+                    onPressed: _isSaving ? null : _saveMeal,
+                    isLoading: _isSaving,
+                    width: double.infinity,
+                  ),
+                  const SizedBox(height: UIConstants.spacingMd),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Opens barcode scanner, fetches product, then shows add-food dialog with product pre-filled.
+  Future<FoodItem?> _showAddFoodItemDialogWithBarcode() async {
+    final barcode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => _BarcodeScannerPage(),
+      ),
+    );
+    if (barcode == null || barcode.isEmpty || !mounted) return null;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Looking up product...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final product = await ref.read(productByBarcodeProvider(barcode).future);
+    if (!mounted) return null;
+    Navigator.of(context).pop(); // Dismiss loading
+    if (product == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product not found. Add manually.')),
+      );
+      return null;
+    }
+    final result = await showDialog<FoodItem>(
+      context: context,
+      builder: (context) => _AddFoodItemDialog(
+        initialItem: FoodItem.fromProduct(product),
+      ),
+    );
+    return result;
+  }
+}
+
+/// Sticky header showing meal totals (P, F, C, cal).
+class _StickyTotalsBarDelegate extends SliverPersistentHeaderDelegate {
+  final MacroSummary totals;
+  final Color color;
+
+  _StickyTotalsBarDelegate({required this.totals, required this.color});
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: color,
+      padding: const EdgeInsets.symmetric(
+        horizontal: UIConstants.screenPaddingHorizontal,
+        vertical: UIConstants.spacingSm,
+      ),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        '${totals.protein.toStringAsFixed(0)}g P  '
+        '${totals.fats.toStringAsFixed(0)}g F  '
+        '${totals.netCarbs.toStringAsFixed(0)}g C  '
+        '${totals.calories.toStringAsFixed(0)} cal',
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
-}
-
-/// Macro row widget for displaying macro information
-class _MacroRow extends StatelessWidget {
-  final String label;
-  final double value;
-  final String unit;
-  final double percent;
-
-  const _MacroRow({
-    required this.label,
-    required this.value,
-    required this.unit,
-    required this.percent,
-  });
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium,
-        ),
-        Row(
-          children: [
-            Text(
-              '${value.toStringAsFixed(1)}$unit',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: UIConstants.spacingSm),
-            Text(
-              '(${percent.toStringAsFixed(1)}%)',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  double get maxExtent => 48;
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
+      true;
 }
 
 /// Dialog for adding/editing food items
@@ -764,22 +991,42 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
   final _netCarbsController = TextEditingController();
   final _caloriesController = TextEditingController();
   final _ingredientsController = TextEditingController();
+  final _quantityController = TextEditingController();
 
   String _debouncedQuery = '';
   Timer? _debounceTimer;
   bool _showSuggestions = false;
+  FoodQuantityUnit _unit = FoodQuantityUnit.g;
+  /// When set, macros are recalculated from quantity/unit (per 100g base).
+  Product? _selectedProduct;
+  /// Base per 100g when from initialItem without Product (e.g. from recipe).
+  double? _baseP;
+  double? _baseF;
+  double? _baseC;
+  double? _baseCal;
 
   @override
   void initState() {
     super.initState();
+    _quantityController.text = '100';
     if (widget.initialItem != null) {
       final item = widget.initialItem!;
       _nameController.text = item.name;
+      _quantityController.text = item.quantity == item.quantity.roundToDouble()
+          ? item.quantity.toInt().toString()
+          : item.quantity.toStringAsFixed(1);
+      _unit = item.unit;
       _proteinController.text = item.protein.toStringAsFixed(1);
       _fatsController.text = item.fats.toStringAsFixed(1);
       _netCarbsController.text = item.netCarbs.toStringAsFixed(1);
       _caloriesController.text = item.calories.toStringAsFixed(1);
       _ingredientsController.text = item.ingredients.join(', ');
+      if (item.baseProteinPer100g != null) {
+        _baseP = item.baseProteinPer100g;
+        _baseF = item.baseFatsPer100g;
+        _baseC = item.baseNetCarbsPer100g;
+        _baseCal = item.baseCaloriesPer100g;
+      }
     }
   }
 
@@ -793,7 +1040,37 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
     _netCarbsController.dispose();
     _caloriesController.dispose();
     _ingredientsController.dispose();
+    _quantityController.dispose();
     super.dispose();
+  }
+
+  bool get _hasBaseValues =>
+      _selectedProduct != null || (_baseP != null && _baseF != null && _baseC != null && _baseCal != null);
+
+  void _recalcFromQuantityAndUnit() {
+    if (!_hasBaseValues) return;
+    final qty = double.tryParse(_quantityController.text) ?? 100;
+    if (qty <= 0) return;
+    final grams = quantityToGrams(qty, _unit);
+    final factor = grams / 100;
+    double p, f, c, cal;
+    if (_selectedProduct != null) {
+      p = _selectedProduct!.protein * factor;
+      f = _selectedProduct!.fats * factor;
+      c = _selectedProduct!.netCarbs * factor;
+      cal = _selectedProduct!.calories * factor;
+    } else {
+      p = (_baseP ?? 0) * factor;
+      f = (_baseF ?? 0) * factor;
+      c = (_baseC ?? 0) * factor;
+      cal = (_baseCal ?? 0) * factor;
+    }
+    setState(() {
+      _proteinController.text = p.toStringAsFixed(1);
+      _fatsController.text = f.toStringAsFixed(1);
+      _netCarbsController.text = c.toStringAsFixed(1);
+      _caloriesController.text = cal.toStringAsFixed(1);
+    });
   }
 
   void _onNameChanged(String value) {
@@ -809,19 +1086,17 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
   }
 
   void _selectProduct(Product product) {
-    final data = product.toFoodItemData();
-    _nameController.text = data['name'] as String;
-    _proteinController.text = (data['protein'] as double).toStringAsFixed(1);
-    _fatsController.text = (data['fats'] as double).toStringAsFixed(1);
-    _netCarbsController.text = (data['netCarbs'] as double).toStringAsFixed(1);
-    _caloriesController.text = (data['calories'] as double).toStringAsFixed(1);
-    _ingredientsController.text = (data['ingredients'] as List<String>).join(', ');
+    _selectedProduct = product;
+    _quantityController.text = '100';
+    _unit = FoodQuantityUnit.g;
+    _recalcFromQuantityAndUnit();
+    _nameController.text = product.name;
+    _ingredientsController.text = product.ingredients.join(', ');
     setState(() {
       _showSuggestions = false;
       _debouncedQuery = '';
     });
     _nameFocusNode.unfocus();
-    // Cache product for offline use
     ref.read(openFoodFactsLocalDataSourceProvider).saveProduct(product);
   }
 
@@ -886,6 +1161,7 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
     }
 
     final name = _nameController.text.trim();
+    final quantity = double.tryParse(_quantityController.text) ?? 100.0;
     final protein = double.tryParse(_proteinController.text) ?? 0.0;
     final fats = double.tryParse(_fatsController.text) ?? 0.0;
     final netCarbs = double.tryParse(_netCarbsController.text) ?? 0.0;
@@ -902,6 +1178,12 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
       netCarbs: netCarbs,
       calories: calories,
       ingredients: ingredients,
+      quantity: quantity,
+      unit: _unit,
+      baseProteinPer100g: _selectedProduct?.protein ?? _baseP,
+      baseFatsPer100g: _selectedProduct?.fats ?? _baseF,
+      baseNetCarbsPer100g: _selectedProduct?.netCarbs ?? _baseC,
+      baseCaloriesPer100g: _selectedProduct?.calories ?? _baseCal,
     );
 
     Navigator.of(context).pop(item);
@@ -953,6 +1235,50 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
                   onDismiss: () => setState(() => _showSuggestions = false),
                 ),
               ],
+              const SizedBox(height: UIConstants.spacingSm),
+              // Quantity and unit (default 100 g for quick add)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      controller: _quantityController,
+                      decoration: const InputDecoration(
+                        labelText: 'Quantity',
+                        hintText: '100',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Required';
+                        final n = double.tryParse(value);
+                        if (n == null || n <= 0) return 'Invalid';
+                        return null;
+                      },
+                      onChanged: (_) => _recalcFromQuantityAndUnit(),
+                    ),
+                  ),
+                  const SizedBox(width: UIConstants.spacingSm),
+                  Expanded(
+                    child: DropdownButtonFormField<FoodQuantityUnit>(
+                      initialValue: _unit,
+                      decoration: const InputDecoration(labelText: 'Unit'),
+                      items: FoodQuantityUnit.values
+                          .map((u) => DropdownMenuItem(value: u, child: Text(u.displayLabel)))
+                          .toList(),
+                      onChanged: (FoodQuantityUnit? v) {
+                        if (v != null) {
+                          setState(() => _unit = v);
+                          _recalcFromQuantityAndUnit();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: UIConstants.spacingSm),
               Row(
                 children: [
@@ -1025,9 +1351,6 @@ class _AddFoodItemDialogState extends ConsumerState<_AddFoodItemDialog> {
                         final num = double.tryParse(value);
                         if (num == null || num < 0) {
                           return 'Invalid';
-                        }
-                        if (num > 40.0) {
-                          return 'Max 40g';
                         }
                         return null;
                       },
